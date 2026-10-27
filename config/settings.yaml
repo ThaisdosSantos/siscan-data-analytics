@@ -1,0 +1,6 @@
+# Configurações do Projeto
+crs: "10ª CRS"
+data_paths:
+  bronze: "data/1_bronze"
+  silver: "data/2_silver"
+  gold: "data/3_gold"
