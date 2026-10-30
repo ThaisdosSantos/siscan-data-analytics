@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,OCEAN,ORANGE,SKY
+from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,ORANGE,SKY
 from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Adequabilidade | SISCAN",layout="wide")
 apply_custom_css()
@@ -30,7 +30,7 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
                     color_discrete_map={"Insatisfatória":ORANGE,"Rejeitada":SKY},
                     title="Taxa anual por categoria",labels={"taxa":"Taxa (%)","ano":"Ano"})
         fig.update_xaxes(type="category")
-        display_chart(fig)
+        display_chart(format_percent_chart(fig))
     bycity=df.groupby(["municipio","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
     pivot=bycity.pivot(index="municipio",columns="categoria",values="quantidade_amostras").fillna(0)
     for name in ["Satisfatória","Insatisfatória","Rejeitada"]:
