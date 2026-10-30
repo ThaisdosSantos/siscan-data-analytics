@@ -19,6 +19,10 @@ if require(df,["municipio","grupo_etario_diretriz","quantidade_exames"]):
                 ("Menores de 25 anos",fmt_pct(pct(sums.get("<25 anos",0),total))),
                 ("65 anos ou mais",fmt_pct(pct(sums.get("≥65 anos",0),total)))])
     agg=groups.groupby(["municipio","grupo"],as_index=False).quantidade_exames.sum(min_count=1)
+    # Calcula a participação por município antes de desenhar as barras.
+    # Evita que o hover exiba a quantidade como se fosse um percentual.
+    total_municipio=agg.groupby("municipio")["quantidade_exames"].transform("sum")
+    agg["percentual"]=agg["quantidade_exames"].div(total_municipio.where(total_municipio.gt(0))).mul(100)
     a,b=st.columns([1,2])
     with a:
         fig=px.pie(agg,names="grupo",values="quantidade_exames",hole=.6,
@@ -26,11 +30,12 @@ if require(df,["municipio","grupo_etario_diretriz","quantidade_exames"]):
                    title="Distribuição dos exames")
         display_chart(fig)
     with b:
-        fig=px.bar(agg,x="municipio",y="quantidade_exames",color="grupo",
+        fig=px.bar(agg,x="municipio",y="percentual",color="grupo",
                    color_discrete_map={"25–64 anos":OCEAN,"<25 anos":SKY,"≥65 anos":ORANGE},
-                   labels={"municipio":"Município","quantidade_exames":"Percentual (%)"},
+                   labels={"municipio":"Município","percentual":"Percentual (%)"},
                    title="Composição etária por município")
-        fig.update_layout(barnorm="percent")
+        fig.update_traces(hovertemplate="Município: %{x}<br>Percentual: %{y:.2f}%<extra>%{fullData.name}</extra>")
+        fig.update_yaxes(range=[0,100],ticksuffix="%")
         fig.update_xaxes(tickangle=-45)
         display_chart(fig)
     export_table(agg,"siscan_faixa_etaria.csv")
