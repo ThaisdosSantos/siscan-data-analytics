@@ -89,7 +89,7 @@ def load_table(table_key, source="CSV local"):
 
 def selected_source():
     """Fonte persistente, independente da vida útil dos widgets multipágina."""
-    return st.session_state.get("source_preference", "Databricks SQL")
+    return "Databricks SQL"
 
 def filtered(table_key):
     df=load_table(table_key, selected_source())
@@ -116,21 +116,16 @@ def require(df,columns):
 
 def sidebar_filters():
     """Filtros persistentes entre as páginas; widgets têm chaves transitórias."""
-    def sync_source():
-        st.session_state["source_preference"]=st.session_state["_source_widget"]
     def sync_year():
         st.session_state["year_preference"]=st.session_state["_year_widget"]
     def sync_cities():
         st.session_state["city_preference"]=st.session_state["_cities_widget"]
 
-    options=["Databricks SQL","CSV local"]
     years=["Todos",*range(2020,2026)]
     cities=list(MUNICIPIOS.values())
-    st.session_state.setdefault("source_preference","Databricks SQL")
     st.session_state.setdefault("year_preference","Todos")
     st.session_state.setdefault("city_preference",cities.copy())
     # Restore values after Streamlit removes widget keys while changing pages.
-    st.session_state["_source_widget"]=st.session_state["source_preference"]
     st.session_state["_year_widget"]=st.session_state["year_preference"]
     st.session_state["_cities_widget"]=st.session_state["city_preference"]
 
@@ -141,7 +136,6 @@ def sidebar_filters():
         st.markdown("### PET-Saúde — Informação e Saúde Digital")
         st.caption("TCC Engenharia de Software")
         st.divider()
-        st.selectbox("Origem dos dados",options,key="_source_widget",on_change=sync_source)
         st.selectbox("Ano",years,key="_year_widget",on_change=sync_year)
         st.multiselect("Municípios da 10ª CRS",cities,key="_cities_widget",on_change=sync_cities)
         st.caption("Fonte: SISCAN/DATASUS · 2020–2025")
