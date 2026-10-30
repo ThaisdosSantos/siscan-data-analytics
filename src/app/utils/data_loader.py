@@ -115,27 +115,49 @@ def require(df,columns):
     return True
 
 def sidebar_filters():
-    """Filtros persistentes entre as páginas; widgets têm chaves transitórias."""
-    def sync_year():
-        st.session_state["year_preference"]=st.session_state["_year_widget"]
-    def sync_cities():
-        st.session_state["city_preference"]=st.session_state["_cities_widget"]
-
+    """Filtros globais com caixas de seleção de municípios."""
     years=["Todos",*range(2020,2026)]
     cities=list(MUNICIPIOS.values())
     st.session_state.setdefault("year_preference","Todos")
     st.session_state.setdefault("city_preference",cities.copy())
-    # Restore values after Streamlit removes widget keys while changing pages.
+    st.session_state["city_preference"]=[c for c in cities if c in st.session_state["city_preference"]]
+
+    def sync_year():
+        st.session_state["year_preference"]=st.session_state["_year_widget"]
+
+    def sync_city(city):
+        selected=set(st.session_state["city_preference"])
+        if st.session_state["_city_"+city]:
+            selected.add(city)
+        else:
+            selected.discard(city)
+        st.session_state["city_preference"]=[c for c in cities if c in selected]
+
+    def set_all(value):
+        st.session_state["city_preference"]=cities.copy() if value else []
+        for city in cities:
+            st.session_state["_city_"+city]=value
+
     st.session_state["_year_widget"]=st.session_state["year_preference"]
-    st.session_state["_cities_widget"]=st.session_state["city_preference"]
 
     with st.sidebar:
         logo=Path(__file__).resolve().parents[1]/"assets"/"LogoPET-Saude.jpeg"
         if logo.is_file():
-            st.image(str(logo), use_container_width=True)
+            st.image(str(logo),use_container_width=True)
         st.markdown("### PET-Saúde — Informação e Saúde Digital")
         st.caption("TCC Engenharia de Software")
         st.divider()
         st.selectbox("Ano",years,key="_year_widget",on_change=sync_year)
-        st.multiselect("Municípios da 10ª CRS",cities,key="_cities_widget",on_change=sync_cities)
+        selected=st.session_state["city_preference"]
+        with st.expander(f"Municípios da 10ª CRS ({len(selected)}/{len(cities)})",expanded=False):
+            left,right=st.columns(2)
+            with left:
+                st.button("Todos",key="city_all",use_container_width=True,on_click=set_all,args=(True,))
+            with right:
+                st.button("Limpar",key="city_none",use_container_width=True,on_click=set_all,args=(False,))
+            for city in cities:
+                key="_city_"+city
+                if key not in st.session_state:
+                    st.session_state[key]=city in selected
+                st.checkbox(city,key=key,on_change=sync_city,args=(city,))
         st.caption("Fonte: SISCAN/DATASUS · 2020–2025")
