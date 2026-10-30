@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,OCEAN
+from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN
 from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
 apply_custom_css()
@@ -20,7 +20,7 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                labels={"faixa_etaria":"Faixa etária","taxa":"Proporção (%)"},
                title="Exames alterados por faixa etária")
     fig.update_xaxes(tickangle=-45)
-    display_chart(fig)
+    display_chart(format_percent_chart(fig))
     matrix=df.groupby(["municipio","faixa_etaria"],as_index=False)[["quantidade_alterados","total_exames_validos"]].sum(min_count=1)
     matrix["taxa"]=matrix.quantidade_alterados.div(matrix.total_exames_validos.where(matrix.total_exames_validos>0)).mul(100)
     heat=matrix.pivot(index="municipio",columns="faixa_etaria",values="taxa")
@@ -28,5 +28,7 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
         fig=px.imshow(heat,aspect="auto",color_continuous_scale="Blues",
                       labels={"x":"Faixa etária","y":"Município","color":"%"},
                       title="Matriz territorial de proporção operacional")
+        fig.update_traces(hovertemplate="Faixa etária: %{x}<br>Município: %{y}<br>Proporção: %{z:.2f}%<extra></extra>")
+        fig.update_coloraxes(colorbar_tickformat=".2f", colorbar_ticksuffix="%")
         display_chart(fig)
     export_table(matrix,"siscan_exames_alterados.csv")
