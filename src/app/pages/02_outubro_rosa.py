@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,ORANGE,OCEAN,SKY,NAVY
-from utils.data_loader import filtered,require
+from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Outubro Rosa | SISCAN",layout="wide")
 apply_custom_css()
+sidebar_filters()
 st.title("02 · Outubro Rosa")
 st.caption("Análise descritiva da variação de exames em relação a setembro; não demonstra causalidade atribuível à campanha.")
 df=filtered("outubro")
