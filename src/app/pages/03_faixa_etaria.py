@@ -26,10 +26,11 @@ if require(df,["municipio","grupo_etario_diretriz","quantidade_exames"]):
                    title="Distribuição dos exames")
         display_chart(fig)
     with b:
-        fig=px.bar(agg,x="municipio",y="quantidade_exames",color="grupo",barnorm="percent",
+        fig=px.bar(agg,x="municipio",y="quantidade_exames",color="grupo",
                    color_discrete_map={"25–64 anos":OCEAN,"<25 anos":SKY,"≥65 anos":ORANGE},
                    labels={"municipio":"Município","quantidade_exames":"Percentual (%)"},
                    title="Composição etária por município")
+        fig.update_layout(barnorm="percent")
         fig.update_xaxes(tickangle=-45)
         display_chart(fig)
     export_table(agg,"siscan_faixa_etaria.csv")
