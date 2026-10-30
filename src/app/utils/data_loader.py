@@ -88,20 +88,25 @@ def load_table(table_key, source="CSV local"):
     return df
 
 def selected_source():
-    return st.session_state.get("source","CSV local")
+    """Fonte persistente, independente da vida útil dos widgets multipágina."""
+    return st.session_state.get("source_preference", "Databricks SQL")
 
 def filtered(table_key):
-    df=load_table(table_key,selected_source())
-    if df.empty: return df
-    year=st.session_state.get("ano_global","Todos")
-    cities=st.session_state.get("municipios_global",list(MUNICIPIOS.values()))
-    if year!="Todos" and "ano" in df: df=df[df.ano==int(year)]
-    if "municipio" in df: df=df[df.municipio.isin(cities)]
+    df=load_table(table_key, selected_source())
+    if df.empty:
+        return df
+    year=st.session_state.get("year_preference", "Todos")
+    cities=st.session_state.get("city_preference", list(MUNICIPIOS.values()))
+    if year!="Todos" and "ano" in df:
+        df=df[df.ano==int(year)]
+    if "municipio" in df:
+        df=df[df.municipio.isin(cities)]
     return df.copy()
 
 def require(df,columns):
     if df.empty:
-        st.info("Nenhuma linha Gold encontrada. Confirme a conexão, as permissões de SELECT, os filtros e a disponibilidade dos dados.")
+        st.info("Não há registros para os filtros selecionados na fonte "
+                + selected_source() + ". Verifique os dados e os filtros.")
         return False
     missing=[c for c in columns if c not in df]
     if missing:
@@ -110,24 +115,33 @@ def require(df,columns):
     return True
 
 def sidebar_filters():
-    """Recria controles em todas as páginas e preserva valores na navegação."""
-    from pathlib import Path
-    def keep(key):
-        st.session_state["saved_"+key]=st.session_state[key]
-    def restore(key,default):
-        if key not in st.session_state:
-            st.session_state[key]=st.session_state.get("saved_"+key,default)
+    """Filtros persistentes entre as páginas; widgets têm chaves transitórias."""
+    def sync_source():
+        st.session_state["source_preference"]=st.session_state["_source_widget"]
+    def sync_year():
+        st.session_state["year_preference"]=st.session_state["_year_widget"]
+    def sync_cities():
+        st.session_state["city_preference"]=st.session_state["_cities_widget"]
+
+    options=["Databricks SQL","CSV local"]
+    years=["Todos",*range(2020,2026)]
+    cities=list(MUNICIPIOS.values())
+    st.session_state.setdefault("source_preference","Databricks SQL")
+    st.session_state.setdefault("year_preference","Todos")
+    st.session_state.setdefault("city_preference",cities.copy())
+    # Restore values after Streamlit removes widget keys while changing pages.
+    st.session_state["_source_widget"]=st.session_state["source_preference"]
+    st.session_state["_year_widget"]=st.session_state["year_preference"]
+    st.session_state["_cities_widget"]=st.session_state["city_preference"]
+
     with st.sidebar:
         logo=Path(__file__).resolve().parents[1]/"assets"/"LogoPET-Saude.jpeg"
-        if logo.is_file(): st.image(str(logo),use_container_width=True)
+        if logo.is_file():
+            st.image(str(logo), use_container_width=True)
         st.markdown("### PET-Saúde — Informação e Saúde Digital")
         st.caption("TCC Engenharia de Software")
         st.divider()
-        restore("source","Databricks SQL")
-        st.selectbox("Origem dos dados",["CSV local","Databricks SQL"],key="source",on_change=keep,args=("source",))
-        restore("ano_global","Todos")
-        st.selectbox("Ano",["Todos",*range(2020,2026)],key="ano_global",on_change=keep,args=("ano_global",))
-        restore("municipios_global",list(MUNICIPIOS.values()))
-        st.multiselect("Municípios da 10ª CRS",list(MUNICIPIOS.values()),key="municipios_global",
-                       on_change=keep,args=("municipios_global",))
+        st.selectbox("Origem dos dados",options,key="_source_widget",on_change=sync_source)
+        st.selectbox("Ano",years,key="_year_widget",on_change=sync_year)
+        st.multiselect("Municípios da 10ª CRS",cities,key="_cities_widget",on_change=sync_cities)
         st.caption("Fonte: SISCAN/DATASUS · 2020–2025")
