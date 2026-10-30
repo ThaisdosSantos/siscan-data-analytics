@@ -2,21 +2,11 @@
 from pathlib import Path
 import streamlit as st
 from utils.theme import apply_custom_css, metric_row, fmt_num
-from utils.data_loader import MUNICIPIOS, filtered, require
+from utils.data_loader import MUNICIPIOS, filtered, require, sidebar_filters
 
 st.set_page_config(page_title="SISCAN | 10ª CRS",page_icon="🩺",layout="wide",initial_sidebar_state="expanded")
 apply_custom_css()
-with st.sidebar:
-    logo=Path(__file__).parent/"assets"/"LogoPET-Saude.jpeg"
-    if logo.is_file(): st.image(str(logo),use_container_width=True)
-    st.markdown("### PET-Saúde — Informação e Saúde Digital")
-    st.caption("TCC Engenharia de Software")
-    st.divider()
-    st.selectbox("Origem dos dados",["CSV local","Databricks SQL"],key="source")
-    st.selectbox("Ano",["Todos",*range(2020,2026)],key="ano_global")
-    st.multiselect("Municípios da 10ª CRS",list(MUNICIPIOS.values()),
-                   default=list(MUNICIPIOS.values()),key="municipios_global")
-    st.caption("Fonte: SISCAN/DATASUS · 2020–2025")
+sidebar_filters()
 st.title("Exames citopatológicos do colo do útero")
 st.markdown("#### Painel analítico — 10ª Coordenadoria Regional de Saúde do Rio Grande do Sul")
 st.write("Explore a distribuição municipal e temporal, a campanha Outubro Rosa, a faixa etária, a adequabilidade das amostras e os resultados alterados.")
