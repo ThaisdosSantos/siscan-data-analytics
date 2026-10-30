@@ -34,6 +34,16 @@ def style_chart(fig, height=430, percent=False):
     fig.update_yaxes(gridcolor="#e9edf1")
     return fig
 
+def format_percent_chart(fig, axis="y"):
+    """Formata percentuais nos eixos e no tooltip sem arredondar os cálculos."""
+    if axis == "y":
+        fig.update_yaxes(tickformat=".2f", ticksuffix="%")
+        fig.update_traces(hovertemplate="%{x}<br>%{y:.2f}%<extra>%{fullData.name}</extra>")
+    elif axis == "x":
+        fig.update_xaxes(tickformat=".2f", ticksuffix="%")
+        fig.update_traces(hovertemplate="%{y}<br>%{x:.2f}%<extra>%{fullData.name}</extra>")
+    return fig
+
 def display_chart(fig):
     st.plotly_chart(style_chart(fig), use_container_width=True)
 
@@ -52,7 +62,7 @@ def fmt_num(v):
 
 def fmt_pct(v):
     if v is None or v != v: return "N/D"
-    return f"{v:.1f}%".replace(".", ",")
+    return f"{v:.2f}%".replace(".", ",")
 
 def pct(n, d):
     return 100*n/d if d and d > 0 else float("nan")
