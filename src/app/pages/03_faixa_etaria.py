@@ -28,6 +28,7 @@ if require(df,["municipio","grupo_etario_diretriz","quantidade_exames"]):
         fig=px.pie(agg,names="grupo",values="quantidade_exames",hole=.6,
                    color="grupo",color_discrete_map={"25–64 anos":OCEAN,"<25 anos":SKY,"≥65 anos":ORANGE},
                    title="Distribuição dos exames")
+        fig.update_traces(texttemplate="%{percent:.2%}", hovertemplate="%{label}<br>%{percent:.2%}<extra></extra>")
         display_chart(fig)
     with b:
         fig=px.bar(agg,x="municipio",y="percentual",color="grupo",
