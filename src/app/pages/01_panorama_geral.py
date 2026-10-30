@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,OCEAN
-from utils.data_loader import filtered,require
+from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Panorama | SISCAN",layout="wide")
 apply_custom_css()
+sidebar_filters()
 st.title("01 · Panorama temporal e territorial")
 df=filtered("temporal")
 if require(df,["municipio","ano","mes","quantidade"]):
