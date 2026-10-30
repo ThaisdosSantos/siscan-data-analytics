@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,ORANGE,OCEAN,SKY,NAVY
+from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,ORANGE,OCEAN,SKY,NAVY
 from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Outubro Rosa | SISCAN",layout="wide")
 apply_custom_css()
@@ -37,6 +37,6 @@ if require(df,["ano","mes","municipio","exames_mes","exames_referencia_setembro"
         fig=px.bar(city.sort_values("variacao_pct"),y="municipio",x="variacao_pct",orientation="h",
                    color_discrete_sequence=[ORANGE],labels={"municipio":"Município","variacao_pct":"Variação (%)"},
                    title="Variação outubro × setembro por município (agregada no período)")
-        display_chart(fig)
+        display_chart(format_percent_chart(fig, axis="x"))
     export_table(city,"siscan_outubro_rosa.csv")
     st.caption("Comparações agregadas são calculadas com somas dos volumes, não com a média de percentuais municipais.")
