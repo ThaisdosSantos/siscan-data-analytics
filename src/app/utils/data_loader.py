@@ -101,3 +101,26 @@ def require(df,columns):
         st.warning("Colunas ausentes na tabela Gold: "+", ".join(missing))
         return False
     return True
+
+def sidebar_filters():
+    """Recria controles em todas as páginas e preserva valores na navegação."""
+    from pathlib import Path
+    def keep(key):
+        st.session_state["saved_"+key]=st.session_state[key]
+    def restore(key,default):
+        if key not in st.session_state:
+            st.session_state[key]=st.session_state.get("saved_"+key,default)
+    with st.sidebar:
+        logo=Path(__file__).resolve().parents[1]/"assets"/"LogoPET-Saude.jpeg"
+        if logo.is_file(): st.image(str(logo),use_container_width=True)
+        st.markdown("### PET-Saúde — Informação e Saúde Digital")
+        st.caption("TCC Engenharia de Software")
+        st.divider()
+        restore("source","CSV local")
+        st.selectbox("Origem dos dados",["CSV local","Databricks SQL"],key="source",on_change=keep,args=("source",))
+        restore("ano_global","Todos")
+        st.selectbox("Ano",["Todos",*range(2020,2026)],key="ano_global",on_change=keep,args=("ano_global",))
+        restore("municipios_global",list(MUNICIPIOS.values()))
+        st.multiselect("Municípios da 10ª CRS",list(MUNICIPIOS.values()),key="municipios_global",
+                       on_change=keep,args=("municipios_global",))
+        st.caption("Fonte: SISCAN/DATASUS · 2020–2025")
