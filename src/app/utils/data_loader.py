@@ -44,7 +44,14 @@ def _from_databricks(name):
     path=_config("DATABRICKS_HTTP_PATH")
     token=_config("DATABRICKS_TOKEN")
     catalog=_config("DATABRICKS_CATALOG","tcc-analise-siscan-10crs")
-    if not all([host,path,token]): return pd.DataFrame()
+    missing=[k for k,v in {
+        "DATABRICKS_SERVER_HOSTNAME":host,
+        "DATABRICKS_HTTP_PATH":path,
+        "DATABRICKS_TOKEN":token,
+    }.items() if not v]
+    if missing:
+        raise RuntimeError("Configuração Databricks incompleta: " + ", ".join(missing)
+          + ". Configure esses valores nos Secrets do Streamlit Cloud ou em variáveis de ambiente.")
     with sql.connect(server_hostname=host.replace("https://",""),http_path=path,access_token=token) as conn:
         with conn.cursor() as cursor:
             cursor.execute(f"SELECT * FROM `{catalog}`.gold.`{name}`")
@@ -57,7 +64,7 @@ def load_table(table_key, source="CSV local"):
     try:
         df=_from_databricks(name) if source=="Databricks SQL" else _from_csv(name)
     except Exception as exc:
-        st.warning(f"Não foi possível consultar {name}: {type(exc).__name__}. Verifique a configuração e a disponibilidade.")
+        st.error(f"Falha ao consultar Gold: {type(exc).__name__}: {exc}")
         return pd.DataFrame()
     if df.empty: return df
     df.columns=[str(x).strip().lower() for x in df.columns]
@@ -94,7 +101,7 @@ def filtered(table_key):
 
 def require(df,columns):
     if df.empty:
-        st.info("Não há dados Gold disponíveis para os filtros selecionados. Configure a conexão Databricks SQL ou adicione os CSVs em data/3_gold/.")
+        st.info("Nenhuma linha Gold encontrada. Confirme a conexão, as permissões de SELECT, os filtros e a disponibilidade dos dados.")
         return False
     missing=[c for c in columns if c not in df]
     if missing:
@@ -116,7 +123,7 @@ def sidebar_filters():
         st.markdown("### PET-Saúde — Informação e Saúde Digital")
         st.caption("TCC Engenharia de Software")
         st.divider()
-        restore("source","CSV local")
+        restore("source","Databricks SQL")
         st.selectbox("Origem dos dados",["CSV local","Databricks SQL"],key="source",on_change=keep,args=("source",))
         restore("ano_global","Todos")
         st.selectbox("Ano",["Todos",*range(2020,2026)],key="ano_global",on_change=keep,args=("ano_global",))
