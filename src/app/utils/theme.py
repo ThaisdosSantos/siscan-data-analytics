@@ -53,7 +53,19 @@ def metric_row(items):
         col.metric(label,value)
 
 def export_table(df, name):
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    """Duas casas nas colunas percentuais; CSV preserva valores originais."""
+    from pandas.api.types import is_numeric_dtype
+    config = {}
+    for column in df.columns:
+        lower = column.lower()
+        is_percentage = (
+            lower in {"percentual", "taxa", "variacao_pct"}
+            or lower.endswith(("_pct", "_percentual", "_percentual_pct"))
+            or lower.startswith(("taxa_", "proporcao_"))
+        )
+        if is_percentage and is_numeric_dtype(df[column]):
+            config[column] = st.column_config.NumberColumn(column, format="%.2f")
+    st.dataframe(df, use_container_width=True, hide_index=True, column_config=config)
     st.download_button("⬇️ Exportar CSV", df.to_csv(index=False, sep=";").encode("utf-8-sig"),
                        file_name=name, mime="text/csv", key="csv_"+name)
 
