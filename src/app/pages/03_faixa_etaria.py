@@ -223,21 +223,19 @@ def matrix_html(table):
     """Tabela responsiva fiel à referência; somente valores escapados."""
     headers = [
         "Município",
-        "Sobrerrastreamento (&lt;25 anos)",
-        "Taxa Alteração (&lt;25 anos)",
-        "Taxa Alteração Alvo (25–64)",
-        "Taxa Alteração Idosas (≥65)",
-        "Razão de Efetividade (&lt;25 / Alvo)",
-        "Avaliação de Impacto",
+        "Volume &lt;25 anos",
+        "Taxa de alteração &lt;25 (%)",
+        "Taxa de alteração 25–64 (%)",
+        "Taxa de alteração ≥65 (%)",
+        "Razão de efetividade",
+        "Classificação de impacto",
     ]
     rows = []
     for _, row in table.iterrows():
         volume = format_br(row["Volume <25"], 0)
-        share = format_br(row["Participação <25 (%)"])
-        volume_label = f"{volume} exames ({share}%)" if volume != "N/D" and share != "N/D" else "N/D"
         cells = [
             f'<strong>{escape(str(row["Município"]))}</strong>',
-            escape(volume_label),
+            escape(volume),
             escape(format_br(row["Taxa <25 (%)"]) + "%") if pd.notna(row["Taxa <25 (%)"]) else "N/D",
             escape(format_br(row["Taxa 25–64 (%)"]) + "%") if pd.notna(row["Taxa 25–64 (%)"]) else "N/D",
             escape(format_br(row["Taxa ≥65 (%)"]) + "%") if pd.notna(row["Taxa ≥65 (%)"]) else "N/D",
