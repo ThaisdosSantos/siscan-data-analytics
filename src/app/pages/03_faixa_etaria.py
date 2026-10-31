@@ -1,5 +1,6 @@
 """Conformidade etária (Q3) e matriz exploratória de alterações (Q3 × Q5)."""
 import re
+from html import escape
 import unicodedata
 
 import pandas as pd
@@ -199,21 +200,86 @@ matrix["Classificação de impacto"] = matrix.apply(impact, axis=1, threshold=th
 if q5.empty:
     st.warning("A tabela Gold de exames alterados (Q5) não retornou registros. Taxas e razão serão exibidas como N/D.")
 
-columns = ["Município", "Volume <25", "Taxa <25 (%)", "Taxa 25–64 (%)",
-           "Taxa ≥65 (%)", "Razão (<25 / Alvo)", "Classificação de impacto"]
-st.dataframe(
-    matrix[columns], use_container_width=True, hide_index=True,
-    height=min(40 * (len(matrix) + 1) + 14, 540),
-    column_config={
-        "Município": st.column_config.TextColumn("Município", pinned=True),
-        "Volume <25": st.column_config.NumberColumn("Volume <25 anos", format="%d"),
-        "Taxa <25 (%)": st.column_config.NumberColumn("Taxa de alteração <25 (%)", format="%.2f%%"),
-        "Taxa 25–64 (%)": st.column_config.NumberColumn("Taxa de alteração 25–64 (%)", format="%.2f%%"),
-        "Taxa ≥65 (%)": st.column_config.NumberColumn("Taxa de alteração ≥65 (%)", format="%.2f%%"),
-        "Razão (<25 / Alvo)": st.column_config.NumberColumn("Razão de efetividade", format="%.2f"),
-        "Classificação de impacto": st.column_config.TextColumn("Classificação de impacto"),
-    },
-)
+def format_br(value, digits=2):
+    """Formata número no padrão brasileiro, sem transformar ausências em zero."""
+    if pd.isna(value):
+        return "N/D"
+    return f"{value:,.{digits}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def impact_badge(label):
+    """Badges acessíveis, com rótulos explícitos além da cor."""
+    classes = {
+        "🟢 Boa Adesão Local": "ok",
+        "🟡 Baixo Retorno": "low",
+        "🔴 Alto Desperdício": "waste",
+        "⚪ Dados insuficientes": "unknown",
+    }
+    color = classes.get(label, "unknown")
+    return f'<span class="q3-badge q3-{color}">{escape(label)}</span>'
+
+
+def matrix_html(table):
+    """Tabela responsiva fiel à referência; somente valores escapados."""
+    headers = [
+        "Município",
+        "Sobrerrastreamento (&lt;25 anos)",
+        "Taxa Alteração (&lt;25 anos)",
+        "Taxa Alteração Alvo (25–64)",
+        "Taxa Alteração Idosas (≥65)",
+        "Razão de Efetividade (&lt;25 / Alvo)",
+        "Avaliação de Impacto",
+    ]
+    rows = []
+    for _, row in table.iterrows():
+        volume = format_br(row["Volume <25"], 0)
+        share = format_br(row["Participação <25 (%)"])
+        volume_label = f"{volume} exames ({share}%)" if volume != "N/D" and share != "N/D" else "N/D"
+        cells = [
+            f'<strong>{escape(str(row["Município"]))}</strong>',
+            escape(volume_label),
+            escape(format_br(row["Taxa <25 (%)"]) + "%") if pd.notna(row["Taxa <25 (%)"]) else "N/D",
+            escape(format_br(row["Taxa 25–64 (%)"]) + "%") if pd.notna(row["Taxa 25–64 (%)"]) else "N/D",
+            escape(format_br(row["Taxa ≥65 (%)"]) + "%") if pd.notna(row["Taxa ≥65 (%)"]) else "N/D",
+            escape(format_br(row["Razão (<25 / Alvo)"])),
+            impact_badge(str(row["Classificação de impacto"])),
+        ]
+        rows.append("<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>")
+    if not rows:
+        rows = ['<tr><td colspan="7">Nenhum município selecionado.</td></tr>']
+    header = "".join(f"<th scope='col'>{value}</th>" for value in headers)
+    return (
+        '<div class="q3-matrix-scroll" role="region" aria-label="Matriz Q3 e Q5" tabindex="0">'
+        '<table class="q3-matrix"><thead><tr>' + header + '</tr></thead><tbody>'
+        + "".join(rows) + '</tbody></table></div>'
+    )
+
+
+st.markdown("""
+<style>
+.q3-matrix-scroll {width:100%;overflow-x:auto;border-radius:8px;
+  box-shadow:0 2px 7px rgba(26,59,92,.09);margin:12px 0 17px;}
+.q3-matrix {border-collapse:collapse;width:100%;min-width:1040px;background:white;
+  color:#1A3B5C;font-family:Manrope,Arial,sans-serif;font-size:.83rem;}
+.q3-matrix th {background:#1A3B5C;color:#fff;text-align:left;
+  padding:13px 12px;font-size:.76rem;line-height:1.35;font-weight:750;}
+.q3-matrix td {padding:13px 12px;border-bottom:1px solid #e7ebef;vertical-align:middle;}
+.q3-matrix tbody tr:nth-child(even) {background:#f6f8fa;}
+.q3-matrix tbody tr:hover {background:#ecf5fa;}
+.q3-matrix td:first-child {font-weight:700;min-width:125px;}
+.q3-matrix td:last-child {min-width:165px;}
+.q3-badge {display:inline-block;border-radius:5px;padding:5px 9px;
+  line-height:1.4;font-size:.76rem;font-weight:750;white-space:normal;}
+.q3-ok {background:#e2f0d9;color:#385723;}
+.q3-low {background:#fff3cd;color:#856404;}
+.q3-waste {background:#ffe6e6;color:#b72323;}
+.q3-unknown {background:#e9edf1;color:#4a5968;}
+@media(max-width:800px) {
+  .q3-matrix th,.q3-matrix td {padding:11px 9px;}
+}
+</style>
+""", unsafe_allow_html=True)
+st.markdown(matrix_html(matrix), unsafe_allow_html=True)
 st.caption(
     "Rótulos heurísticos exploratórios: verde se a participação <25 é ≤ ao limiar; "
     "vermelho se excede o limiar e a razão é <0,25; amarelo nos demais casos com razão válida. "
