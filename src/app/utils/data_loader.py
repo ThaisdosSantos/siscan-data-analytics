@@ -147,17 +147,23 @@ def sidebar_filters():
         st.markdown("### PET-Saúde — Informação e Saúde Digital")
         st.caption("TCC Engenharia de Software")
         st.divider()
-        st.selectbox("Ano",years,key="_year_widget",on_change=sync_year)
-        selected=st.session_state["city_preference"]
-        with st.expander(f"Municípios da 10ª CRS ({len(selected)}/{len(cities)})",expanded=False):
-            left,right=st.columns(2)
-            with left:
-                st.button("Todos",key="city_all",use_container_width=True,on_click=set_all,args=(True,))
-            with right:
-                st.button("Limpar",key="city_none",use_container_width=True,on_click=set_all,args=(False,))
-            for city in cities:
-                key="_city_"+city
-                if key not in st.session_state:
-                    st.session_state[key]=city in selected
-                st.checkbox(city,key=key,on_change=sync_city,args=(city,))
         st.caption("Fonte: SISCAN/DATASUS · 2020–2025")
+
+    # Filtros compartilhados no topo, fora da sidebar.
+    with st.container():
+        left,right=st.columns([1,3],gap="small")
+        with left:
+            st.selectbox("Ano",years,key="_year_widget",on_change=sync_year)
+        with right:
+            selected=st.session_state["city_preference"]
+            with st.expander(f"Municípios da 10ª CRS ({len(selected)}/{len(cities)})",expanded=False):
+                left,right=st.columns(2)
+                with left:
+                    st.button("Todos",key="city_all",use_container_width=True,on_click=set_all,args=(True,))
+                with right:
+                    st.button("Limpar",key="city_none",use_container_width=True,on_click=set_all,args=(False,))
+                for city in cities:
+                    key="_city_"+city
+                    if key not in st.session_state:
+                        st.session_state[key]=city in selected
+                    st.checkbox(city,key=key,on_change=sync_city,args=(city,))
