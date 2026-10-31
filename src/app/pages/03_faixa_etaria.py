@@ -236,7 +236,7 @@ with b:
     with st.container(border=True, key="age_bar_card"):
         st.markdown(
             '<div style="font-size:1.12rem;color:#1A3B5C;font-weight:700">'
-            'Composição etária por município · 100%</div>'
+            'Composição etária por município</div>'
             '<div style="color:#7C8FA0;font-size:.77rem">Percentual (%)</div>',
             unsafe_allow_html=True,
         )
