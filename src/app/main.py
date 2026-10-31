@@ -153,12 +153,13 @@ with left:
         if lx:
             fig.add_trace(go.Scatter(
                 x=lx, y=ly, mode="lines",
-                line=dict(color="rgba(0,108,154,0.40)", width=1.6),
+                line=dict(color="rgba(59,119,151,0.32)", width=1.25),
                 hoverinfo="skip", showlegend=False,
             ))
         max_vol = max(1, float(city["quantidade"].max()))
         indexed = city.set_index("municipio")["quantidade"]
-        for (x, y), municipality in zip(positions, order):
+        for municipality in order:
+            x, y = position_by_city[municipality]
             volume = float(indexed.loc[municipality])
             size = 17 + 56 * (volume / max_vol) ** 0.5
             fig.add_trace(go.Scatter(
@@ -167,6 +168,13 @@ with left:
                 customdata=[[municipality, volume]],
                 hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,.0f} exames<extra></extra>",
                 showlegend=False,
+            ))
+        if order:
+            fig.add_trace(go.Scatter(
+                x=[position_by_city[c][0] for c in order],
+                y=[position_by_city[c][1] for c in order],
+                mode="markers", marker=dict(size=6, color=ORANGE),
+                hoverinfo="skip", showlegend=False,
             ))
         fig.update_xaxes(visible=False, range=[-0.08, 1.08], fixedrange=True)
         fig.update_yaxes(visible=False, range=[-0.05, 1.03], fixedrange=True)
@@ -195,29 +203,37 @@ with right:
         fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-# Os próprios cartões são links nativos do Streamlit.
-# Não há mais uma caixa decorativa com um segundo link separado.
+# Três cartões de navegação completos: link nativo sobre toda a área do cartão.
 st.markdown("""
 <style>
-div[data-testid="stPageLink"] a[href*="panorama_geral"],
-div[data-testid="stPageLink"] a[href*="outubro_rosa"],
-div[data-testid="stPageLink"] a[href*="exames_alterados"] {
-    text-decoration:none;
+.exec-nav-subtitle{color:#72879d;font-size:.76rem;margin-top:3px;pointer-events:none;}
+.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados{
+  position:relative;background:#fff;border:1px solid #d7dde3;border-radius:13px;
+  padding:17px 18px;min-height:102px;box-shadow:0 3px 9px rgba(26,59,92,.07);
+  transition:border-color .15s,box-shadow .15s,transform .15s;
+}
+.st-key-exec-nav-panorama:hover,.st-key-exec-nav-outubro:hover,.st-key-exec-nav-alterados:hover{
+  border-color:#EE5325;box-shadow:0 7px 20px rgba(26,59,92,.13);transform:translateY(-1px);
 }
 .st-key-exec-nav-panorama [data-testid="stPageLink"] a,
 .st-key-exec-nav-outubro [data-testid="stPageLink"] a,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a {
-    display:flex;align-items:center;width:100%;min-height:84px;
-    background:white;border:1px solid #dbe4ec;border-radius:13px;
-    padding:16px;color:#1A3B5C;font-size:1.04rem;font-weight:700;
-    box-shadow:0 3px 12px rgba(26,59,92,.04);
+.st-key-exec-nav-alterados [data-testid="stPageLink"] a{
+  position:static!important;display:block!important;color:#1A3B5C!important;
+  text-decoration:none!important;font-family:Fraunces,Georgia,serif;
+  font-size:1.1rem;font-weight:650;line-height:1.4;
+  padding:0!important;margin:0!important;background:transparent!important;
 }
-.st-key-exec-nav-panorama [data-testid="stPageLink"] a:hover,
-.st-key-exec-nav-outubro [data-testid="stPageLink"] a:hover,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a:hover {
-    border-color:#EE5325;background:#fff9f6;
-    box-shadow:0 6px 18px rgba(26,59,92,.10);
+.st-key-exec-nav-panorama [data-testid="stPageLink"] a::after,
+.st-key-exec-nav-outubro [data-testid="stPageLink"] a::after,
+.st-key-exec-nav-alterados [data-testid="stPageLink"] a::after {
+  content:"";position:absolute;inset:0;z-index:2;cursor:pointer;
 }
+.st-key-exec-nav-panorama [data-testid="stPageLink"],
+.st-key-exec-nav-outubro [data-testid="stPageLink"],
+.st-key-exec-nav-alterados [data-testid="stPageLink"] {margin:0!important;}
+.st-key-exec-nav-panorama .stCaptionContainer,
+.st-key-exec-nav-outubro .stCaptionContainer,
+.st-key-exec-nav-alterados .stCaptionContainer{margin-top:2px!important;}
 </style>
 """, unsafe_allow_html=True)
 nav = [
@@ -228,11 +244,12 @@ nav = [
     ("Exames alterados", "Proporção operacional por faixa etária",
      "pages/05_exames_alterados.py", "exec-nav-alterados"),
 ]
-for col, (title, subtitle, page, key) in zip(st.columns(3, gap="small"), nav):
+for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), nav):
     with col:
         with st.container(key=key):
             st.page_link(page, label=title + "  →", use_container_width=True)
-            st.caption(subtitle)
+            st.markdown('<div class="exec-nav-subtitle">' + html.escape(subtitle)
+                        + '</div>', unsafe_allow_html=True)
 
 st.caption("Fonte: SISCAN/DATASUS · Databricks camada Gold. "
            "Volumes representam exames registrados, não mulheres únicas ou cobertura populacional. "
