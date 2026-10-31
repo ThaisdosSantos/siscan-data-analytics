@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 from utils.theme import apply_custom_css, style_chart, fmt_num, fmt_pct, pct, OCEAN, SKY, ORANGE, NAVY
-from utils.data_loader import MUNICIPIOS, filtered, require, sidebar_filters
+from utils.data_loader import MUNICIPIOS, filtered, require, sidebar_filters, selected_years, years_label, year_month_index
 
 st.set_page_config(page_title="SISCAN | Painel Analítico 10ª CRS", page_icon="🩺",
                    layout="wide", initial_sidebar_state="expanded")
@@ -24,20 +24,7 @@ with mark:
 # Os filtros globais (ano e municípios) permanecem na barra lateral.
 # Filtros rápidos abaixo refinam apenas os gráficos da página principal e
 # a taxa de alteração; a Gold não dispõe de cruzamento idade x competência.
-col_year, col_city, col_age = st.columns([0.8, 1.4, 1])
-def sync_quick_year():
-    # Callback roda antes da nova execução; nunca modifica widgets já instanciados.
-    st.session_state["year_preference"] = st.session_state["home_year_quick"]
-
-with col_year:
-    # Sincroniza com o filtro lateral antes de construir o widget superior.
-    st.session_state["home_year_quick"] = st.session_state.get("year_preference", "Todos")
-    st.selectbox(
-        "Ano · filtro global",
-        ["Todos", *range(2020, 2026)],
-        key="home_year_quick",
-        on_change=sync_quick_year,
-    )
+col_city, col_age = st.columns([1.4, 1])
 with col_city:
     city_focus = st.selectbox("Visualização territorial", ["Todos os municípios", *MUNICIPIOS.values()],
                               help="Refina somente os gráficos desta página.")
@@ -46,6 +33,7 @@ with col_age:
                              ["Todas as idades", "25–64 anos", "Menores de 25", "65 anos ou mais"],
                              help="Filtro aplicável apenas ao indicador de exames alterados; não à série temporal.")
 
+st.caption(f"**Anos selecionados:** {years_label()}")
 df = filtered("temporal")
 if not require(df, ["municipio", "ano", "mes", "quantidade"]):
     st.stop()
@@ -120,10 +108,7 @@ with left:
                     color_discrete_sequence=[OCEAN],
                     labels={"data":"Competência","quantidade":"Exames"})
         # Lacunas de competências não devem ser apresentadas como um zero.
-        full_index=pd.date_range("2020-01-01", "2025-12-01", freq="MS")
-        if st.session_state.get("year_preference", "Todos") != "Todos":
-            year=int(st.session_state["year_preference"])
-            full_index=pd.date_range(f"{year}-01-01", f"{year}-12-01",freq="MS")
+        full_index = year_month_index()
         wide=monthly.set_index("data").reindex(full_index)
         fig=px.line(x=wide.index, y=wide.quantidade, markers=True,
                     labels={"x":"Competência","y":"Exames"},
