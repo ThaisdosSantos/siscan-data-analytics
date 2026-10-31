@@ -79,7 +79,13 @@ with left:
                     labels={"x":"Competência","y":"Exames"},
                     color_discrete_sequence=[OCEAN])
         fig.update_traces(connectgaps=False, hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>")
-        fig.update_xaxes(tickformat="%b/%Y", dtick="M2")
+        meses_pt = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+        marcacoes = full_index[::2]
+        fig.update_xaxes(
+            tickmode="array",
+            tickvals=marcacoes,
+            ticktext=[f"{meses_pt[d.month - 1]}/{str(d.year)[2:]}" for d in marcacoes]
+        )
         fig.update_yaxes(tickformat=",d")
         fig.update_layout(showlegend=False, height=365)
         st.plotly_chart(style_chart(fig, height=365), use_container_width=True)
