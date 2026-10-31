@@ -67,6 +67,24 @@ def apply_custom_css():
       .block-container {padding:1rem .85rem 2rem;}
       .pet-hero {padding:24px 22px 60px;border-radius:13px;}
     }
+
+    [data-testid="stSidebarNav"] {display:none!important;}
+    [data-testid="stAppViewContainer"] {background:#f8fafb!important;}
+    [data-testid="stSidebar"] {width:300px!important;min-width:300px!important;}
+    .lovable-brand {display:flex;align-items:center;gap:12px;padding:14px 6px 22px;}
+    .lovable-mark {display:grid;place-items:center;width:42px;height:42px;background:#ee5325;
+      border-radius:12px;font-size:24px;color:white!important;}
+    .lovable-brand strong {display:block;font-size:1.3rem;color:white;font-weight:800;}
+    .lovable-brand small {display:block;color:#c3d7e6;font-size:.74rem;}
+    .lovable-label {font-weight:800;color:#9cc5de!important;font-size:.68rem;letter-spacing:.15em;margin:14px 0 9px;}
+    .lovable-footer {font-size:.72rem;line-height:1.8;color:#bad0df!important;border-top:1px solid #456b87;margin-top:20px;padding-top:18px;}
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a {padding:10px 13px;border-radius:10px;font-weight:650;text-decoration:none;}
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {background:#285778;}
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {background:#006c9a!important;}
+    [data-testid="stSidebar"] [data-testid="stButton"] button {min-height:34px;border-radius:9px;font-size:.8rem;padding:4px;}
+    [data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"] {background:#006c9a!important;border-color:#4a9fd8!important;}
+    .pet-hero {min-height:185px;padding-bottom:75px;}
+    [data-testid="stMetricValue"] {font-size:1.85rem;}
     </style>""", unsafe_allow_html=True)
 
 
