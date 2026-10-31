@@ -95,10 +95,10 @@ def filtered(table_key):
     df=load_table(table_key, selected_source())
     if df.empty:
         return df
-    year=st.session_state.get("year_preference", "Todos")
+    years=selected_years()
     cities=st.session_state.get("city_preference", list(MUNICIPIOS.values()))
-    if year!="Todos" and "ano" in df:
-        df=df[df.ano==int(year)]
+    if "ano" in df:
+        df=df[df.ano.isin(years)]
     if "municipio" in df:
         df=df[df.municipio.isin(cities)]
     return df.copy()
@@ -114,16 +114,44 @@ def require(df,columns):
         return False
     return True
 
+def selected_years():
+    """Anos ativos para todas as páginas, inclusive após troca de página."""
+    years = list(range(2020, 2026))
+    saved = st.session_state.get("years_preference")
+    if saved is None:
+        old = st.session_state.get("year_preference", "Todos")
+        saved = years if old == "Todos" else [int(old)]
+    return [year for year in years if year in saved]
+
+
+def years_label(years=None):
+    """Representação fiel inclusive de anos não consecutivos."""
+    years = selected_years() if years is None else years
+    if not years:
+        return "Nenhum ano"
+    if years == list(range(min(years), max(years) + 1)):
+        return str(years[0]) if len(years) == 1 else f"{years[0]}–{years[-1]}"
+    return ", ".join(map(str, years))
+
+
+def year_month_index(years=None):
+    """Calendário com meses omitidos preservados como NaN."""
+    years = selected_years() if years is None else years
+    if not years:
+        return pd.DatetimeIndex([])
+    return pd.date_range(f"{min(years)}-01-01", f"{max(years)}-12-01", freq="MS")
+
+
 def sidebar_filters():
     """Filtros globais com caixas de seleção de municípios."""
-    years=["Todos",*range(2020,2026)]
+    years=list(range(2020,2026))
     cities=list(MUNICIPIOS.values())
-    st.session_state.setdefault("year_preference","Todos")
+    st.session_state["years_preference"]=selected_years()
     st.session_state.setdefault("city_preference",cities.copy())
     st.session_state["city_preference"]=[c for c in cities if c in st.session_state["city_preference"]]
 
     def sync_year():
-        st.session_state["year_preference"]=st.session_state["_year_widget"]
+        st.session_state["years_preference"]=list(st.session_state["_years_widget"])
 
     def sync_city(city):
         selected=set(st.session_state["city_preference"])
@@ -138,7 +166,7 @@ def sidebar_filters():
         for city in cities:
             st.session_state["_city_"+city]=value
 
-    st.session_state["_year_widget"]=st.session_state["year_preference"]
+    st.session_state["_years_widget"]=selected_years()
 
     with st.sidebar:
         logo=Path(__file__).resolve().parents[1]/"assets"/"LogoPET-Saude.jpeg"
@@ -147,7 +175,15 @@ def sidebar_filters():
         st.markdown("### PET-Saúde — Informação e Saúde Digital")
         st.caption("TCC Engenharia de Software")
         st.divider()
-        st.selectbox("Ano",years,key="_year_widget",on_change=sync_year)
+        st.multiselect("Anos",years,key="_years_widget",on_change=sync_year,
+                       help="Selecione qualquer combinação de anos. Use Todos/Limpar para agilizar.")
+        one,two=st.columns(2)
+        with one:
+            st.button("Todos os anos",key="years_all",use_container_width=True,
+                      on_click=lambda: st.session_state.update({"years_preference":years.copy(),"_years_widget":years.copy()}))
+        with two:
+            st.button("Limpar anos",key="years_clear",use_container_width=True,
+                      on_click=lambda: st.session_state.update({"years_preference":[],"_years_widget":[]}))
         selected=st.session_state["city_preference"]
         with st.expander(f"Municípios da 10ª CRS ({len(selected)}/{len(cities)})",expanded=False):
             left,right=st.columns(2)
