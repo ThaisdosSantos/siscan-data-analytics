@@ -97,13 +97,15 @@ def build_matrix(q3, q5, municipalities):
 def impact(row, threshold):
     """Regra visual exploratória: baseada na participação Q3 e na razão Q5."""
     share, ratio = row["Participação <25 (%)"], row["Razão (<25 / Alvo)"]
-    if pd.isna(share) or pd.isna(ratio):
+    if pd.isna(share):
         return "⚪ Dados insuficientes"
     if share <= threshold:
         return "🟢 Boa Adesão Local"
+    if pd.isna(ratio):
+        return "⚪ Dados insuficientes"
     if ratio < 0.25:
-        return "🔴 Alto Desperdício*"
-    return "🟡 Baixo Retorno*"
+        return "🔴 Alto Desperdício"
+    return "🟡 Baixo Retorno"
 
 
 st.set_page_config(page_title="Faixa etária | SISCAN", layout="wide")
@@ -179,9 +181,8 @@ with b:
 st.markdown("""
 <div class="q3-section">
 <strong>🔬 Matriz Cruzada de Efetividade: Sobrerrastreamento vs. Alterações Citológicas (Q3 × Q5)</strong>
-<p>Compara o volume de exames abaixo de 25 anos (Q3) com a proporção operacional de exames
-alterados em menores de 25, na população-alvo de 25–64 e em pessoas com 65 anos ou mais (Q5).
-O cruzamento é municipal, não individual, e não demonstra efetividade clínica ou desperdício.</p>
+<p>Avaliação epidemiológica do retorno diagnóstico dos exames realizados fora do público-alvo prioritário do Ministério da Saúde.<br>
+Comparação municipal agregada (não individual); as proporções Q5 são estimativas operacionais e não medem efetividade clínica ou desperdício comprovado.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -189,9 +190,9 @@ q5 = filtered("alterados")
 selected_cities = [c for c in MUNICIPIOS.values()
                    if c in st.session_state.get("city_preference", list(MUNICIPIOS.values()))]
 matrix = build_matrix(groups, q5, selected_cities)
-threshold = st.number_input(
+threshold = st.slider(
     "Limiar exploratório de participação de exames em menores de 25 anos (%)",
-    min_value=0.0, max_value=100.0, value=10.0, step=0.5,
+    min_value=5.0, max_value=20.0, value=10.0, step=0.5,
     help="Critério visual configurável pelo usuário, não é uma referência oficial.",
 )
 matrix["Classificação de impacto"] = matrix.apply(impact, axis=1, threshold=threshold)
@@ -214,8 +215,8 @@ st.dataframe(
     },
 )
 st.caption(
-    "*Rótulos heurísticos ilustrativos: verde se a participação <25 é ≤ ao limiar; "
-    "vermelho se excede o limiar e a razão é <0,25; amarelo nos demais casos calculáveis. "
+    "Rótulos heurísticos exploratórios: verde se a participação <25 é ≤ ao limiar; "
+    "vermelho se excede o limiar e a razão é <0,25; amarelo nos demais casos com razão válida. "
     "Não representam critérios oficiais, julgamento de conduta clínica ou desperdício comprovado. "
     "Taxas Q5: estimativas operacionais, sem exclusão verificável de amostras rejeitadas/insatisfatórias "
     "do denominador. Uma razão de 0,25 significa taxa <25 igual a um quarto da taxa 25–64. "
