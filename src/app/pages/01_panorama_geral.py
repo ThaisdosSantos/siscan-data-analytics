@@ -2,14 +2,14 @@
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from utils.theme import apply_custom_css, display_chart, fmt_num, fmt_pct, pct, OCEAN
+from utils.theme import apply_custom_css, page_header, display_chart, fmt_num, fmt_pct, pct, OCEAN
 from utils.data_loader import filtered, require, sidebar_filters, MUNICIPIOS, selected_years, years_label, year_month_index
 
 st.set_page_config(page_title="Panorama geral | SISCAN", layout="wide")
 apply_custom_css()
 sidebar_filters()
-st.title("01 · Panorama temporal e territorial")
-st.caption("Exames citopatológicos registrados por competência e município de residência na 10ª CRS do Rio Grande do Sul.")
+page_header("Panorama geral", "Volume de exames por competência e município",
+            "Exames citopatológicos registrados na 10ª CRS do Rio Grande do Sul.")
 
 df = filtered("temporal")
 if require(df, ["municipio", "ano", "mes", "quantidade"]):
