@@ -142,76 +142,73 @@ def year_month_index(years=None):
     return pd.date_range(f"{min(years)}-01-01", f"{max(years)}-12-01", freq="MS")
 
 
+
 def sidebar_filters():
-    """Filtros globais com caixas de seleção de municípios."""
-    years=list(range(2020,2026))
-    cities=list(MUNICIPIOS.values())
-    st.session_state["years_preference"]=selected_years()
-    st.session_state.setdefault("city_preference",cities.copy())
-    st.session_state["city_preference"]=[c for c in cities if c in st.session_state["city_preference"]]
+    """Navegação e filtros globais no padrão Lovable."""
+    years = list(range(2020, 2026))
+    cities = list(MUNICIPIOS.values())
+    st.session_state["years_preference"] = selected_years()
+    st.session_state.setdefault("city_preference", cities.copy())
 
-    def sync_year(year):
-        chosen=set(st.session_state["years_preference"])
-        if st.session_state[f"_year_check_{year}"]:
-            chosen.add(year)
+    def toggle_year(year):
+        selected = set(st.session_state["years_preference"])
+        if year in selected:
+            selected.remove(year)
         else:
-            chosen.discard(year)
-        st.session_state["years_preference"]=[y for y in years if y in chosen]
+            selected.add(year)
+        st.session_state["years_preference"] = [y for y in years if y in selected]
 
-    def set_years(value):
-        chosen=years.copy() if value else []
-        st.session_state["years_preference"]=chosen
-        for year in years:
-            st.session_state[f"_year_check_{year}"]=year in chosen
-
-    def sync_city(city):
-        selected=set(st.session_state["city_preference"])
-        if st.session_state["_city_"+city]:
+    def toggle_city(city):
+        selected = set(st.session_state["city_preference"])
+        if st.session_state["_city_" + city]:
             selected.add(city)
         else:
             selected.discard(city)
-        st.session_state["city_preference"]=[c for c in cities if c in selected]
+        st.session_state["city_preference"] = [c for c in cities if c in selected]
 
-    def set_all(value):
-        st.session_state["city_preference"]=cities.copy() if value else []
+    def set_cities(value):
+        st.session_state["city_preference"] = cities.copy() if value else []
         for city in cities:
-            st.session_state["_city_"+city]=value
-
+            st.session_state["_city_" + city] = value
 
     with st.sidebar:
-        logo=Path(__file__).resolve().parents[1]/"assets"/"LogoPET-Saude.jpeg"
-        if logo.is_file():
-            st.image(str(logo),use_container_width=True)
-        st.markdown("### PET-Saúde — Informação e Saúde Digital")
-        st.caption("TCC Engenharia de Software")
+        st.markdown('<div class="lovable-brand"><span class="lovable-mark">✳</span><span><strong>SISCAN</strong><small>PET-Saúde · 10ª CRS</small></span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="lovable-label">EXPLORAR</div>', unsafe_allow_html=True)
+        for path, label, icon in [
+            ("main.py", "Visão executiva", ":material/dashboard:"),
+            ("pages/01_panorama_geral.py", "Panorama geral", ":material/monitoring:"),
+            ("pages/02_outubro_rosa.py", "Outubro Rosa", ":material/favorite:"),
+            ("pages/03_faixa_etaria.py", "Faixa etária", ":material/groups:"),
+            ("pages/04_adequabilidade.py", "Adequabilidade", ":material/verified:"),
+            ("pages/05_exames_alterados.py", "Exames alterados", ":material/biotech:"),
+        ]:
+            st.page_link(path, label=label, icon=icon)
         st.divider()
-        active_years=selected_years()
-        summary=years_label(active_years)
-        st.caption("PERÍODO DE ANÁLISE")
-        with st.expander(f"Anos: {summary} ({len(active_years)}/6)",expanded=False):
-            one,two=st.columns(2)
-            with one:
-                st.button("Todos",key="years_all",use_container_width=True,
-                          on_click=set_years,args=(True,))
-            with two:
-                st.button("Limpar",key="years_clear",use_container_width=True,
-                          on_click=set_years,args=(False,))
-            first,second=st.columns(2)
-            for i,year in enumerate(years):
-                key=f"_year_check_{year}"
-                st.session_state[key]=year in active_years
-                with (first if i<3 else second):
-                    st.checkbox(str(year),key=key,on_change=sync_year,args=(year,))
-        selected=st.session_state["city_preference"]
-        with st.expander(f"Municípios da 10ª CRS ({len(selected)}/{len(cities)})",expanded=False):
-            left,right=st.columns(2)
-            with left:
-                st.button("Todos",key="city_all",use_container_width=True,on_click=set_all,args=(True,))
-            with right:
-                st.button("Limpar",key="city_none",use_container_width=True,on_click=set_all,args=(False,))
+        st.markdown('<div class="lovable-label">ANO</div>', unsafe_allow_html=True)
+        if st.button("Todos", key="lovable_year_all", use_container_width=True):
+            st.session_state["years_preference"] = years.copy()
+            st.rerun()
+        for row in (years[:3], years[3:]):
+            cols = st.columns(3, gap="small")
+            for col, year in zip(cols, row):
+                with col:
+                    active = year in selected_years()
+                    st.button(str(year) + (" ✓" if active else ""),
+                              key=f"lovable_year_{year}", type="primary" if active else "secondary",
+                              use_container_width=True, on_click=toggle_year, args=(year,))
+        selected = st.session_state["city_preference"]
+        st.markdown(f'<div class="lovable-label">MUNICÍPIOS ({len(selected)}/11)</div>', unsafe_allow_html=True)
+        left, right = st.columns(2)
+        with left:
+            st.button("Todos", key="lovable_city_all", use_container_width=True,
+                      on_click=set_cities, args=(True,))
+        with right:
+            st.button("Limpar", key="lovable_city_none", use_container_width=True,
+                      on_click=set_cities, args=(False,))
+        with st.container(height=300, border=False):
             for city in cities:
-                key="_city_"+city
+                key = "_city_" + city
                 if key not in st.session_state:
-                    st.session_state[key]=city in selected
-                st.checkbox(city,key=key,on_change=sync_city,args=(city,))
-        st.caption("Fonte: SISCAN/DATASUS · 2020–2025")
+                    st.session_state[key] = city in selected
+                st.checkbox(city, key=key, on_change=toggle_city, args=(city,))
+        st.markdown('<div class="lovable-footer">Fonte: SISCAN/DATASUS · 2020–2025<br>TCC Engenharia de Software · Informação e Saúde Digital</div>', unsafe_allow_html=True)
