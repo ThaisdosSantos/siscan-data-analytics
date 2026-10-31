@@ -150,8 +150,19 @@ def sidebar_filters():
     st.session_state.setdefault("city_preference",cities.copy())
     st.session_state["city_preference"]=[c for c in cities if c in st.session_state["city_preference"]]
 
-    def sync_year():
-        st.session_state["years_preference"]=list(st.session_state["_years_widget"])
+    def sync_year(year):
+        chosen=set(st.session_state["years_preference"])
+        if st.session_state[f"_year_check_{year}"]:
+            chosen.add(year)
+        else:
+            chosen.discard(year)
+        st.session_state["years_preference"]=[y for y in years if y in chosen]
+
+    def set_years(value):
+        chosen=years.copy() if value else []
+        st.session_state["years_preference"]=chosen
+        for year in years:
+            st.session_state[f"_year_check_{year}"]=year in chosen
 
     def sync_city(city):
         selected=set(st.session_state["city_preference"])
@@ -166,7 +177,6 @@ def sidebar_filters():
         for city in cities:
             st.session_state["_city_"+city]=value
 
-    st.session_state["_years_widget"]=selected_years()
 
     with st.sidebar:
         logo=Path(__file__).resolve().parents[1]/"assets"/"LogoPET-Saude.jpeg"
@@ -175,15 +185,23 @@ def sidebar_filters():
         st.markdown("### PET-Saúde — Informação e Saúde Digital")
         st.caption("TCC Engenharia de Software")
         st.divider()
-        st.multiselect("Anos",years,key="_years_widget",on_change=sync_year,
-                       help="Selecione qualquer combinação de anos. Use Todos/Limpar para agilizar.")
-        one,two=st.columns(2)
-        with one:
-            st.button("Todos os anos",key="years_all",use_container_width=True,
-                      on_click=lambda: st.session_state.update({"years_preference":years.copy(),"_years_widget":years.copy()}))
-        with two:
-            st.button("Limpar anos",key="years_clear",use_container_width=True,
-                      on_click=lambda: st.session_state.update({"years_preference":[],"_years_widget":[]}))
+        active_years=selected_years()
+        summary=years_label(active_years)
+        st.caption("PERÍODO DE ANÁLISE")
+        with st.expander(f"Anos: {summary} ({len(active_years)}/6)",expanded=False):
+            one,two=st.columns(2)
+            with one:
+                st.button("Todos",key="years_all",use_container_width=True,
+                          on_click=set_years,args=(True,))
+            with two:
+                st.button("Limpar",key="years_clear",use_container_width=True,
+                          on_click=set_years,args=(False,))
+            first,second=st.columns(2)
+            for i,year in enumerate(years):
+                key=f"_year_check_{year}"
+                st.session_state[key]=year in active_years
+                with (first if i<3 else second):
+                    st.checkbox(str(year),key=key,on_change=sync_year,args=(year,))
         selected=st.session_state["city_preference"]
         with st.expander(f"Municípios da 10ª CRS ({len(selected)}/{len(cities)})",expanded=False):
             left,right=st.columns(2)
