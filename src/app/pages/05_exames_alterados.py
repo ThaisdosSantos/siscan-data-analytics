@@ -9,6 +9,11 @@ sidebar_filters()
 page_header("Resultados", "Exames citopatológicos alterados")
 st.warning("Limitação metodológica: o denominador Gold é o total de exames por faixa etária, sem exclusão verificável de amostras rejeitadas/insatisfatórias. As proporções abaixo são estimativas operacionais, não taxas clínicas validadas.")
 df=filtered("alterados")
+# Alinhamento metodológico (31/out/2026): 'Ignorado' e 'Até 9 anos' têm bases ínfimas
+# (0 alterados sobre ~1-2 exames) e não compõem grupos da diretriz de rastreio.
+# Excluídas das proporções (barra e matriz territorial); os dados permanecem íntegros
+# na Gold e nos contadores globais. Mesma regra aplicada no dashboard AI/BI.
+df=df[~df["faixa_etaria"].isin(["Ignorado","Até 9 anos"])]
 if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_validos"]):
     num=df.quantidade_alterados.sum(min_count=1)
     den=df.total_exames_validos.sum(min_count=1)
