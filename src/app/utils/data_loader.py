@@ -141,7 +141,7 @@ def sidebar_filters():
     st.session_state["_year_widget"]=st.session_state["year_preference"]
 
     with st.sidebar:
-        logo=Path(__file__).resolve().parents[1]/"assets"/"LogoPET-Saude.jpeg"
+        logo=Path(__file__).resolve().parents[2]/"assets"/"LogoPET-Saude.jpeg"
         if logo.is_file():
             st.image(str(logo),use_container_width=True)
         st.markdown("### PET-Saúde — Informação e Saúde Digital")
