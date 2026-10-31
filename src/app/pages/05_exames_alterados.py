@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN
+from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN
 from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
-st.title("05 · Exames citopatológicos alterados")
+page_header("Resultados", "Exames citopatológicos alterados")
 st.warning("Limitação metodológica: o denominador Gold é o total de exames por faixa etária, sem exclusão verificável de amostras rejeitadas/insatisfatórias. As proporções abaixo são estimativas operacionais, não taxas clínicas validadas.")
 df=filtered("alterados")
 if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_validos"]):
