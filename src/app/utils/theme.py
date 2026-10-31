@@ -16,6 +16,9 @@ def apply_custom_css():
     """Identidade Lovable: sidebar escura, hero em gradiente e cartões claros."""
     st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+    html,body,[data-testid="stAppViewContainer"] {font-family:'Manrope',system-ui,sans-serif;}
+    .pet-hero-title,h1,h2,h3 {font-family:'Fraunces',Georgia,serif;}
     :root {--navy:#1A3B5C;--ocean:#006C9A;--sky:#4A9FD8;
            --orange:#EE5325;--gray:#D9D9D9;--light:#F4F6F8;}
     html,body,[data-testid="stAppViewContainer"] {background:#fff;color:#1A3B5C;}
