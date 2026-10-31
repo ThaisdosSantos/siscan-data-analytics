@@ -120,69 +120,73 @@ with left:
                     unsafe_allow_html=True)
         city = (df.groupby("municipio", as_index=False)["quantidade"]
                 .sum(min_count=1).sort_values("municipio"))
-        # Diagrama de bolhas, não mapa geográfico: posições fixas e não geocodificadas.
-        positions = [(0.20,0.70),(0.46,0.81),(0.78,0.71),(0.12,0.44),
-                     (0.52,0.55),(0.86,0.45),(0.31,0.28),(0.64,0.26),
-                     (0.16,0.17),(0.50,0.12),(0.86,0.15)]
-        order = [c for c in MUNICIPIOS.values() if c in set(city["municipio"])]
+        # Coordenadas fixas e regra de conexões do diagrama territorial.
+        # Uma aresta existe para cada par com distância euclidiana < 34.
+        # São posições visuais, não coordenadas geográficas.
+        territories = [
+            ("Uruguaiana", 12, 46),
+            ("Alegrete", 42, 40),
+            ("Sant'Ana do Livramento", 50, 84),
+            ("São Gabriel", 82, 44),
+            ("Itaqui", 20, 16),
+            ("Rosário do Sul", 66, 62),
+            ("Quaraí", 26, 76),
+            ("Manoel Viana", 54, 18),
+            ("Barra do Quaraí", 6, 70),
+            ("Santa Margarida do Sul", 90, 66),
+            ("Maçambará", 34, 8),
+        ]
+        totals = city.set_index("municipio")["quantidade"]
+        visible = set(totals.index)
+        selected = set(st.session_state.get("city_preference", list(MUNICIPIOS.values())))
         fig = go.Figure()
-        # Ligações visuais ilustrativas, sem representar estradas ou distâncias.
-        # Posições estáveis por município para manter filtros coerentes.
-        position_by_city = dict(zip(MUNICIPIOS.values(), positions))
-        # A referência visual sugere conexões entre bolhas próximas.
-        # Calculamos dois vizinhos por posição do diagrama, sem atribuir
-        # significado geográfico às linhas e sem manter arestas arbitrárias.
-        visible = set(order)
-        edges = set()
-        for origin in order:
-            x1, y1 = position_by_city[origin]
-            closest = sorted(
-                (destination for destination in order if destination != origin),
-                key=lambda destination: (
-                    (x1 - position_by_city[destination][0]) ** 2
-                    + (y1 - position_by_city[destination][1]) ** 2,
-                    destination,
-                ),
-            )
-            for destination in closest[:2]:
-                edges.add(tuple(sorted((origin, destination))))
-        lx, ly = [], []
-        for origin, destination in sorted(edges):
-            x1, y1 = position_by_city[origin]
-            x2, y2 = position_by_city[destination]
-            lx.extend([x1, x2, None])
-            ly.extend([y1, y2, None])
-        if lx:
-            fig.add_trace(go.Scatter(
-                x=lx, y=ly, mode="lines",
-                line=dict(color="rgba(59,119,151,0.32)", width=1.25),
-                hoverinfo="skip", showlegend=False,
-            ))
-        max_vol = max(1, float(city["quantidade"].max()))
-        indexed = city.set_index("municipio")["quantidade"]
-        for municipality in order:
-            x, y = position_by_city[municipality]
-            volume = float(indexed.loc[municipality])
-            size = 17 + 56 * (volume / max_vol) ** 0.5
+
+        # A rede é independente da seleção; apenas a cor indica desativação.
+        xs, ys = [], []
+        for i, (_, ax, ay) in enumerate(territories):
+            for _, bx, by in territories[i + 1:]:
+                if ((ax - bx)**2 + (ay - by)**2)**0.5 < 34:
+                    xs.extend([ax, bx, None])
+                    ys.extend([ay, by, None])
+        fig.add_trace(go.Scatter(
+            x=xs, y=ys, mode="lines", showlegend=False, hoverinfo="skip",
+            line=dict(color="#d7e0e8", width=1.0),
+        ))
+
+        # O tamanho reflete os volumes da Gold. Círculos desativados ficam esmaecidos.
+        max_vol = max(1, float(totals.max()) if not totals.empty else 1)
+        for municipality, x, y in territories:
+            volume = float(totals.loc[municipality]) if municipality in visible else 0.0
+            enabled = municipality in selected
+            radius = 2.5 + (volume / max_vol)**0.5 * 11
+            size = radius * 6.2
             fig.add_trace(go.Scatter(
                 x=[x], y=[y], mode="markers",
-                marker=dict(size=size, color="rgba(0,108,154,.28)", line=dict(color=OCEAN, width=1.2)),
+                marker=dict(
+                    size=size,
+                    color="rgba(0,108,154,0.25)" if enabled else "rgba(160,175,190,0.20)",
+                    line=dict(color=OCEAN if enabled else "#b9c4cf", width=1.2),
+                ),
                 customdata=[[municipality, volume]],
                 hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,.0f} exames<extra></extra>",
                 showlegend=False,
             ))
-        if order:
             fig.add_trace(go.Scatter(
-                x=[position_by_city[c][0] for c in order],
-                y=[position_by_city[c][1] for c in order],
-                mode="markers", marker=dict(size=6, color=ORANGE),
+                x=[x], y=[y], mode="markers",
+                marker=dict(size=6, color=ORANGE if enabled else "#9daeba"),
                 hoverinfo="skip", showlegend=False,
             ))
-        fig.update_xaxes(visible=False, range=[-0.08, 1.08], fixedrange=True)
-        fig.update_yaxes(visible=False, range=[-0.05, 1.03], fixedrange=True)
-        fig.update_layout(height=330, margin=dict(l=3,r=3,t=5,b=5),
-                          plot_bgcolor="#f4f6f8", paper_bgcolor="rgba(0,0,0,0)",
-                          hoverlabel=dict(bgcolor="white",font_color=NAVY))
+
+        fig.update_xaxes(visible=False, range=[-9, 109], fixedrange=True,
+                         constrain="domain")
+        # SVG original usa origem no canto superior esquerdo.
+        fig.update_yaxes(visible=False, range=[109, -9], fixedrange=True,
+                         scaleanchor="x", scaleratio=1)
+        fig.update_layout(
+            height=330, margin=dict(l=3, r=3, t=5, b=5),
+            plot_bgcolor="#f4f6f8", paper_bgcolor="rgba(0,0,0,0)",
+            hoverlabel=dict(bgcolor="white", font_color=NAVY),
+        )
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         st.caption("Passe o mouse sobre uma bolha para consultar o município.")
 
