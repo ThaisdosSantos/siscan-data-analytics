@@ -25,15 +25,19 @@ with mark:
 # Filtros rápidos abaixo refinam apenas os gráficos da página principal e
 # a taxa de alteração; a Gold não dispõe de cruzamento idade x competência.
 col_year, col_city, col_age = st.columns([0.8, 1.4, 1])
+def sync_quick_year():
+    # Callback roda antes da nova execução; nunca modifica widgets já instanciados.
+    st.session_state["year_preference"] = st.session_state["home_year_quick"]
+
 with col_year:
-    current_year = st.session_state.get("year_preference", "Todos")
-    quick_year = st.selectbox("Ano · filtro global", ["Todos", *range(2020, 2026)],
-                              index=["Todos", *range(2020, 2026)].index(current_year),
-                              key="home_year_quick")
-    if quick_year != current_year:
-        st.session_state["year_preference"] = quick_year
-        st.session_state["_year_widget"] = quick_year
-        st.rerun()
+    # Sincroniza com o filtro lateral antes de construir o widget superior.
+    st.session_state["home_year_quick"] = st.session_state.get("year_preference", "Todos")
+    st.selectbox(
+        "Ano · filtro global",
+        ["Todos", *range(2020, 2026)],
+        key="home_year_quick",
+        on_change=sync_quick_year,
+    )
 with col_city:
     city_focus = st.selectbox("Visualização territorial", ["Todos os municípios", *MUNICIPIOS.values()],
                               help="Refina somente os gráficos desta página.")
