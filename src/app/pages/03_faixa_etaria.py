@@ -255,15 +255,15 @@ with b:
                          ticktext=["0%", "25%", "50%", "75%", "100%"],
                          showgrid=True, gridcolor="#e9edf1", title=None)
         fig.update_yaxes(title=None, autorange="reversed", automargin=True,
-                         tickfont=dict(size=10))
+                         tickfont=dict(size=12, color="#405a70"))
         fig.update_layout(
             margin=dict(l=12, r=8, t=8, b=10),
             legend=dict(orientation="h", yanchor="top", y=-0.12,
                         xanchor="center", x=0.5, title=None,
-                        font=dict(size=10)),
-            bargap=0.22,
+                        font=dict(size=12)),
+            bargap=0.12,
         )
-        st.plotly_chart(style_chart(fig, height=355), use_container_width=True)
+        st.plotly_chart(style_chart(fig, height=max(480, 40 * len(cities_order) + 90)), use_container_width=True)
 
 st.markdown("""
 <div class="q3-section">
