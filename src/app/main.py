@@ -28,15 +28,15 @@ st.markdown("""
 .exec-pill{display:inline-block;border:1px solid #547e9d;border-radius:20px;
     padding:5px 12px;font-size:.7rem;color:#f3f8fb}
 .exec-metric{background:#fff;border:1px solid #dae4ec;border-radius:12px;
-    min-height:115px;padding:20px 17px;box-shadow:0 6px 18px -12px #193c5d33;}
-.exec-metric.blue{background:#006C9A;color:#fff;border-color:#006C9A}
-.exec-metric.orange{background:#EE5325;color:#fff;border-color:#EE5325}
+    height:124px;box-sizing:border-box;padding:20px 17px;box-shadow:0 6px 18px -12px #193c5d33;}
+.exec-metric.blue{background:#fff;color:#1A3B5C;border-color:#dae4ec}
+.exec-metric.orange{background:#fff;color:#1A3B5C;border-color:#dae4ec}
 .exec-metric-label{font-size:.67rem;font-weight:800;letter-spacing:.04em;color:#59728a}
-.exec-metric.blue .exec-metric-label,.exec-metric.orange .exec-metric-label{color:#e8f6fd}
+.exec-metric.blue .exec-metric-label,.exec-metric.orange .exec-metric-label{color:#59728a}
 .exec-metric-value{font-family:Fraunces,Georgia,serif;font-size:clamp(1.35rem,2vw,2.1rem);
     font-weight:650;margin:7px 0;color:#1A3B5C}
-.exec-metric.blue .exec-metric-value,.exec-metric.orange .exec-metric-value{color:#fff}
-.exec-metric-desc{font-size:.68rem;color:#fce9dc}
+.exec-metric.blue .exec-metric-value,.exec-metric.orange .exec-metric-value{color:#1A3B5C}
+.exec-metric-desc{font-size:.68rem;color:#72879d}
 .exec-warning{border:1px solid #f6a381;border-left:4px solid #EE5325;border-radius:11px;
     padding:13px 16px;margin:17px 0;background:#fff;color:#1A3B5C;font-size:.78rem}
 .exec-card-title{font-family:Fraunces,Georgia,serif;color:#1A3B5C;font-size:1.2rem;margin:0;font-weight:650}
@@ -51,7 +51,7 @@ st.markdown("""
 .st-key-exec-month-card [data-testid="stPlotlyChart"]{border:none!important;
     box-shadow:none!important;background:transparent!important;padding:0!important}
 .st-key-exec-bubble-card,.st-key-exec-month-card{border-radius:14px!important;background:white!important}
-@media(max-width:850px){.exec-hero{padding:24px 18px 64px}.exec-metric{min-height:100px}}
+@media(max-width:850px){.exec-hero{padding:24px 18px 64px}.exec-metric{height:124px}}
 </style>
 """, unsafe_allow_html=True)
 
