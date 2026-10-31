@@ -212,10 +212,10 @@ with right:
 # Três cartões de navegação completos: link nativo sobre toda a área do cartão.
 st.markdown("""
 <style>
-.exec-nav-subtitle{color:#72879d;font-size:.76rem;margin-top:3px;pointer-events:none;}
+.exec-nav-subtitle{color:#72879d;font-size:.76rem;margin-top:1px;pointer-events:none;line-height:1.35;}
 .st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados{
   position:relative;background:#fff;border:1px solid #d7dde3;border-radius:13px;
-  padding:17px 18px;min-height:102px;box-shadow:0 3px 9px rgba(26,59,92,.07);
+  padding:15px 16px;min-height:78px;box-shadow:0 3px 9px rgba(26,59,92,.07);
   transition:border-color .15s,box-shadow .15s,transform .15s;
 }
 .st-key-exec-nav-panorama:hover,.st-key-exec-nav-outubro:hover,.st-key-exec-nav-alterados:hover{
@@ -226,13 +226,24 @@ st.markdown("""
 .st-key-exec-nav-alterados [data-testid="stPageLink"] a{
   position:static!important;display:block!important;color:#1A3B5C!important;
   text-decoration:none!important;font-family:Fraunces,Georgia,serif;
-  font-size:1.1rem;font-weight:650;line-height:1.4;
+  font-size:1rem;font-weight:650;line-height:1.3;
   padding:0!important;margin:0!important;background:transparent!important;
 }
 .st-key-exec-nav-panorama [data-testid="stPageLink"] a::after,
 .st-key-exec-nav-outubro [data-testid="stPageLink"] a::after,
 .st-key-exec-nav-alterados [data-testid="stPageLink"] a::after {
   content:"";position:absolute;inset:0;z-index:2;cursor:pointer;
+}
+.st-key-exec-nav-panorama::after,.st-key-exec-nav-outubro::after,
+.st-key-exec-nav-alterados::after{
+  content:"→";position:absolute;right:16px;top:50%;
+  transform:translateY(-50%);color:#EE5325;font-size:1.35rem;
+  font-weight:500;pointer-events:none;
+}
+.st-key-exec-nav-panorama [data-testid="stPageLink"] a,
+.st-key-exec-nav-outubro [data-testid="stPageLink"] a,
+.st-key-exec-nav-alterados [data-testid="stPageLink"] a {
+  padding-right:35px!important;
 }
 .st-key-exec-nav-panorama [data-testid="stPageLink"],
 .st-key-exec-nav-outubro [data-testid="stPageLink"],
@@ -247,13 +258,13 @@ nav = [
      "pages/01_panorama_geral.py", "exec-nav-panorama"),
     ("Outubro Rosa", "Setembro × outubro e meses seguintes",
      "pages/02_outubro_rosa.py", "exec-nav-outubro"),
-    ("Exames alterados", "Proporção operacional por faixa etária",
+    ("Exames alterados", "Pico de alterações por faixa etária",
      "pages/05_exames_alterados.py", "exec-nav-alterados"),
 ]
 for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), nav):
     with col:
         with st.container(key=key):
-            st.page_link(page, label=title + "  →", use_container_width=True)
+            st.page_link(page, label=title, use_container_width=True)
             st.markdown('<div class="exec-nav-subtitle">' + html.escape(subtitle)
                         + '</div>', unsafe_allow_html=True)
 
