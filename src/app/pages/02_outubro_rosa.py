@@ -2,13 +2,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css, style_chart, fmt_num, fmt_pct, ORANGE, OCEAN, SKY, NAVY
+from utils.theme import apply_custom_css, page_header, style_chart, fmt_num, fmt_pct, ORANGE, OCEAN, SKY, NAVY
 from utils.data_loader import filtered, require, sidebar_filters, years_label
 
 st.set_page_config(page_title="Outubro Rosa | SISCAN", layout="wide")
 apply_custom_css()
 sidebar_filters()
-st.title("02 · Outubro Rosa")
+page_header("Campanha · Outubro Rosa", "Outubro em destaque: o que muda nos registros?")
 st.caption(
     "Comparação descritiva dos exames registrados. Novembro e dezembro mostram o "
     "comportamento após outubro; diferenças mensais não comprovam efeito causal da campanha."
