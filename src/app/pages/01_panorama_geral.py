@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from utils.theme import apply_custom_css, display_chart, fmt_num, fmt_pct, pct, OCEAN
-from utils.data_loader import filtered, require, sidebar_filters, MUNICIPIOS
+from utils.data_loader import filtered, require, sidebar_filters, MUNICIPIOS, selected_years, years_label, year_month_index
 
 st.set_page_config(page_title="Panorama geral | SISCAN", layout="wide")
 apply_custom_css()
@@ -13,15 +13,15 @@ st.caption("Exames citopatológicos registrados por competência e município de
 
 df = filtered("temporal")
 if require(df, ["municipio", "ano", "mes", "quantidade"]):
-    year = st.session_state.get("year_preference", "Todos")
+    years = selected_years()
     places = st.session_state.get("city_preference", list(MUNICIPIOS.values()))
-    period = "2020–2025" if year == "Todos" else str(year)
+    period = years_label(years)
     total = df.quantidade.sum(min_count=1)
     monthly = (df.groupby(["ano", "mes"], as_index=False)
                .quantidade.sum(min_count=1).sort_values(["ano", "mes"]))
     monthly["data"] = pd.to_datetime(dict(year=monthly.ano, month=monthly.mes, day=1))
     months_count = len(monthly)
-    expected = 72 if year == "Todos" else 12
+    expected = 12 * len(years)
     bycity = (df.groupby("municipio", as_index=False).quantidade.sum(min_count=1)
               .sort_values("quantidade", ascending=False))
     top = bycity.iloc[0] if not bycity.empty else None
@@ -41,11 +41,12 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             st.caption(f"**{top.municipio}** · percentual dos exames dos municípios selecionados em {period}.")
 
     # Constrói a série mensal completa antes de plotar: ausência permanece NaN.
-    start = "2020-01-01" if year == "Todos" else f"{int(year)}-01-01"
-    finish = "2025-12-01" if year == "Todos" else f"{int(year)}-12-01"
-    complete = pd.date_range(start, finish, freq="MS")
+    complete = year_month_index(years)
+    selected_dates = pd.DatetimeIndex(
+        [date for date in complete if date.year in years]
+    )
     series = monthly.set_index("data").reindex(complete)
-    missing = complete[series["quantidade"].isna()]
+    missing = selected_dates[series.loc[selected_dates, "quantidade"].isna()]
     if len(missing):
         months_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
                      "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
