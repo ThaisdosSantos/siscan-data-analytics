@@ -11,14 +11,9 @@ st.set_page_config(page_title="SISCAN | Painel Analítico 10ª CRS", page_icon="
 apply_custom_css()
 sidebar_filters()
 
-logo = Path(__file__).parent / "assets" / "LogoPET-Saude.jpeg"
-head, mark = st.columns([7, 1], vertical_alignment="center")
-with head:
-    page_header("Visão executiva · 10ª CRS · RS", "SISCAN — Painel Analítico 10ª CRS",
-                "Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS")
-with mark:
-    if logo.is_file():
-        st.image(str(logo), use_container_width=True)
+page_header("Visão executiva · 10ª CRS · RS",
+            "SISCAN — Painel Analítico 10ª CRS",
+            "Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS")
 
 # Os filtros globais (ano e municípios) permanecem na barra lateral.
 # Filtros rápidos abaixo refinam apenas os gráficos da página principal e
@@ -97,9 +92,9 @@ monthly = monthly.sort_values("data")
 by_city = data.groupby("municipio", as_index=False).quantidade.sum(min_count=1)
 by_city = by_city.sort_values("quantidade", ascending=True)
 
-left, right = st.columns([3,2], gap="medium")
+left, right = st.columns([1.4, 1], gap="medium")
 with left:
-    st.markdown("#### Evolução mensal de exames")
+    st.markdown("### Evolução mensal de exames")
     if monthly.empty:
         st.info("Sem exames para o município selecionado.")
     else:
@@ -116,7 +111,7 @@ with left:
         fig.update_layout(showlegend=False, height=365)
         st.plotly_chart(style_chart(fig, height=365), use_container_width=True)
 with right:
-    st.markdown("#### Volume por município")
+    st.markdown("### Distribuição territorial")
     if by_city.empty:
         st.info("Nenhuma observação disponível.")
     else:
