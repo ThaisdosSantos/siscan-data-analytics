@@ -157,15 +157,58 @@ total_city = agg.groupby("municipio")["quantidade_exames"].transform("sum")
 agg["percentual"] = safe_percent(agg["quantidade_exames"], total_city)
 a, b = st.columns([2, 3], gap="medium")
 with a:
+    # Rosca e legenda conforme referência visual; valores são calculados da Gold.
+    donut_order = ["25–64 anos", "≥65 anos", "<25 anos"]
+    donut_colors = {"25–64 anos": "#0076A5", "≥65 anos": "#4A9FD8", "<25 anos": "#EE5325"}
+    donut_values = [float(sums.get(group, 0)) for group in donut_order]
+    target_percent = pct(sums.get("25–64 anos", 0), total)
     fig = px.pie(
-        agg, names="grupo", values="quantidade_exames", hole=.62,
-        color="grupo",
-        category_orders={"grupo": labels},
-        color_discrete_map={"25–64 anos": OCEAN, "<25 anos": SKY, "≥65 anos": ORANGE},
-        title="Distribuição dos exames",
+        names=donut_order,
+        values=donut_values,
+        hole=0.66,
+        color=donut_order,
+        color_discrete_map=donut_colors,
     )
-    fig.update_traces(texttemplate="%{percent:.2%}", hovertemplate="%{label}<br>%{percent:.2%}<extra></extra>")
+    fig.update_traces(
+        sort=False,
+        direction="clockwise",
+        rotation=270,
+        textinfo="none",
+        marker=dict(line=dict(color="#FFFFFF", width=3)),
+        hovertemplate="%{label}<br>%{value:,.0f} exames<br>%{percent:.2%}<extra></extra>",
+    )
+    fig.update_layout(
+        showlegend=False,
+        height=310,
+        margin=dict(t=12, b=6, l=12, r=12),
+        annotations=[dict(
+            text=(f"<span style='font-size:32px;color:#006C9A'>{target_percent:.0f}%</span>"
+                  "<br><span style='font-size:11px;color:#7C8FA0'>na faixa-alvo</span>")
+            if pd.notna(target_percent) else "N/D",
+            x=0.5, y=0.5, xref="paper", yref="paper",
+            showarrow=False, align="center",
+        )],
+    )
+    st.markdown('<div style="font-size:1.12rem;color:#1A3B5C;font-weight:700">Distribuição dos exames</div>'
+                '<div style="color:#7C8FA0;font-size:.77rem">Por grupo etário</div>', unsafe_allow_html=True)
     display_chart(fig)
+    legend_rows = []
+    for group in donut_order:
+        val = pct(sums.get(group, 0), total)
+        formatted = fmt_pct(val)
+        legend_rows.append(
+            '<div class="age-legend-row"><span class="age-legend-dot" style="background:'
+            + donut_colors[group] + '"></span><span class="age-legend-label">'
+            + group + '</span><strong>' + formatted + '</strong></div>'
+        )
+    st.markdown(
+        '<style>.age-legend-row{display:flex;align-items:center;gap:9px;'
+        'color:#1A3B5C;font-size:.83rem;padding:5px 0}'
+        '.age-legend-dot{height:10px;width:10px;border-radius:50%;flex:0 0 10px}'
+        '.age-legend-label{flex:1}.age-legend-row strong{font-weight:750}</style>'
+        + '<div class="age-legend">' + "".join(legend_rows) + '</div>',
+        unsafe_allow_html=True,
+    )
 with b:
     fig = px.bar(
         agg, x="municipio", y="percentual", color="grupo", barmode="stack",
