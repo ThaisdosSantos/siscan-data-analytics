@@ -2,7 +2,7 @@
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from utils.theme import apply_custom_css, page_header, display_chart, fmt_num, fmt_pct, pct, OCEAN
+from utils.theme import apply_custom_css, page_header, display_chart, display_table, fmt_num, fmt_pct, pct, OCEAN
 from utils.data_loader import filtered, require, sidebar_filters, MUNICIPIOS, selected_years, years_label, year_month_index
 
 st.set_page_config(page_title="Panorama geral | SISCAN", layout="wide")
@@ -92,7 +92,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     detail = detail.rename(columns={
         "municipio":"Município", "ano":"Ano", "mes":"Mês", "quantidade":"Exames registrados"
     })
-    st.dataframe(detail, use_container_width=True, hide_index=True)
+    display_table(detail, integer_columns=['Ano', 'Exames registrados'])
     st.download_button("⬇️ Exportar dados filtrados (CSV)",
                        detail.to_csv(index=False, sep=";").encode("utf-8-sig"),
                        file_name="siscan_panorama.csv", mime="text/csv")
