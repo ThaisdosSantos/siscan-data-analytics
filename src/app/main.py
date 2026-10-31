@@ -12,7 +12,7 @@ apply_custom_css()
 sidebar_filters()
 
 page_header("Visão executiva · 10ª CRS · RS",
-            "SISCAN — Painel Analítico 10ª CRS",
+            "Rastreamento do câncer do colo do útero, território a território.",
             "Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS")
 
 # Os filtros globais (ano e municípios) permanecem na barra lateral.
