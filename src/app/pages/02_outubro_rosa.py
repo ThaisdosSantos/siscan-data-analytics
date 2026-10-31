@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.theme import apply_custom_css, style_chart, fmt_num, fmt_pct, ORANGE, OCEAN, SKY, NAVY
-from utils.data_loader import filtered, require, sidebar_filters
+from utils.data_loader import filtered, require, sidebar_filters, years_label
 
 st.set_page_config(page_title="Outubro Rosa | SISCAN", layout="wide")
 apply_custom_css()
@@ -15,9 +15,8 @@ st.caption(
 )
 df = filtered("outubro")
 if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_setembro"]):
-    selected_year = st.session_state.get("year_preference", "Todos")
     selected_cities = st.session_state.get("city_preference", [])
-    period = "2020–2025" if selected_year == "Todos" else str(selected_year)
+    period = years_label()
     st.caption(f"**Recorte ativo:** {period} · {len(selected_cities)} municípios selecionados")
 
     octdf = df.loc[df["mes"] == 10].copy()
