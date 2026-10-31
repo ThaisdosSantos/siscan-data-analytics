@@ -14,8 +14,15 @@ if require(df,["municipio","ano","mes","quantidade"]):
     monthly["data"]=pd.to_datetime(dict(year=monthly.ano,month=monthly.mes,day=1))
     bycity=df.groupby("municipio",as_index=False).quantidade.sum(min_count=1).sort_values("quantidade",ascending=False)
     top=bycity.iloc[0] if not bycity.empty else None
-    metric_row([("Total de exames",fmt_num(total)),("Média por mês com registro",fmt_num(monthly.quantidade.mean())),
-                ("Município com maior participação",f"{top.municipio} · {fmt_pct(pct(top.quantidade,total))}" if top is not None else "N/D")])
+    col_total,col_media,col_municipio=st.columns(3)
+    with col_total:
+        st.metric("Total de exames",fmt_num(total))
+    with col_media:
+        st.metric("Média por mês com registro",fmt_num(monthly.quantidade.mean()))
+    with col_municipio:
+        st.metric("Maior participação nos exames",fmt_pct(pct(top.quantidade,total)) if top is not None else "N/D")
+        if top is not None:
+            st.caption(f"Município: **{top.municipio}**")
     fig=px.line(monthly,x="data",y="quantidade",markers=True,color_discrete_sequence=[OCEAN],
                 labels={"data":"Competência","quantidade":"Exames"},title="Evolução mensal")
     display_chart(fig)
