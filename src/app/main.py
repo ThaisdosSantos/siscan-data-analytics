@@ -11,12 +11,40 @@ st.set_page_config(page_title="SISCAN | Painel Analítico 10ª CRS", page_icon="
 apply_custom_css()
 sidebar_filters()
 
-st.markdown('<h1 style="font-size:1.75rem;margin:0">SISCAN — Painel Analítico 10ª CRS</h1>', unsafe_allow_html=True)
-st.caption("10ª Coordenadoria Regional de Saúde do Rio Grande do Sul · Exames citopatológicos do colo do útero")
-selected_year = st.session_state.get("year_preference", "Todos")
-period = "2020–2025" if selected_year == "Todos" else str(selected_year)
-selected_cities = st.session_state.get("city_preference", list(MUNICIPIOS.values()))
-st.caption(f"**Recorte ativo:** {period} · {len(selected_cities)} municípios selecionados")
+logo = Path(__file__).parent / "assets" / "LogoPET-Saude.jpeg"
+head, mark = st.columns([7, 1], vertical_alignment="center")
+with head:
+    st.markdown('<h1 style="font-size:1.75rem;margin:0">SISCAN — Painel Analítico 10ª CRS</h1>',
+                unsafe_allow_html=True)
+    st.caption("Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS")
+with mark:
+    if logo.is_file():
+        st.image(str(logo), use_container_width=True)
+
+# Os filtros globais (ano e municípios) permanecem na barra lateral.
+# Filtros rápidos abaixo refinam apenas os gráficos da página principal e
+# a taxa de alteração; a Gold não dispõe de cruzamento idade x competência.
+col_year, col_city, col_age = st.columns([0.8, 1.4, 1])
+def sync_quick_year():
+    # Callback roda antes da nova execução; nunca modifica widgets já instanciados.
+    st.session_state["year_preference"] = st.session_state["home_year_quick"]
+
+with col_year:
+    # Sincroniza com o filtro lateral antes de construir o widget superior.
+    st.session_state["home_year_quick"] = st.session_state.get("year_preference", "Todos")
+    st.selectbox(
+        "Ano · filtro global",
+        ["Todos", *range(2020, 2026)],
+        key="home_year_quick",
+        on_change=sync_quick_year,
+    )
+with col_city:
+    city_focus = st.selectbox("Visualização territorial", ["Todos os municípios", *MUNICIPIOS.values()],
+                              help="Refina somente os gráficos desta página.")
+with col_age:
+    age_focus = st.selectbox("Faixa etária · taxa de alteração",
+                             ["Todas as idades", "25–64 anos", "Menores de 25", "65 anos ou mais"],
+                             help="Filtro aplicável apenas ao indicador de exames alterados; não à série temporal.")
 
 df = filtered("temporal")
 if not require(df, ["municipio", "ano", "mes", "quantidade"]):
@@ -25,8 +53,27 @@ if not require(df, ["municipio", "ano", "mes", "quantidade"]):
 alt = filtered("alterados")
 alt_ready = not alt.empty and {"quantidade_alterados", "total_exames_validos", "faixa_etaria"}.issubset(alt.columns)
 
+def age_start(label):
+    text = str(label).lower().strip()
+    import re
+    if "ate" in text or "até" in text:
+        return 0
+    nums = re.findall(r"\d+", text)
+    return int(nums[0]) if nums else None
+
+def in_age_group(label, selection):
+    age = age_start(label)
+    if age is None:
+        return selection == "Todas as idades"
+    return (selection == "Todas as idades"
+            or selection == "25–64 anos" and 25 <= age <= 64
+            or selection == "Menores de 25" and age < 25
+            or selection == "65 anos ou mais" and age >= 65)
+
+if alt_ready and age_focus != "Todas as idades":
+    alt = alt[alt.faixa_etaria.map(lambda v: in_age_group(v, age_focus))]
+
 nmonths = df[["ano", "mes"]].drop_duplicates().shape[0]
-expected_months = 72 if selected_year == "Todos" else 12
 total = df.quantidade.sum(min_count=1)
 num_cities = df.municipio.nunique()
 if alt_ready:
@@ -43,19 +90,19 @@ with k1:
 with k2:
     st.metric("Municípios com registros", f"{num_cities} de 11")
 with k3:
-    st.metric("Meses com registros", f"{nmonths} de {expected_months}",
-              help="Quantidade de meses com registros em relação ao período selecionado.")
+    st.metric("Meses com registros", f"{nmonths} de 72",
+              help="Agosto de 2022 não está disponível na Gold temporal.")
 with k4:
-    st.metric("Exames alterados — estimativa (%)", altered_pct,
+    st.metric("Exames alterados (%)", altered_pct,
               help="Estimativa operacional: denominador inclui exames sem exclusão de rejeitados/insatisfatórios por faixa etária.")
-st.caption("**Como é calculada a estimativa de alteração:** exames alterados ÷ total de exames "
-           "do denominador disponível na Gold × 100. Esse denominador não exclui de forma "
-           "verificável rejeitados e insatisfatórios por faixa etária.")
-if selected_year == "Todos" or selected_year == 2022:
-    st.warning("**Disponibilidade temporal:** agosto de 2022 não consta na série de exames do SISCAN utilizada.")
-st.info(f"**Resumo do recorte:** {fmt_num(total)} exames registrados em {num_cities} municípios; "
-        f"registros em {nmonths} dos {expected_months} meses previstos.")
+st.caption("⚠️ **Auditoria temporal:** agosto/2022 ausente da série Gold. "
+           "A taxa de alteração é uma estimativa operacional, não um indicador clínico validado.")
+if age_focus != "Todas as idades":
+    st.caption("O filtro de faixa etária afeta apenas a taxa de alteração; a Gold temporal não oferece cruzamento por idade.")
+
 data = df.copy()
+if city_focus != "Todos os municípios":
+    data = data[data.municipio == city_focus]
 
 monthly = data.groupby(["ano", "mes"], as_index=False).quantidade.sum(min_count=1)
 monthly["data"] = pd.to_datetime(dict(year=monthly.ano, month=monthly.mes, day=1))
@@ -69,6 +116,9 @@ with left:
     if monthly.empty:
         st.info("Sem exames para o município selecionado.")
     else:
+        fig=px.line(monthly, x="data", y="quantidade", markers=True,
+                    color_discrete_sequence=[OCEAN],
+                    labels={"data":"Competência","quantidade":"Exames"})
         # Lacunas de competências não devem ser apresentadas como um zero.
         full_index=pd.date_range("2020-01-01", "2025-12-01", freq="MS")
         if st.session_state.get("year_preference", "Todos") != "Todos":
@@ -79,14 +129,6 @@ with left:
                     labels={"x":"Competência","y":"Exames"},
                     color_discrete_sequence=[OCEAN])
         fig.update_traces(connectgaps=False, hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>")
-        meses_pt = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
-        marcacoes = full_index[::2]
-        fig.update_xaxes(
-            tickmode="array",
-            tickvals=marcacoes,
-            ticktext=[f"{meses_pt[d.month - 1]}/{str(d.year)[2:]}" for d in marcacoes]
-        )
-        fig.update_yaxes(tickformat=",d")
         fig.update_layout(showlegend=False, height=365)
         st.plotly_chart(style_chart(fig, height=365), use_container_width=True)
 with right:
@@ -101,8 +143,5 @@ with right:
         fig.update_layout(showlegend=False, height=365, margin=dict(l=10,r=15,t=12,b=25))
         st.plotly_chart(style_chart(fig,height=365),use_container_width=True)
 
-with st.expander("Sobre os dados e limitações", expanded=False):
-    st.write("Fonte: SISCAN/DATASUS, dados consultados na camada Gold do Databricks (2020–2025).")
-    st.write("Os volumes representam exames, não mulheres únicas nem cobertura populacional.")
-    st.write("Agosto de 2022 está ausente na série histórica; a ausência não deve ser tratada como zero.")
-    st.write("A taxa de alteração exibida é uma estimativa operacional, sujeita à limitação do denominador disponível.")
+st.caption("Fonte: Databricks · camada Gold, somente leitura. "
+           "Os volumes representam exames registrados, não mulheres únicas ou cobertura populacional.")
