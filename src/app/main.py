@@ -126,6 +126,36 @@ with left:
                      (0.16,0.17),(0.50,0.12),(0.86,0.15)]
         order = [c for c in MUNICIPIOS.values() if c in set(city["municipio"])]
         fig = go.Figure()
+        # Ligações visuais ilustrativas, sem representar estradas ou distâncias.
+        # Posições estáveis por município para manter filtros coerentes.
+        position_by_city = dict(zip(MUNICIPIOS.values(), positions))
+        links = [
+            ("Alegrete", "Manoel Viana"),
+            ("Alegrete", "Quaraí"),
+            ("Alegrete", "Rosário do Sul"),
+            ("Alegrete", "São Gabriel"),
+            ("Barra do Quaraí", "Uruguaiana"),
+            ("Uruguaiana", "Itaqui"),
+            ("Itaqui", "Maçambará"),
+            ("Quaraí", "Sant'Ana do Livramento"),
+            ("Rosário do Sul", "Santa Margarida do Sul"),
+            ("Rosário do Sul", "São Gabriel"),
+            ("Manoel Viana", "São Gabriel"),
+        ]
+        visible = set(order)
+        lx, ly = [], []
+        for origin, destination in links:
+            if origin in visible and destination in visible:
+                x1, y1 = position_by_city[origin]
+                x2, y2 = position_by_city[destination]
+                lx.extend([x1, x2, None])
+                ly.extend([y1, y2, None])
+        if lx:
+            fig.add_trace(go.Scatter(
+                x=lx, y=ly, mode="lines",
+                line=dict(color="rgba(0,108,154,0.40)", width=1.6),
+                hoverinfo="skip", showlegend=False,
+            ))
         max_vol = max(1, float(city["quantidade"].max()))
         indexed = city.set_index("municipio")["quantidade"]
         for (x, y), municipality in zip(positions, order):
@@ -165,18 +195,45 @@ with right:
         fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
+# Os próprios cartões são links nativos do Streamlit.
+# Não há mais uma caixa decorativa com um segundo link separado.
+st.markdown("""
+<style>
+div[data-testid="stPageLink"] a[href*="panorama_geral"],
+div[data-testid="stPageLink"] a[href*="outubro_rosa"],
+div[data-testid="stPageLink"] a[href*="exames_alterados"] {
+    text-decoration:none;
+}
+.st-key-exec-nav-panorama [data-testid="stPageLink"] a,
+.st-key-exec-nav-outubro [data-testid="stPageLink"] a,
+.st-key-exec-nav-alterados [data-testid="stPageLink"] a {
+    display:flex;align-items:center;width:100%;min-height:84px;
+    background:white;border:1px solid #dbe4ec;border-radius:13px;
+    padding:16px;color:#1A3B5C;font-size:1.04rem;font-weight:700;
+    box-shadow:0 3px 12px rgba(26,59,92,.04);
+}
+.st-key-exec-nav-panorama [data-testid="stPageLink"] a:hover,
+.st-key-exec-nav-outubro [data-testid="stPageLink"] a:hover,
+.st-key-exec-nav-alterados [data-testid="stPageLink"] a:hover {
+    border-color:#EE5325;background:#fff9f6;
+    box-shadow:0 6px 18px rgba(26,59,92,.10);
+}
+</style>
+""", unsafe_allow_html=True)
 nav = [
-    ("Panorama geral", "Volume por competência e município", "pages/01_panorama_geral.py"),
-    ("Outubro Rosa", "Setembro × outubro e meses seguintes", "pages/02_outubro_rosa.py"),
-    ("Exames alterados", "Proporção operacional por faixa etária", "pages/05_exames_alterados.py"),
+    ("Panorama geral", "Volume por competência e município",
+     "pages/01_panorama_geral.py", "exec-nav-panorama"),
+    ("Outubro Rosa", "Setembro × outubro e meses seguintes",
+     "pages/02_outubro_rosa.py", "exec-nav-outubro"),
+    ("Exames alterados", "Proporção operacional por faixa etária",
+     "pages/05_exames_alterados.py", "exec-nav-alterados"),
 ]
-for col, (title, subtitle, page) in zip(st.columns(3, gap="small"), nav):
+for col, (title, subtitle, page, key) in zip(st.columns(3, gap="small"), nav):
     with col:
-        st.markdown('<div class="exec-links"><strong>' + html.escape(title)
-                    + '</strong><small>' + html.escape(subtitle) + '</small></div>',
-                    unsafe_allow_html=True)
-        st.page_link(page, label="Explorar →")
+        with st.container(key=key):
+            st.page_link(page, label=title + "  →", use_container_width=True)
+            st.caption(subtitle)
 
 st.caption("Fonte: SISCAN/DATASUS · Databricks camada Gold. "
            "Volumes representam exames registrados, não mulheres únicas ou cobertura populacional. "
-           "As bolhas ilustram volumes e não representam coordenadas geográficas.")
+           "As bolhas e linhas são um diagrama ilustrativo, sem representar coordenadas ou conexões geográficas.")
