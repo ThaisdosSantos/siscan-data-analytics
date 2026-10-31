@@ -1,6 +1,7 @@
 """Identidade visual PET-Saúde e funções comuns de apresentação."""
 import html
 import io
+import pandas as pd
 import streamlit as st
 import plotly.express as px
 
@@ -133,22 +134,77 @@ def metric_row(items):
     for col, (label,value) in zip(cols,items):
         col.metric(label,value)
 
+
+def display_table(df, *, percent_columns=None, integer_columns=None):
+    """Tabela PET-Saúde: HTML acessível e responsivo, sem alterar os dados."""
+    percent_columns = set(percent_columns or [])
+    integer_columns = set(integer_columns or [])
+    css = """
+    <style>
+    .pet-table-scroller{width:100%;overflow-x:auto;border-radius:8px;
+      box-shadow:0 2px 7px rgba(26,59,92,.09);margin:12px 0 17px}
+    table.pet-table{border-collapse:collapse;width:100%;background:#fff;color:#1A3B5C;
+      font:500 .83rem Manrope,Arial,sans-serif}
+    .pet-table th{background:#1A3B5C;color:#fff;padding:13px 12px;text-align:left;
+      font-size:.76rem;line-height:1.35;font-weight:750;white-space:normal}
+    .pet-table td{padding:13px 12px;border-bottom:1px solid #e7ebef;white-space:nowrap}
+    .pet-table tbody tr:nth-child(even){background:#f6f8fa}
+    .pet-table tbody tr:hover{background:#ecf5fa}
+    .pet-table td:first-child{font-weight:700}
+    .pet-table .pet-badge{display:inline-block;border-radius:5px;padding:5px 9px;
+      font-size:.76rem;font-weight:750;white-space:normal}
+    .pet-badge.ok{color:#385723;background:#e2f0d9}
+    .pet-badge.low{color:#856404;background:#fff3cd}
+    .pet-badge.bad{color:#b72323;background:#ffe6e6}
+    .pet-badge.unknown{color:#4a5968;background:#e9edf1}
+    </style>
+    """
+    def br_number(value, decimals):
+        return f"{value:,.{decimals}f}".replace(",", "@").replace(".", ",").replace("@", ".")
+    def cell(value, column):
+        if pd.isna(value):
+            return "N/D"
+        if isinstance(value, (bool,)):
+            return "Sim" if value else "Não"
+        if column in percent_columns and isinstance(value, (int, float)):
+            return br_number(value, 2) + "%"
+        if column in integer_columns and isinstance(value, (int, float)):
+            return br_number(value, 0)
+        if isinstance(value, (int, float)):
+            return br_number(value, 2 if isinstance(value, float) and not value.is_integer() else 0)
+        content = html.escape(str(value))
+        if column.lower().startswith(("classificação", "classificacao", "alerta")):
+            mode = "unknown"
+            if "🟢" in content or "boa" in content.lower(): mode = "ok"
+            elif "🟡" in content or "baixo" in content.lower(): mode = "low"
+            elif "🔴" in content or "alto" in content.lower(): mode = "bad"
+            return '<span class="pet-badge ' + mode + '">' + content + '</span>'
+        return content
+    header = "".join("<th scope='col'>" + html.escape(str(c)) + "</th>" for c in df.columns)
+    rows = []
+    for values in df.itertuples(index=False, name=None):
+        rows.append("<tr>" + "".join("<td>" + cell(v, c) + "</td>"
+                                   for c, v in zip(df.columns, values)) + "</tr>")
+    if not rows:
+        rows = ['<tr><td colspan="' + str(max(1,len(df.columns))) + '">Nenhum registro.</td></tr>']
+    markup = ('<div class="pet-table-scroller" role="region" aria-label="Tabela de dados" tabindex="0">'
+              '<table class="pet-table"><thead><tr>' + header + '</tr></thead><tbody>'
+              + "".join(rows) + '</tbody></table></div>')
+    st.markdown(css + markup, unsafe_allow_html=True)
+
+
 def export_table(df, name):
-    """Duas casas nas colunas percentuais; CSV preserva valores originais."""
+    """Exibe tabela estilizada, mantendo exportação dos dados originais."""
     from pandas.api.types import is_numeric_dtype
-    config = {}
-    for column in df.columns:
-        lower = column.lower()
-        is_percentage = (
-            lower in {"percentual", "taxa", "variacao_pct"}
-            or lower.endswith(("_pct", "_percentual", "_percentual_pct"))
-            or lower.startswith(("taxa_", "proporcao_"))
-        )
-        if is_percentage and is_numeric_dtype(df[column]):
-            config[column] = st.column_config.NumberColumn(column, format="%.2f")
-    st.dataframe(df, use_container_width=True, hide_index=True, column_config=config)
+    percentage = [
+        c for c in df.columns if is_numeric_dtype(df[c]) and
+        (c.lower() in {"percentual", "taxa", "variacao_pct"} or
+         c.lower().endswith(("_pct", "_percentual", "_percentual_pct")) or
+         c.lower().startswith(("taxa_", "proporcao_")))
+    ]
+    display_table(df, percent_columns=percentage)
     st.download_button("⬇️ Exportar CSV", df.to_csv(index=False, sep=";").encode("utf-8-sig"),
-                       file_name=name, mime="text/csv", key="csv_"+name)
+                       file_name=name, mime="text/csv", key="csv_" + name)
 
 def fmt_num(v):
     return f"{int(v):,}".replace(",", ".")
