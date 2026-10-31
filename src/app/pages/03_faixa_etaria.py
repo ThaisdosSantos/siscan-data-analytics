@@ -155,7 +155,7 @@ for col, label, title, desc in zip(st.columns(3), labels, titles, descriptions):
 agg = groups.groupby(["municipio", "grupo"], as_index=False)["quantidade_exames"].sum()
 total_city = agg.groupby("municipio")["quantidade_exames"].transform("sum")
 agg["percentual"] = safe_percent(agg["quantidade_exames"], total_city)
-a, b = st.columns([1, 1.65], gap="large")
+a, b = st.columns([2, 3], gap="medium")
 with a:
     # Rosca e legenda conforme referência visual; valores são calculados da Gold.
     donut_order = ["25–64 anos", "≥65 anos", "<25 anos"]
@@ -210,41 +210,16 @@ with a:
         unsafe_allow_html=True,
     )
 with b:
-    # Barras horizontais 100% empilhadas, como no layout de referência.
-    # A série agrega a participação de cada grupo dentro de cada município.
-    bar_order = ["25–64 anos", "<25 anos", "≥65 anos"]
-    city_order = list(dict.fromkeys(agg["municipio"].tolist()))
-    bar_colors = {"25–64 anos": "#0076A5", "<25 anos": "#4A9FD8", "≥65 anos": "#EE5325"}
     fig = px.bar(
-        agg,
-        x="percentual",
-        y="municipio",
-        color="grupo",
-        orientation="h",
-        barmode="stack",
-        category_orders={"grupo": bar_order, "municipio": city_order},
-        color_discrete_map=bar_colors,
-        labels={"municipio": "", "percentual": "Percentual (%)", "grupo": "Faixa etária"},
+        agg, x="municipio", y="percentual", color="grupo", barmode="stack",
+        category_orders={"grupo": labels},
+        color_discrete_map={"25–64 anos": OCEAN, "<25 anos": SKY, "≥65 anos": ORANGE},
+        labels={"municipio": "Município", "percentual": "Participação (%)", "grupo": "Faixa etária"},
+        title="Composição etária por município · 100%",
     )
-    fig.update_traces(
-        hovertemplate="%{y}<br>%{fullData.name}: %{x:.2f}%<extra></extra>"
-    )
-    fig.update_xaxes(range=[0, 100], ticksuffix="%", dtick=25, showgrid=True,
-                     gridcolor="#e8edf1", title=None)
-    fig.update_yaxes(title=None, autorange="reversed", automargin=True)
-    fig.update_layout(
-        height=max(490, 36 * len(city_order) + 100),
-        margin=dict(l=8, r=12, t=10, b=8),
-        legend=dict(orientation="h", yanchor="top", y=-0.12,
-                    xanchor="center", x=0.5, title=None),
-        bargap=0.18,
-    )
-    st.markdown(
-        '<div style="font-size:1.12rem;color:#1A3B5C;font-weight:700">'
-        'Composição etária por município</div>'
-        '<div style="color:#7C8FA0;font-size:.77rem">Percentual (%)</div>',
-        unsafe_allow_html=True,
-    )
+    fig.update_yaxes(range=[0, 100], ticksuffix="%")
+    fig.update_xaxes(tickangle=-45)
+    fig.update_traces(hovertemplate="%{x}<br>%{y:.2f}%<extra>%{fullData.name}</extra>")
     display_chart(fig)
 
 st.markdown("""
