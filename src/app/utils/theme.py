@@ -20,7 +20,10 @@ def apply_custom_css():
       --pet-navy:#193C5D; --pet-ocean:#00769B; --pet-sky:#4B9FD7;
       --pet-orange:#ED4C20; --pet-gray:#E2E2E2; --pet-light:#F6F8FA;
     }
-    .block-container {padding-top:1.7rem;max-width:1440px;}
+    .block-container {padding-top:1.15rem;max-width:1680px;padding-left:1.7rem;padding-right:1.7rem;}
+    .pet-section-label {font-size:.72rem;font-weight:750;color:#00769B;
+        letter-spacing:.11em;margin:.5rem 0 .55rem;}
+    @media(max-width:900px) {.block-container {padding-left:.8rem;padding-right:.8rem;}}
     h1,h2,h3,h4 {color:var(--pet-navy)!important;letter-spacing:-.02em;}
     a {color:var(--pet-ocean);}
     div[data-testid="stSidebar"] {
@@ -31,7 +34,7 @@ def apply_custom_css():
     div[data-testid="stMetric"] {
         background:var(--pet-light);padding:1rem 1.1rem;border-radius:13px;
         border:1px solid #E6ECF1;border-left:4px solid var(--pet-ocean);
-        min-height:116px;
+        min-height:105px;
     }
     div[data-testid="stMetricLabel"] {color:var(--pet-navy);}
     div[data-testid="stMetricValue"] {color:var(--pet-navy);font-weight:650;}
