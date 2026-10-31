@@ -1,126 +1,182 @@
-"""Dashboard executivo SISCAN 10ª CRS — leitura exclusiva das tabelas Gold."""
-from pathlib import Path
-import pandas as pd
-import streamlit as st
-import plotly.express as px
-from utils.theme import apply_custom_css, page_header, style_chart, fmt_num, fmt_pct, pct, OCEAN, SKY, ORANGE, NAVY
-from utils.data_loader import MUNICIPIOS, filtered, require, sidebar_filters, selected_years, years_label, year_month_index
+"""Visão executiva SISCAN — painel PET-Saúde, dados Gold."""
+import html
 
-st.set_page_config(page_title="SISCAN | Painel Analítico 10ª CRS", page_icon="🩺",
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+
+from utils.theme import apply_custom_css, fmt_num, fmt_pct, pct, OCEAN, NAVY, ORANGE
+from utils.data_loader import (
+    MUNICIPIOS, filtered, require, sidebar_filters,
+    selected_years, years_label, year_month_index,
+)
+
+st.set_page_config(page_title="Visão executiva | SISCAN", page_icon="🩺",
                    layout="wide", initial_sidebar_state="expanded")
 apply_custom_css()
 sidebar_filters()
 
-page_header("Visão executiva · 10ª CRS · RS",
-            "Rastreamento do câncer do colo do útero, território a território.",
-            "Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS")
+st.markdown("""
+<style>
+.exec-hero{background:linear-gradient(110deg,#1A3B5C,#006C9A);
+    border-radius:17px;padding:32px 34px 68px;color:white;margin-bottom:-43px;}
+.exec-kicker{font-size:.69rem;letter-spacing:.2em;color:#a8d5eb;font-weight:800}
+.exec-title{font-family:Fraunces,Georgia,serif;font-size:clamp(1.7rem,3.2vw,2.9rem);
+    font-weight:650;line-height:1.13;margin:10px 0;color:#fff!important;max-width:770px}
+.exec-title em{font-style:italic;color:#c0d9eb;}
+.exec-sub{font-size:.82rem;color:#d8e7ef;margin:12px 0 17px}
+.exec-pill{display:inline-block;border:1px solid #547e9d;border-radius:20px;
+    padding:5px 12px;font-size:.7rem;color:#f3f8fb}
+.exec-metric{background:#fff;border:1px solid #dae4ec;border-radius:12px;
+    min-height:115px;padding:20px 17px;box-shadow:0 6px 18px -12px #193c5d33;}
+.exec-metric.blue{background:#006C9A;color:#fff;border-color:#006C9A}
+.exec-metric.orange{background:#EE5325;color:#fff;border-color:#EE5325}
+.exec-metric-label{font-size:.67rem;font-weight:800;letter-spacing:.04em;color:#59728a}
+.exec-metric.blue .exec-metric-label,.exec-metric.orange .exec-metric-label{color:#e8f6fd}
+.exec-metric-value{font-family:Fraunces,Georgia,serif;font-size:clamp(1.35rem,2vw,2.1rem);
+    font-weight:650;margin:7px 0;color:#1A3B5C}
+.exec-metric.blue .exec-metric-value,.exec-metric.orange .exec-metric-value{color:#fff}
+.exec-metric-desc{font-size:.68rem;color:#fce9dc}
+.exec-warning{border:1px solid #f6a381;border-left:4px solid #EE5325;border-radius:11px;
+    padding:13px 16px;margin:17px 0;background:#fff;color:#1A3B5C;font-size:.78rem}
+.exec-card-title{font-family:Fraunces,Georgia,serif;color:#1A3B5C;font-size:1.2rem;margin:0;font-weight:650}
+.exec-card-sub{font-size:.75rem;color:#8499ad;margin:3px 0 0}
+.exec-card{background:#fff;border:1px solid #dfe6ed;border-radius:14px;
+    padding:18px 16px 14px;box-shadow:0 6px 20px -17px #1a3b5c55;}
+.exec-links{display:block;border:1px solid #dbe4ec;border-radius:13px;
+    padding:16px 16px;background:white;min-height:78px}
+.exec-links strong{display:block;color:#1A3B5C;font-family:Fraunces,Georgia,serif}
+.exec-links small{display:block;color:#72879d;font-size:.7rem;margin-top:3px}
+.st-key-exec-bubble-card [data-testid="stPlotlyChart"],
+.st-key-exec-month-card [data-testid="stPlotlyChart"]{border:none!important;
+    box-shadow:none!important;background:transparent!important;padding:0!important}
+.st-key-exec-bubble-card,.st-key-exec-month-card{border-radius:14px!important;background:white!important}
+@media(max-width:850px){.exec-hero{padding:24px 18px 64px}.exec-metric{min-height:100px}}
+</style>
+""", unsafe_allow_html=True)
 
-# Os filtros globais (ano e municípios) permanecem na barra lateral.
-# Filtros rápidos abaixo refinam apenas os gráficos da página principal e
-# a taxa de alteração; a Gold não dispõe de cruzamento idade x competência.
-col_city, col_age = st.columns([1.4, 1])
-with col_city:
-    city_focus = st.selectbox("Visualização territorial", ["Todos os municípios", *MUNICIPIOS.values()],
-                              help="Refina somente os gráficos desta página.")
-with col_age:
-    age_focus = st.selectbox("Faixa etária · taxa de alteração",
-                             ["Todas as idades", "25–64 anos", "Menores de 25", "65 anos ou mais"],
-                             help="Filtro aplicável apenas ao indicador de exames alterados; não à série temporal.")
+st.markdown("""
+<div class="exec-hero">
+  <div class="exec-kicker">VISÃO EXECUTIVA · 10ª CRS · RS</div>
+  <h1 class="exec-title">Rastreamento do câncer do colo do útero,
+  <em>território a território.</em></h1>
+  <div class="exec-sub">Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS</div>
+  <span class="exec-pill">Recorte ativo: """ + html.escape(years_label()) +
+  """ · """ + str(len(st.session_state.get("city_preference", list(MUNICIPIOS.values())))) +
+  """ de 11 municípios</span>
+</div>
+""", unsafe_allow_html=True)
 
-st.caption(f"**Anos selecionados:** {years_label()}")
 df = filtered("temporal")
 if not require(df, ["municipio", "ano", "mes", "quantidade"]):
     st.stop()
 
 alt = filtered("alterados")
-alt_ready = not alt.empty and {"quantidade_alterados", "total_exames_validos", "faixa_etaria"}.issubset(alt.columns)
-
-def age_start(label):
-    text = str(label).lower().strip()
-    import re
-    if "ate" in text or "até" in text:
-        return 0
-    nums = re.findall(r"\d+", text)
-    return int(nums[0]) if nums else None
-
-def in_age_group(label, selection):
-    age = age_start(label)
-    if age is None:
-        return selection == "Todas as idades"
-    return (selection == "Todas as idades"
-            or selection == "25–64 anos" and 25 <= age <= 64
-            or selection == "Menores de 25" and age < 25
-            or selection == "65 anos ou mais" and age >= 65)
-
-if alt_ready and age_focus != "Todas as idades":
-    alt = alt[alt.faixa_etaria.map(lambda v: in_age_group(v, age_focus))]
-
-nmonths = df[["ano", "mes"]].drop_duplicates().shape[0]
-total = df.quantidade.sum(min_count=1)
-num_cities = df.municipio.nunique()
-if alt_ready:
-    altered = alt.quantidade_alterados.sum(min_count=1)
-    denominator = alt.total_exames_validos.sum(min_count=1)
-    altered_pct = fmt_pct(pct(altered, denominator)) if pd.notna(denominator) else "N/D"
+months = df[["ano", "mes"]].drop_duplicates().shape[0]
+total = df["quantidade"].sum(min_count=1)
+num_cities = df["municipio"].nunique()
+if not alt.empty and {"quantidade_alterados", "total_exames_validos"}.issubset(alt.columns):
+    altered = alt["quantidade_alterados"].sum(min_count=1)
+    denominator = alt["total_exames_validos"].sum(min_count=1)
+    altered_pct = fmt_pct(pct(altered, denominator))
 else:
     altered_pct = "N/D"
 
-st.markdown('<div class="pet-section-label">VISÃO EXECUTIVA</div>', unsafe_allow_html=True)
-k1,k2,k3,k4=st.columns(4, gap="small")
-with k1:
-    st.metric("Exames registrados", fmt_num(total))
-with k2:
-    st.metric("Municípios com registros", f"{num_cities} de 11")
-with k3:
-    st.metric("Meses com registros", f"{nmonths} de 72",
-              help="Agosto de 2022 não está disponível na Gold temporal.")
-with k4:
-    st.metric("Exames alterados (%)", altered_pct,
-              help="Estimativa operacional: denominador inclui exames sem exclusão de rejeitados/insatisfatórios por faixa etária.")
-st.caption("⚠️ **Auditoria temporal:** agosto/2022 ausente da série Gold. "
-           "A taxa de alteração é uma estimativa operacional, não um indicador clínico validado.")
-if age_focus != "Todas as idades":
-    st.caption("O filtro de faixa etária afeta apenas a taxa de alteração; a Gold temporal não oferece cruzamento por idade.")
+kpis = [
+    ("EXAMES REGISTRADOS", fmt_num(total), "blue"),
+    ("MUNICÍPIOS COM REGISTROS", f"{num_cities} de 11", ""),
+    ("MESES COM REGISTROS", f"{months} de {12 * len(selected_years())}", ""),
+    ("EXAMES ALTERADOS", altered_pct, "orange"),
+]
+for col, (label, value, color) in zip(st.columns(4, gap="small"), kpis):
+    with col:
+        desc = '<div class="exec-metric-desc">Estimativa operacional</div>' if color == "orange" else ""
+        st.markdown(
+            '<div class="exec-metric ' + color + '"><div class="exec-metric-label">'
+            + html.escape(label) + '</div><div class="exec-metric-value">'
+            + html.escape(value) + '</div>' + desc + '</div>',
+            unsafe_allow_html=True,
+        )
 
-data = df.copy()
-if city_focus != "Todos os municípios":
-    data = data[data.municipio == city_focus]
+# Ausência de registro não é equivalente a zero.
+calendar = pd.DatetimeIndex([d for d in year_month_index() if d.year in selected_years()])
+monthly = df.groupby(["ano", "mes"], as_index=False)["quantidade"].sum(min_count=1)
+monthly["data"] = pd.to_datetime(dict(year=monthly["ano"], month=monthly["mes"], day=1))
+series = monthly.set_index("data")["quantidade"].reindex(calendar)
+missing = [d.strftime("%m/%Y") for d in calendar if pd.isna(series.loc[d])]
+audit = ("Competências sem registros: " + ", ".join(missing) + ". " if missing else "")
+st.markdown(
+    '<div class="exec-warning">⚠️ <b>Auditoria temporal:</b> '
+    + html.escape(audit)
+    + 'A taxa de alteração é uma estimativa operacional, não um indicador clínico validado.</div>',
+    unsafe_allow_html=True,
+)
 
-monthly = data.groupby(["ano", "mes"], as_index=False).quantidade.sum(min_count=1)
-monthly["data"] = pd.to_datetime(dict(year=monthly.ano, month=monthly.mes, day=1))
-monthly = monthly.sort_values("data")
-by_city = data.groupby("municipio", as_index=False).quantidade.sum(min_count=1)
-by_city = by_city.sort_values("quantidade", ascending=True)
-
-left, right = st.columns([1.4, 1], gap="medium")
+left, right = st.columns([1, 1.45], gap="medium")
 with left:
-    st.markdown("### Evolução mensal de exames")
-    if monthly.empty:
-        st.info("Sem exames para o município selecionado.")
-    else:
-        fig=px.line(monthly, x="data", y="quantidade", markers=True,
-                    color_discrete_sequence=[OCEAN],
-                    labels={"data":"Competência","quantidade":"Exames"})
-        # Lacunas de competências não devem ser apresentadas como um zero.
-        full_index = year_month_index()
-        wide=monthly.set_index("data").reindex(full_index)
-        fig=px.line(x=wide.index, y=wide.quantidade, markers=True,
-                    labels={"x":"Competência","y":"Exames"},
-                    color_discrete_sequence=[OCEAN])
-        fig.update_traces(connectgaps=False, hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>")
-        fig.update_layout(showlegend=False, height=365)
-        st.plotly_chart(style_chart(fig, height=365), use_container_width=True)
-with right:
-    st.markdown("### Distribuição territorial")
-    if by_city.empty:
-        st.info("Nenhuma observação disponível.")
-    else:
-        fig=px.bar(by_city, x="quantidade", y="municipio", orientation="h",
-                   color_discrete_sequence=[SKY],
-                   labels={"quantidade":"Exames","municipio":""})
-        fig.update_traces(hovertemplate="%{y}<br>%{x:,.0f} exames<extra></extra>")
-        fig.update_layout(showlegend=False, height=365, margin=dict(l=10,r=15,t=12,b=25))
-        st.plotly_chart(style_chart(fig,height=365),use_container_width=True)
+    with st.container(border=True, key="exec-bubble-card"):
+        st.markdown('<div class="exec-card-title">Visualização territorial</div>'
+                    '<div class="exec-card-sub">Bolhas proporcionais ao volume de exames</div>',
+                    unsafe_allow_html=True)
+        city = (df.groupby("municipio", as_index=False)["quantidade"]
+                .sum(min_count=1).sort_values("municipio"))
+        # Diagrama de bolhas, não mapa geográfico: posições fixas e não geocodificadas.
+        positions = [(0.20,0.70),(0.46,0.81),(0.78,0.71),(0.12,0.44),
+                     (0.52,0.55),(0.86,0.45),(0.31,0.28),(0.64,0.26),
+                     (0.16,0.17),(0.50,0.12),(0.86,0.15)]
+        order = [c for c in MUNICIPIOS.values() if c in set(city["municipio"])]
+        fig = go.Figure()
+        max_vol = max(1, float(city["quantidade"].max()))
+        indexed = city.set_index("municipio")["quantidade"]
+        for (x, y), municipality in zip(positions, order):
+            volume = float(indexed.loc[municipality])
+            size = 17 + 56 * (volume / max_vol) ** 0.5
+            fig.add_trace(go.Scatter(
+                x=[x], y=[y], mode="markers",
+                marker=dict(size=size, color="rgba(0,108,154,.28)", line=dict(color=OCEAN, width=1.2)),
+                customdata=[[municipality, volume]],
+                hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,.0f} exames<extra></extra>",
+                showlegend=False,
+            ))
+        fig.update_xaxes(visible=False, range=[-0.08, 1.08], fixedrange=True)
+        fig.update_yaxes(visible=False, range=[-0.05, 1.03], fixedrange=True)
+        fig.update_layout(height=330, margin=dict(l=3,r=3,t=5,b=5),
+                          plot_bgcolor="#f4f6f8", paper_bgcolor="rgba(0,0,0,0)",
+                          hoverlabel=dict(bgcolor="white",font_color=NAVY))
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.caption("Passe o mouse sobre uma bolha para consultar o município.")
 
-st.caption("Fonte: Databricks · camada Gold, somente leitura. "
-           "Os volumes representam exames registrados, não mulheres únicas ou cobertura populacional.")
+with right:
+    with st.container(border=True, key="exec-month-card"):
+        st.markdown('<div class="exec-card-title">Evolução mensal de exames</div>'
+                    '<div class="exec-card-sub">Competência × exames registrados</div>',
+                    unsafe_allow_html=True)
+        fig = go.Figure(go.Scatter(
+            x=calendar, y=series, mode="lines",
+            line=dict(color=OCEAN, width=2),
+            fill="tozeroy", fillcolor="rgba(0,108,154,.08)",
+            connectgaps=False,
+            hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>",
+        ))
+        fig.update_layout(height=370, showlegend=False,
+                          margin=dict(l=14,r=10,t=22,b=20),
+                          plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)")
+        fig.update_yaxes(gridcolor="#e9eff3", rangemode="tozero")
+        fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+nav = [
+    ("Panorama geral", "Volume por competência e município", "pages/01_panorama_geral.py"),
+    ("Outubro Rosa", "Setembro × outubro e meses seguintes", "pages/02_outubro_rosa.py"),
+    ("Exames alterados", "Proporção operacional por faixa etária", "pages/05_exames_alterados.py"),
+]
+for col, (title, subtitle, page) in zip(st.columns(3, gap="small"), nav):
+    with col:
+        st.markdown('<div class="exec-links"><strong>' + html.escape(title)
+                    + '</strong><small>' + html.escape(subtitle) + '</small></div>',
+                    unsafe_allow_html=True)
+        st.page_link(page, label="Explorar →")
+
+st.caption("Fonte: SISCAN/DATASUS · Databricks camada Gold. "
+           "Volumes representam exames registrados, não mulheres únicas ou cobertura populacional. "
+           "As bolhas ilustram volumes e não representam coordenadas geográficas.")
