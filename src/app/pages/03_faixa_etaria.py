@@ -171,6 +171,8 @@ st.markdown("""
   background:transparent!important;
 }
 .st-key-age_donut_card .age-legend {padding:0 4px 4px;}
+.st-key-age_bar_card {background:#fff;border:1px solid #dce4eb;border-radius:14px;padding:16px 18px 22px;box-shadow:0 2px 8px rgba(26,59,92,.04);min-height:454px;}
+.st-key-age_bar_card [data-testid="stPlotlyChart"] {border:0!important;box-shadow:none!important;padding:0!important;background:transparent!important;}
 </style>
 """, unsafe_allow_html=True)
 with a:
@@ -229,17 +231,24 @@ with a:
             unsafe_allow_html=True,
         )
 with b:
-    fig = px.bar(
-        agg, x="municipio", y="percentual", color="grupo", barmode="stack",
-        category_orders={"grupo": labels},
-        color_discrete_map={"25–64 anos": OCEAN, "<25 anos": SKY, "≥65 anos": ORANGE},
-        labels={"municipio": "Município", "percentual": "Participação (%)", "grupo": "Faixa etária"},
-        title="Composição etária por município · 100%",
-    )
-    fig.update_yaxes(range=[0, 100], ticksuffix="%")
-    fig.update_xaxes(tickangle=-45)
-    fig.update_traces(hovertemplate="%{x}<br>%{y:.2f}%<extra>%{fullData.name}</extra>")
-    display_chart(fig)
+    with st.container(border=True, key="age_bar_card"):
+        st.markdown(
+            '<div style="font-size:1.12rem;color:#1A3B5C;font-weight:700">'
+            'Composição etária por município · 100%</div>'
+            '<div style="color:#7C8FA0;font-size:.77rem">Percentual (%)</div>',
+            unsafe_allow_html=True,
+        )
+        fig = px.bar(
+            agg, x="municipio", y="percentual", color="grupo", barmode="stack",
+            category_orders={"grupo": labels},
+            color_discrete_map={"25–64 anos": OCEAN, "<25 anos": SKY, "≥65 anos": ORANGE},
+            labels={"municipio": "Município", "percentual": "Participação (%)", "grupo": "Faixa etária"},
+        )
+        fig.update_yaxes(range=[0, 100], ticksuffix="%")
+        fig.update_xaxes(tickangle=-45)
+        fig.update_traces(hovertemplate="%{x}<br>%{y:.2f}%<extra>%{fullData.name}</extra>")
+        fig.update_layout(margin=dict(l=10, r=8, t=8, b=14), showlegend=True)
+        st.plotly_chart(style_chart(fig, height=355), use_container_width=True)
 
 st.markdown("""
 <div class="q3-section">
