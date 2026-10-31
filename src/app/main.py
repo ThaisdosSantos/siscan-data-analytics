@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from utils.theme import apply_custom_css, style_chart, fmt_num, fmt_pct, pct, OCEAN, SKY, ORANGE, NAVY
+from utils.theme import apply_custom_css, page_header, style_chart, fmt_num, fmt_pct, pct, OCEAN, SKY, ORANGE, NAVY
 from utils.data_loader import MUNICIPIOS, filtered, require, sidebar_filters, selected_years, years_label, year_month_index
 
 st.set_page_config(page_title="SISCAN | Painel Analítico 10ª CRS", page_icon="🩺",
@@ -14,9 +14,8 @@ sidebar_filters()
 logo = Path(__file__).parent / "assets" / "LogoPET-Saude.jpeg"
 head, mark = st.columns([7, 1], vertical_alignment="center")
 with head:
-    st.markdown('<h1 style="font-size:1.75rem;margin:0">SISCAN — Painel Analítico 10ª CRS</h1>',
-                unsafe_allow_html=True)
-    st.caption("Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS")
+    page_header("Visão executiva · 10ª CRS · RS", "SISCAN — Painel Analítico 10ª CRS",
+                "Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS")
 with mark:
     if logo.is_file():
         st.image(str(logo), use_container_width=True)
