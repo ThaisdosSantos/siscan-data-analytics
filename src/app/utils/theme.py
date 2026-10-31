@@ -4,11 +4,11 @@ import io
 import streamlit as st
 import plotly.express as px
 
-NAVY = "#1A3B5C"
-OCEAN = "#006C9A"
-SKY = "#4A9FD8"
-ORANGE = "#EE5325"
-GRAY = "#D9D9D9"
+NAVY = "#193C5D"
+OCEAN = "#00769B"
+SKY = "#4B9FD7"
+ORANGE = "#ED4C20"
+GRAY = "#E2E2E2"
 LIGHT_BG = "#F6F8FA"
 PALETTE = [OCEAN, SKY, ORANGE, NAVY]
 
@@ -17,11 +17,11 @@ def apply_custom_css():
     st.markdown("""
     <style>
     :root {
-      --pet-navy:#1A3B5C; --pet-ocean:#006C9A; --pet-sky:#4A9FD8;
-      --pet-orange:#EE5325; --pet-gray:#D9D9D9; --pet-light:#F6F8FA;
+      --pet-navy:#193C5D; --pet-ocean:#00769B; --pet-sky:#4B9FD7;
+      --pet-orange:#ED4C20; --pet-gray:#E2E2E2; --pet-light:#F6F8FA;
     }
     .block-container {padding-top:1.15rem;max-width:1680px;padding-left:1.7rem;padding-right:1.7rem;}
-    .pet-section-label {font-size:.72rem;font-weight:750;color:#006C9A;
+    .pet-section-label {font-size:.72rem;font-weight:750;color:#00769B;
         letter-spacing:.11em;margin:.5rem 0 .55rem;}
     @media(max-width:900px) {.block-container {padding-left:.8rem;padding-right:.8rem;}}
     h1,h2,h3,h4 {color:var(--pet-navy)!important;letter-spacing:-.02em;}
@@ -36,8 +36,6 @@ def apply_custom_css():
         border:1px solid #E6ECF1;border-left:4px solid var(--pet-ocean);
         min-height:105px;
     }
-    div[data-testid="stMetric"]:has([data-testid="stMetricLabel"] [title*="alterados"]) {border-left-color:#EE5325;}
-    div[data-testid="stMetric"]:has([data-testid="stMetricLabel"] [title*="Meses"]) {border-left-color:#EE5325;}
     div[data-testid="stMetricLabel"] {color:var(--pet-navy);}
     div[data-testid="stMetricValue"] {color:var(--pet-navy);font-weight:650;}
     .stButton button[kind="primary"],.stDownloadButton button[kind="primary"] {
