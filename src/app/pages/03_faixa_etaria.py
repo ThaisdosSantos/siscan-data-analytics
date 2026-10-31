@@ -251,7 +251,8 @@ with b:
         fig.update_traces(
             hovertemplate="%{y}<br>%{fullData.name}: %{x:.2f}%<extra></extra>"
         )
-        fig.update_xaxes(range=[0, 103], tickmode="array", tickvals=[0, 25, 50, 75, 100],\n                         ticktext=["0%", "25%", "50%", "75%", "100%"],
+        fig.update_xaxes(range=[0, 103], tickmode="array", tickvals=[0, 25, 50, 75, 100],
+                         ticktext=["0%", "25%", "50%", "75%", "100%"],
                          showgrid=True, gridcolor="#e9edf1", title=None)
         fig.update_yaxes(title=None, autorange="reversed", automargin=True,
                          tickfont=dict(size=10))
