@@ -40,7 +40,7 @@ def q5_group(label):
         return "<25 anos"
     if "25 a 64" in text or "25-64" in text:
         return "25–64 anos"
-    if "65 anos ou mais" in text or "65 ou mais" in text or ">=65" in text:
+    if "65 anos ou mais" in text or "65 ou mais" in text or ">=65" in text or "acima de 79" in text:
         return "≥65 anos"
     nums = [int(n) for n in re.findall(r"\d+", text)]
     if len(nums) >= 2:
