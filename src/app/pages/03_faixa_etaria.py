@@ -177,10 +177,11 @@ with a:
         marker=dict(line=dict(color="#FFFFFF", width=3)),
         hovertemplate="%{label}<br>%{value:,.0f} exames<br>%{percent:.2%}<extra></extra>",
     )
+    fig.update_traces(domain=dict(x=[0.10, 0.90], y=[0.08, 0.92]))
     fig.update_layout(
         showlegend=False,
-        height=310,
-        margin=dict(t=12, b=6, l=12, r=12),
+        height=300,
+        margin=dict(t=20, b=20, l=24, r=24),
         annotations=[dict(
             text=(f"<span style='font-size:32px;color:#006C9A'>{target_percent:.0f}%</span>"
                   "<br><span style='font-size:11px;color:#7C8FA0'>na faixa-alvo</span>")
