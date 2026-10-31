@@ -1,11 +1,11 @@
 import streamlit as st
 import plotly.express as px
-from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_pct,pct,OCEAN,SKY,ORANGE
+from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_pct,pct,OCEAN,SKY,ORANGE
 from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Faixa etária | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
-st.title("03 · Conformidade etária")
+page_header("Faixa etária", "Conformidade etária", "Distribuição dos exames por grupos etários")
 df=filtered("etaria")
 if require(df,["municipio","grupo_etario_diretriz","quantidade_exames"]):
     groups=df.copy()
