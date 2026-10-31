@@ -13,45 +13,69 @@ LIGHT_BG = "#F4F6F8"
 PALETTE = [OCEAN, SKY, ORANGE, NAVY]
 
 def apply_custom_css():
-    """Estilo inspirado no protótipo siscan_streamlit.zip, com dados Gold preservados."""
+    """Identidade Lovable: sidebar escura, hero em gradiente e cartões claros."""
     st.markdown("""
     <style>
     :root {--navy:#1A3B5C;--ocean:#006C9A;--sky:#4A9FD8;
            --orange:#EE5325;--gray:#D9D9D9;--light:#F4F6F8;}
-    .block-container {padding-top:1.35rem;max-width:1510px;padding-left:2rem;padding-right:2rem;}
-    h1,h2,h3,h4 {color:var(--navy)!important;letter-spacing:-.018em;}
-    h1 {font-size:2rem!important;margin-bottom:.4rem!important;}
-    h3 {font-size:1.2rem!important;}
-    .pet-kicker {color:var(--orange);font-size:.79rem;font-weight:750;
-                 letter-spacing:.12em;text-transform:uppercase;margin-bottom:.35rem;}
-    .pet-note {background:var(--light);border-left:4px solid var(--orange);
-               border-radius:10px;padding:13px 16px;color:var(--navy);
-               margin:10px 0 18px;line-height:1.55;}
-    .pet-highlight {background:var(--light);border-left:4px solid var(--orange);
-                    border-radius:14px;padding:17px 20px;color:var(--navy);
-                    font-size:1.06rem;margin:12px 0 20px;line-height:1.55;}
-    .pet-section-label {color:var(--orange);font-weight:750;letter-spacing:.1em;font-size:.75rem;}
-    [data-testid="stSidebar"] {background:#F4F6F8;border-right:1px solid var(--gray);}
-    [data-testid="stSidebar"] [data-testid="stImage"] {max-width:195px;margin:0 auto;}
-    [data-testid="stSidebar"] h3 {font-size:.94rem!important;}
-    [data-testid="stSidebar"] .stCaption {font-size:.78rem;}
-    [data-testid="stMetric"] {background:var(--light);border:1px solid var(--gray);
-       border-left:4px solid var(--ocean);border-radius:14px;padding:14px 18px;min-height:112px;}
-    [data-testid="stMetricLabel"] {color:var(--navy);font-weight:550;}
-    [data-testid="stMetricValue"] {color:var(--navy);font-weight:700;}
-    [data-testid="stExpander"] {border-color:var(--gray);border-radius:10px;}
-    [data-testid="stDataFrame"] {border:1px solid var(--gray);border-radius:10px;}
-    .stButton button[kind="primary"] {background:var(--ocean);border-color:var(--ocean);color:white;}
-    @media(max-width:850px) {.block-container {padding-left:1rem;padding-right:1rem;}}
+    html,body,[data-testid="stAppViewContainer"] {background:#fff;color:#1A3B5C;}
+    .block-container {padding:1.25rem 2.1rem 3rem;max-width:1480px;}
+    h1,h2,h3,h4 {color:var(--navy)!important;letter-spacing:-.015em;}
+    h2,h3 {font-weight:730!important;}
+    .pet-hero {background:radial-gradient(120% 140% at 100% 0%,#006C9A 0%,#1A3B5C 66%);
+        border-radius:19px;padding:36px 40px 74px;color:white;
+        box-shadow:0 16px 36px -22px rgba(26,59,92,.35);margin:0 0 -43px;}
+    .pet-hero-kicker {font-weight:750;letter-spacing:.22em;color:#89c8ee;
+        font-size:.71rem;text-transform:uppercase;margin:0 0 13px;}
+    .pet-hero-title {color:#fff!important;font-size:clamp(1.8rem,3.4vw,3rem);
+        font-weight:760;line-height:1.13;letter-spacing:-.035em;margin:0 0 12px;}
+    .pet-hero-desc {color:#d7e7f4;font-size:.95rem;line-height:1.5;max-width:740px;}
+    .pet-kicker {color:var(--orange);font-size:.73rem;font-weight:780;
+                 letter-spacing:.13em;text-transform:uppercase;}
+    .pet-note,.pet-highlight {background:#F4F6F8;border-radius:14px;padding:16px 20px;
+        border-left:4px solid var(--orange);line-height:1.6;margin:12px 0 20px;}
+    .pet-section-label {color:var(--ocean);font-size:.73rem;font-weight:780;letter-spacing:.12em;}
+    [data-testid="stSidebar"] {background:#1A3B5C!important;border-right:0!important;color:#e8f3fa;}
+    [data-testid="stSidebar"] * {color:#e8f3fa;}
+    [data-testid="stSidebar"] [data-testid="stImage"] {background:white;padding:8px;
+         border-radius:14px;margin:4px auto 16px;max-width:220px;}
+    [data-testid="stSidebar"] [data-testid="stExpander"] {background:#244d70;
+        border:1px solid #38617d;border-radius:12px;}
+    [data-testid="stSidebar"] [data-testid="stCheckbox"] {padding:1px 0;}
+    [data-testid="stSidebar"] button {background:#244d70;color:#fff;border:1px solid #456b87;}
+    [data-testid="stSidebar"] button:hover {background:#006C9A;color:white;border-color:#4A9FD8;}
+    [data-testid="stSidebarNav"] a {border-radius:11px;padding:.56rem .75rem;}
+    [data-testid="stSidebarNav"] a[aria-current="page"] {background:#006C9A!important;}
+    [data-testid="stSidebarNav"] a:hover {background:#244d70;}
+    [data-testid="stSidebar"] hr {border-color:#456b87;}
+    div[data-testid="stMetric"] {background:white;border:1px solid #dfe6ec;
+        border-radius:16px;padding:18px 20px;min-height:120px;
+        box-shadow:0 1px 2px rgba(26,59,92,.04),0 15px 32px -24px rgba(26,59,92,.3);}
+    div[data-testid="stMetricLabel"] {font-weight:700;color:#50667b;font-size:.85rem;}
+    div[data-testid="stMetricValue"] {color:#1A3B5C;font-weight:760;}
+    [data-testid="stPlotlyChart"] {background:#fff;border:1px solid #e5eaf0;
+        padding:12px;border-radius:16px;box-shadow:0 12px 28px -24px rgba(26,59,92,.24);}
+    [data-testid="stDataFrame"] {border:1px solid #dfe6ec;border-radius:13px;}
+    [data-testid="stExpander"] {border-radius:12px;border-color:#dfe6ec;}
+    .stButton button[kind="primary"] {background:#EE5325;color:white;border-color:#EE5325;}
+    .stDownloadButton button {background:#EE5325!important;color:white!important;
+        border:0!important;border-radius:20px!important;}
+    @media(max-width:900px) {
+      .block-container {padding:1rem .85rem 2rem;}
+      .pet-hero {padding:24px 22px 60px;border-radius:13px;}
+    }
     </style>""", unsafe_allow_html=True)
 
 
 def page_header(kicker, title, description=""):
-    """Cabeçalho editorial do protótipo, usado pelas páginas reais."""
-    st.markdown(f'<div class="pet-kicker">{html.escape(str(kicker))}</div>', unsafe_allow_html=True)
-    st.title(title)
-    if description:
-        st.caption(description)
+    """Hero do Lovable implementado em HTML/CSS, sem dependências React."""
+    st.markdown(
+        '<header class="pet-hero"><p class="pet-hero-kicker">'
+        + html.escape(str(kicker)) + '</p><h1 class="pet-hero-title">'
+        + html.escape(str(title)) + '</h1><div class="pet-hero-desc">'
+        + html.escape(str(description)) + '</div></header>',
+        unsafe_allow_html=True
+    )
 
 
 def note(message, highlight=False):
