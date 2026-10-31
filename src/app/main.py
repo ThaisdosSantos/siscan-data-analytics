@@ -129,27 +129,29 @@ with left:
         # Ligações visuais ilustrativas, sem representar estradas ou distâncias.
         # Posições estáveis por município para manter filtros coerentes.
         position_by_city = dict(zip(MUNICIPIOS.values(), positions))
-        links = [
-            ("Alegrete", "Manoel Viana"),
-            ("Alegrete", "Quaraí"),
-            ("Alegrete", "Rosário do Sul"),
-            ("Alegrete", "São Gabriel"),
-            ("Barra do Quaraí", "Uruguaiana"),
-            ("Uruguaiana", "Itaqui"),
-            ("Itaqui", "Maçambará"),
-            ("Quaraí", "Sant'Ana do Livramento"),
-            ("Rosário do Sul", "Santa Margarida do Sul"),
-            ("Rosário do Sul", "São Gabriel"),
-            ("Manoel Viana", "São Gabriel"),
-        ]
+        # A referência visual sugere conexões entre bolhas próximas.
+        # Calculamos dois vizinhos por posição do diagrama, sem atribuir
+        # significado geográfico às linhas e sem manter arestas arbitrárias.
         visible = set(order)
+        edges = set()
+        for origin in order:
+            x1, y1 = position_by_city[origin]
+            closest = sorted(
+                (destination for destination in order if destination != origin),
+                key=lambda destination: (
+                    (x1 - position_by_city[destination][0]) ** 2
+                    + (y1 - position_by_city[destination][1]) ** 2,
+                    destination,
+                ),
+            )
+            for destination in closest[:2]:
+                edges.add(tuple(sorted((origin, destination))))
         lx, ly = [], []
-        for origin, destination in links:
-            if origin in visible and destination in visible:
-                x1, y1 = position_by_city[origin]
-                x2, y2 = position_by_city[destination]
-                lx.extend([x1, x2, None])
-                ly.extend([y1, y2, None])
+        for origin, destination in sorted(edges):
+            x1, y1 = position_by_city[origin]
+            x2, y2 = position_by_city[destination]
+            lx.extend([x1, x2, None])
+            ly.extend([y1, y2, None])
         if lx:
             fig.add_trace(go.Scatter(
                 x=lx, y=ly, mode="lines",
