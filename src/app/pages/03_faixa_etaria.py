@@ -9,7 +9,7 @@ import streamlit as st
 
 from utils.theme import (
     apply_custom_css, page_header, display_chart, export_table,
-    fmt_num, fmt_pct, pct, OCEAN, SKY, ORANGE, NAVY,
+    fmt_num, fmt_pct, pct, style_chart, OCEAN, SKY, ORANGE, NAVY,
 )
 from utils.data_loader import MUNICIPIOS, filtered, sidebar_filters, require, years_label
 
@@ -195,11 +195,11 @@ with a:
             marker=dict(line=dict(color="#FFFFFF", width=3)),
             hovertemplate="%{label}<br>%{value:,.0f} exames<br>%{percent:.2%}<extra></extra>",
         )
-        fig.update_traces(domain=dict(x=[0.18, 0.82], y=[0.08, 0.92]))
+        fig.update_traces(domain=dict(x=[0.08, 0.92], y=[0.04, 0.96]))
         fig.update_layout(
             showlegend=False,
-            height=280,
-            margin=dict(t=8, b=8, l=8, r=8),
+            height=320,
+            margin=dict(t=6, b=6, l=6, r=6),
             annotations=[dict(
                 text=(f"<span style='font-size:32px;color:#006C9A'>{target_percent:.0f}%</span>"
                       "<br><span style='font-size:11px;color:#7C8FA0'>na faixa-alvo</span>")
@@ -210,7 +210,7 @@ with a:
         )
         st.markdown('<div style="font-size:1.12rem;color:#1A3B5C;font-weight:700">Distribuição dos exames</div>'
                     '<div style="color:#7C8FA0;font-size:.77rem">Por grupo etário</div>', unsafe_allow_html=True)
-        display_chart(fig)
+        st.plotly_chart(style_chart(fig, height=320), use_container_width=True)
         legend_rows = []
         for group in donut_order:
             val = pct(sums.get(group, 0), total)
