@@ -238,16 +238,30 @@ with b:
             '<div style="color:#7C8FA0;font-size:.77rem">Percentual (%)</div>',
             unsafe_allow_html=True,
         )
+        # Barras horizontais empilhadas 100%, alinhadas à referência visual.
+        bar_order = ["25–64 anos", "<25 anos", "≥65 anos"]
+        cities_order = list(dict.fromkeys(agg["municipio"].tolist()))
         fig = px.bar(
-            agg, x="municipio", y="percentual", color="grupo", barmode="stack",
-            category_orders={"grupo": labels},
+            agg, x="percentual", y="municipio", color="grupo",
+            orientation="h", barmode="stack",
+            category_orders={"grupo": bar_order, "municipio": cities_order},
             color_discrete_map={"25–64 anos": OCEAN, "<25 anos": SKY, "≥65 anos": ORANGE},
-            labels={"municipio": "Município", "percentual": "Participação (%)", "grupo": "Faixa etária"},
+            labels={"municipio": "", "percentual": "Participação (%)", "grupo": "Faixa etária"},
         )
-        fig.update_yaxes(range=[0, 100], ticksuffix="%")
-        fig.update_xaxes(tickangle=-45)
-        fig.update_traces(hovertemplate="%{x}<br>%{y:.2f}%<extra>%{fullData.name}</extra>")
-        fig.update_layout(margin=dict(l=10, r=8, t=8, b=14), showlegend=True)
+        fig.update_traces(
+            hovertemplate="%{y}<br>%{fullData.name}: %{x:.2f}%<extra></extra>"
+        )
+        fig.update_xaxes(range=[0, 100], dtick=25, ticksuffix="%",
+                         showgrid=True, gridcolor="#e9edf1", title=None)
+        fig.update_yaxes(title=None, autorange="reversed", automargin=True,
+                         tickfont=dict(size=10))
+        fig.update_layout(
+            margin=dict(l=12, r=8, t=8, b=10),
+            legend=dict(orientation="h", yanchor="top", y=-0.12,
+                        xanchor="center", x=0.5, title=None,
+                        font=dict(size=10)),
+            bargap=0.22,
+        )
         st.plotly_chart(style_chart(fig, height=355), use_container_width=True)
 
 st.markdown("""
