@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css, page_header, style_chart, fmt_num, fmt_pct, ORANGE, OCEAN, SKY, NAVY
+from utils.theme import apply_custom_css, page_header, style_chart, display_table, fmt_num, fmt_pct, ORANGE, OCEAN, SKY, NAVY
 from utils.data_loader import filtered, require, sidebar_filters, years_label
 
 st.set_page_config(page_title="Outubro Rosa | SISCAN", layout="wide")
@@ -113,16 +113,8 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         "variacao_pct":"Variação (%)"
     })
     st.markdown(f"#### Dados municipais · {len(table)} municípios")
-    st.dataframe(
-        table, use_container_width=True, hide_index=True,
-        height=min(36 * (len(table) + 1) + 6, 550),
-        column_config={
-            "Variação (%)":st.column_config.NumberColumn("Variação (%)",format="%.2f"),
-            "Exames em setembro":st.column_config.NumberColumn("Exames em setembro",format="%d"),
-            "Exames em outubro":st.column_config.NumberColumn("Exames em outubro",format="%d"),
-            "Diferença (exames)":st.column_config.NumberColumn("Diferença (exames)",format="%d")
-        }
-    )
+    display_table(table, percent_columns=["Variação (%)"],
+                  integer_columns=["Exames em setembro", "Exames em outubro", "Diferença (exames)"])
     st.download_button(
         "⬇️ Exportar CSV", table.to_csv(index=False, sep=";", decimal=",").encode("utf-8-sig"),
         file_name="siscan_outubro_rosa.csv", mime="text/csv"
