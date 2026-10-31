@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,ORANGE,SKY
+from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,ORANGE,SKY
 from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Adequabilidade | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
-st.title("04 · Adequabilidade das amostras")
+page_header("Qualidade da amostra", "Adequabilidade das amostras")
 df=filtered("adequabilidade")
 if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras"]):
     def cat(s):
