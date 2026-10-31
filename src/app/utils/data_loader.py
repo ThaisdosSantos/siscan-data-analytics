@@ -97,6 +97,8 @@ def filtered(table_key):
         return df
     years=selected_years()
     cities=st.session_state.get("city_preference", list(MUNICIPIOS.values()))
+    if not years or not cities:
+        return df.iloc[0:0].copy()
     if "ano" in df:
         df=df[df.ano.isin(years)]
     if "municipio" in df:
@@ -150,6 +152,9 @@ def sidebar_filters():
     st.session_state["years_preference"] = selected_years()
     st.session_state.setdefault("city_preference", cities.copy())
 
+    def set_years(value):
+        st.session_state["years_preference"] = years.copy() if value else []
+
     def toggle_year(year):
         selected = set(st.session_state["years_preference"])
         if year in selected:
@@ -185,9 +190,13 @@ def sidebar_filters():
             st.page_link(path, label=label, icon=icon)
         st.divider()
         st.markdown('<div class="lovable-label">ANO</div>', unsafe_allow_html=True)
-        if st.button("Todos", key="lovable_year_all", use_container_width=True):
-            st.session_state["years_preference"] = years.copy()
-            st.rerun()
+        left_year, right_year = st.columns(2, gap="small")
+        with left_year:
+            st.button("Todos", key="lovable_year_all", use_container_width=True,
+                      on_click=set_years, args=(True,))
+        with right_year:
+            st.button("Limpar", key="lovable_year_clear", use_container_width=True,
+                      on_click=set_years, args=(False,))
         for row in (years[:3], years[3:]):
             cols = st.columns(3, gap="small")
             for col, year in zip(cols, row):
@@ -196,6 +205,7 @@ def sidebar_filters():
                     st.button(str(year) + (" ✓" if active else ""),
                               key=f"lovable_year_{year}", type="primary" if active else "secondary",
                               use_container_width=True, on_click=toggle_year, args=(year,))
+        st.caption(f"Anos selecionados: {years_label()}")
         selected = st.session_state["city_preference"]
         st.markdown(f'<div class="lovable-label">MUNICÍPIOS ({len(selected)}/11)</div>', unsafe_allow_html=True)
         left, right = st.columns(2)
