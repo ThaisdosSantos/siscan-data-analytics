@@ -4,55 +4,66 @@ import io
 import streamlit as st
 import plotly.express as px
 
-NAVY = "#193C5D"
-OCEAN = "#00769B"
-SKY = "#4B9FD7"
-ORANGE = "#ED4C20"
-GRAY = "#E2E2E2"
-LIGHT_BG = "#F6F8FA"
+NAVY = "#1A3B5C"
+OCEAN = "#006C9A"
+SKY = "#4A9FD8"
+ORANGE = "#EE5325"
+GRAY = "#D9D9D9"
+LIGHT_BG = "#F4F6F8"
 PALETTE = [OCEAN, SKY, ORANGE, NAVY]
 
 def apply_custom_css():
-    """Aparência unificada conforme paleta PET-Saúde."""
+    """Estilo inspirado no protótipo siscan_streamlit.zip, com dados Gold preservados."""
     st.markdown("""
     <style>
-    :root {
-      --pet-navy:#193C5D; --pet-ocean:#00769B; --pet-sky:#4B9FD7;
-      --pet-orange:#ED4C20; --pet-gray:#E2E2E2; --pet-light:#F6F8FA;
-    }
-    .block-container {padding-top:1.15rem;max-width:1680px;padding-left:1.7rem;padding-right:1.7rem;}
-    .pet-section-label {font-size:.72rem;font-weight:750;color:#00769B;
-        letter-spacing:.11em;margin:.5rem 0 .55rem;}
-    @media(max-width:900px) {.block-container {padding-left:.8rem;padding-right:.8rem;}}
-    h1,h2,h3,h4 {color:var(--pet-navy)!important;letter-spacing:-.02em;}
-    a {color:var(--pet-ocean);}
-    div[data-testid="stSidebar"] {
-        background:linear-gradient(180deg,#FFFFFF 0%,#F6F8FA 100%);
-        border-right:1px solid var(--pet-gray);
-    }
-    div[data-testid="stSidebar"] h3 {color:var(--pet-navy)!important;}
-    div[data-testid="stMetric"] {
-        background:var(--pet-light);padding:1rem 1.1rem;border-radius:13px;
-        border:1px solid #E6ECF1;border-left:4px solid var(--pet-ocean);
-        min-height:105px;
-    }
-    div[data-testid="stMetricLabel"] {color:var(--pet-navy);}
-    div[data-testid="stMetricValue"] {color:var(--pet-navy);font-weight:650;}
-    .stButton button[kind="primary"],.stDownloadButton button[kind="primary"] {
-        background:var(--pet-orange);border-color:var(--pet-orange);color:#fff;
-    }
-    .stButton button:hover,.stDownloadButton button:hover {
-        border-color:var(--pet-orange);color:var(--pet-orange);
-    }
-    [data-testid="stExpander"] {border-color:var(--pet-gray);border-radius:11px;}
-    div[data-testid="stDataFrame"] {border:1px solid var(--pet-gray);border-radius:10px;}
+    :root {--navy:#1A3B5C;--ocean:#006C9A;--sky:#4A9FD8;
+           --orange:#EE5325;--gray:#D9D9D9;--light:#F4F6F8;}
+    .block-container {padding-top:1.35rem;max-width:1510px;padding-left:2rem;padding-right:2rem;}
+    h1,h2,h3,h4 {color:var(--navy)!important;letter-spacing:-.018em;}
+    h1 {font-size:2rem!important;margin-bottom:.4rem!important;}
+    h3 {font-size:1.2rem!important;}
+    .pet-kicker {color:var(--orange);font-size:.79rem;font-weight:750;
+                 letter-spacing:.12em;text-transform:uppercase;margin-bottom:.35rem;}
+    .pet-note {background:var(--light);border-left:4px solid var(--orange);
+               border-radius:10px;padding:13px 16px;color:var(--navy);
+               margin:10px 0 18px;line-height:1.55;}
+    .pet-highlight {background:var(--light);border-left:4px solid var(--orange);
+                    border-radius:14px;padding:17px 20px;color:var(--navy);
+                    font-size:1.06rem;margin:12px 0 20px;line-height:1.55;}
+    .pet-section-label {color:var(--orange);font-weight:750;letter-spacing:.1em;font-size:.75rem;}
+    [data-testid="stSidebar"] {background:#F4F6F8;border-right:1px solid var(--gray);}
+    [data-testid="stSidebar"] [data-testid="stImage"] {max-width:195px;margin:0 auto;}
+    [data-testid="stSidebar"] h3 {font-size:.94rem!important;}
+    [data-testid="stSidebar"] .stCaption {font-size:.78rem;}
+    [data-testid="stMetric"] {background:var(--light);border:1px solid var(--gray);
+       border-left:4px solid var(--ocean);border-radius:14px;padding:14px 18px;min-height:112px;}
+    [data-testid="stMetricLabel"] {color:var(--navy);font-weight:550;}
+    [data-testid="stMetricValue"] {color:var(--navy);font-weight:700;}
+    [data-testid="stExpander"] {border-color:var(--gray);border-radius:10px;}
+    [data-testid="stDataFrame"] {border:1px solid var(--gray);border-radius:10px;}
+    .stButton button[kind="primary"] {background:var(--ocean);border-color:var(--ocean);color:white;}
+    @media(max-width:850px) {.block-container {padding-left:1rem;padding-right:1rem;}}
     </style>""", unsafe_allow_html=True)
+
+
+def page_header(kicker, title, description=""):
+    """Cabeçalho editorial do protótipo, usado pelas páginas reais."""
+    st.markdown(f'<div class="pet-kicker">{html.escape(str(kicker))}</div>', unsafe_allow_html=True)
+    st.title(title)
+    if description:
+        st.caption(description)
+
+
+def note(message, highlight=False):
+    css = "pet-highlight" if highlight else "pet-note"
+    st.markdown(f'<div class="{css}">{html.escape(str(message))}</div>', unsafe_allow_html=True)
+
 
 def style_chart(fig, height=430, percent=False):
     fig.update_layout(
         template="plotly_white", font=dict(family="Arial", color=NAVY),
         colorway=PALETTE,
-        margin=dict(l=15,r=15,t=45,b=20), height=height,
+        margin=dict(l=15,r=15,t=30,b=20), height=height,
         hoverlabel=dict(bgcolor="white",font_color=NAVY),
         legend_title_text="", paper_bgcolor="rgba(0,0,0,0)")
     fig.update_xaxes(showgrid=False)
