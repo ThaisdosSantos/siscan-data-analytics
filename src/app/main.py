@@ -122,6 +122,32 @@ for col, (label, value, color) in zip(st.columns(4, gap="small"), kpis):
             + html.escape(value) + '</div>' + desc + '</div>',
             unsafe_allow_html=True,
         )
+        if label == "MESES COM REGISTROS":
+            with st.popover("ⓘ Entenda os meses", use_container_width=True):
+                st.markdown("**Por que o número de meses pode ser menor?**")
+                st.write(
+                    f"O recorte possui **{months} meses com registros** de "
+                    f"**{12 * len(selected_years())} meses previstos**."
+                )
+                if 2022 in selected_years():
+                    st.info(
+                        "Agosto de 2022 está ausente da série temporal Gold. "
+                        "Ausência de registro não equivale a zero exames."
+                    )
+                else:
+                    st.caption("A contagem considera os anos e municípios selecionados.")
+        elif label == "EXAMES ALTERADOS":
+            with st.popover("ⓘ Entenda a taxa", use_container_width=True):
+                st.markdown("**O que representa o percentual?**")
+                st.write(
+                    "Proporção operacional de exames classificados como alterados "
+                    "em relação ao denominador informado como válido na tabela Gold Q5."
+                )
+                st.warning(
+                    "Não foi possível confirmar a exclusão de todas as amostras "
+                    "rejeitadas ou insatisfatórias do denominador. "
+                    "Não é indicador clínico validado nem cobertura populacional."
+                )
 
 # Ausência de registro não é equivalente a zero.
 calendar = pd.DatetimeIndex([d for d in year_month_index() if d.year in selected_years()])
