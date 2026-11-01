@@ -63,6 +63,16 @@ st.markdown("""
   .exec-warning{padding:11px 12px;}
   .exec-links{min-height:76px;}
 }
+
+/* KPIs da Visão Executiva: paleta PET-Saúde. */
+.exec-metric {background:#F4F6F8;border-color:#dae4ec;color:#1A3B5C;}
+.exec-metric.blue {background:#006C9A;border-color:#006C9A;color:white;}
+.exec-metric.orange {background:#EE5325;border-color:#EE5325;color:white;}
+.exec-metric.blue .exec-metric-label,
+.exec-metric.orange .exec-metric-label,
+.exec-metric.blue .exec-metric-value,
+.exec-metric.orange .exec-metric-value {color:white;}
+.exec-metric.orange .exec-metric-desc {color:#ffe5dc;}
 </style>
 """, unsafe_allow_html=True)
 
