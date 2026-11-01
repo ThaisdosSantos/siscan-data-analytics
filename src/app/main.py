@@ -64,32 +64,6 @@ st.markdown("""
   .exec-links{min-height:76px;}
 }
 
-
-/* Visão executiva: hierarquia de leitura e cartões editoriais. */
-.exec-section-heading{display:flex;align-items:end;justify-content:space-between;
-  margin:26px 0 13px;gap:14px;}
-.exec-eyebrow{display:block;font-size:.66rem;letter-spacing:.18em;
-  color:#006C9A;font-weight:800;margin-bottom:4px;}
-.exec-section-heading h2{font-family:Fraunces,Georgia,serif!important;
-  font-size:clamp(1.25rem,2.5vw,1.75rem);margin:0!important;line-height:1.25;}
-.exec-section-heading p{color:#788da1;font-size:.81rem;margin:5px 0 0;}
-.exec-insight{background:#fff;border:1px solid #e0e9ef;border-radius:13px;
-  padding:17px 18px;min-height:119px;box-shadow:0 4px 16px rgba(26,59,92,.045);}
-.exec-insight-label{font-size:.66rem;font-weight:800;color:#72869c;letter-spacing:.09em;}
-.exec-insight-value{font-family:Fraunces,Georgia,serif;color:#1A3B5C;
-  font-size:clamp(1.2rem,2.1vw,1.75rem);line-height:1.4;margin:4px 0;}
-.exec-insight-desc{color:#8093a5;font-size:.73rem;line-height:1.4;}
-.st-key-exec-ranking-card,.st-key-exec-month-card{background:#fff!important;
-  border:1px solid #dfe7ee!important;border-radius:15px!important;
-  padding:14px!important;min-width:0;}
-.st-key-exec-ranking-card [data-testid="stPlotlyChart"],
-.st-key-exec-month-card [data-testid="stPlotlyChart"]{border:0!important;
-  box-shadow:none!important;padding:0!important;background:transparent!important;}
-.exec-next-heading{margin-top:26px;}
-@media(max-width:700px){.exec-section-heading{margin-top:19px}
-  .exec-insight{min-height:94px;padding:13px 15px;}
-  .exec-section-heading p{font-size:.75rem;}}
-
 /* Ajuda compacta dentro dos KPIs, sem botões adicionais abaixo. */
 .exec-metric {position:relative;overflow:visible;}
 .exec-metric-help {position:absolute;right:12px;top:12px;z-index:10;}
@@ -181,128 +155,103 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-# Resumo executivo derivado exclusivamente do recorte temporal corrente.
-by_city = (df.groupby("municipio", as_index=False)["quantidade"]
-           .sum(min_count=1).sort_values("quantidade", ascending=False))
-valid_series = series.dropna()
-peak_date = valid_series.idxmax() if not valid_series.empty else None
-peak_value = float(valid_series.max()) if not valid_series.empty else None
-top_city = by_city.iloc[0] if not by_city.empty else None
-total_value = float(total) if pd.notna(total) else 0
-top_share = pct(top_city["quantidade"], total_value) if top_city is not None else float("nan")
-
-st.markdown('<div class="exec-section-heading"><div><span class="exec-eyebrow">O QUE OS DADOS REVELAM</span>'
-            '<h2>Retrato do período selecionado</h2>'
-            '<p>Uma síntese para identificar evolução e concentração dos registros.</p></div></div>',
-            unsafe_allow_html=True)
-insights = [
-    ("MAIOR VOLUME MUNICIPAL", str(top_city["municipio"]) if top_city is not None else "N/D",
-     f"{fmt_pct(top_share)} dos exames do recorte" if pd.notna(top_share) else "Sem registros"),
-    ("PICO MENSAL", peak_date.strftime("%m/%Y") if peak_date is not None else "N/D",
-     f"{fmt_num(peak_value)} exames registrados" if peak_value is not None else "Sem registros"),
-    ("LEITURA DOS DADOS", f"{months} competências",
-     "Exames registrados, não pessoas únicas"),
-]
-for col, (label, value, desc) in zip(st.columns(3, gap="small"), insights):
-    with col:
-        st.markdown(
-            '<div class="exec-insight"><div class="exec-insight-label">' + html.escape(label)
-            + '</div><div class="exec-insight-value">' + html.escape(value)
-            + '</div><div class="exec-insight-desc">' + html.escape(desc)
-            + '</div></div>', unsafe_allow_html=True
-        )
-
-st.markdown('<div class="exec-section-heading"><div><span class="exec-eyebrow">ANÁLISE EXPLORATÓRIA</span>'
-            '<h2>Como os exames se distribuem?</h2>'
-            '<p>Evolução mensal e participação dos municípios nos registros.</p></div></div>',
-            unsafe_allow_html=True)
-
-left, right = st.columns([1.45, 1], gap="medium")
+left, right = st.columns([1, 1.45], gap="medium")
 with left:
+    with st.container(border=True, key="exec-bubble-card"):
+        st.markdown('<div class="exec-card-title">Visualização territorial</div>'
+                    '<div class="exec-card-sub">Bolhas proporcionais ao volume de exames</div>',
+                    unsafe_allow_html=True)
+        city = (df.groupby("municipio", as_index=False)["quantidade"]
+                .sum(min_count=1).sort_values("municipio"))
+        # Coordenadas fixas e regra de conexões do diagrama territorial.
+        # Uma aresta existe para cada par com distância euclidiana < 34.
+        # São posições visuais, não coordenadas geográficas.
+        territories = [
+            ("Uruguaiana", 12, 46),
+            ("Alegrete", 42, 40),
+            ("Sant'Ana do Livramento", 50, 84),
+            ("São Gabriel", 82, 44),
+            ("Itaqui", 20, 16),
+            ("Rosário do Sul", 66, 62),
+            ("Quaraí", 26, 76),
+            ("Manoel Viana", 54, 18),
+            ("Barra do Quaraí", 6, 70),
+            ("Santa Margarida do Sul", 90, 66),
+            ("Maçambará", 34, 8),
+        ]
+        totals = city.set_index("municipio")["quantidade"]
+        visible = set(totals.index)
+        selected = set(st.session_state.get("city_preference", list(MUNICIPIOS.values())))
+        fig = go.Figure()
+
+        # A rede é independente da seleção; apenas a cor indica desativação.
+        xs, ys = [], []
+        for i, (_, ax, ay) in enumerate(territories):
+            for _, bx, by in territories[i + 1:]:
+                if ((ax - bx)**2 + (ay - by)**2)**0.5 < 34:
+                    xs.extend([ax, bx, None])
+                    ys.extend([ay, by, None])
+        fig.add_trace(go.Scatter(
+            x=xs, y=ys, mode="lines", showlegend=False, hoverinfo="skip",
+            line=dict(color="#d7e0e8", width=1.0),
+        ))
+
+        # O tamanho reflete os volumes da Gold. Círculos desativados ficam esmaecidos.
+        max_vol = max(1, float(totals.max()) if not totals.empty else 1)
+        for municipality, x, y in territories:
+            volume = float(totals.loc[municipality]) if municipality in visible else 0.0
+            enabled = municipality in selected
+            radius = 2.5 + (volume / max_vol)**0.5 * 11
+            size = radius * 6.2
+            fig.add_trace(go.Scatter(
+                x=[x], y=[y], mode="markers",
+                marker=dict(
+                    size=size,
+                    color="rgba(0,108,154,0.25)" if enabled else "rgba(160,175,190,0.20)",
+                    line=dict(color=OCEAN if enabled else "#b9c4cf", width=1.2),
+                ),
+                customdata=[[municipality, volume]],
+                hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,.0f} exames<extra></extra>",
+                showlegend=False,
+            ))
+            fig.add_trace(go.Scatter(
+                x=[x], y=[y], mode="markers",
+                marker=dict(size=6, color=ORANGE if enabled else "#9daeba"),
+                hoverinfo="skip", showlegend=False,
+            ))
+
+        fig.update_xaxes(visible=False, range=[-9, 109], fixedrange=True,
+                         constrain="domain")
+        # SVG original usa origem no canto superior esquerdo.
+        fig.update_yaxes(visible=False, range=[109, -9], fixedrange=True,
+                         scaleanchor="x", scaleratio=1)
+        fig.update_layout(
+            height=330, margin=dict(l=3, r=3, t=5, b=5),
+            plot_bgcolor="#f4f6f8", paper_bgcolor="rgba(0,0,0,0)",
+            hoverlabel=dict(bgcolor="white", font_color=NAVY),
+        )
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.caption("Passe o mouse sobre uma bolha para consultar o município.")
+
+with right:
     with st.container(border=True, key="exec-month-card"):
-        st.markdown('<div class="exec-card-title">Evolução mensal</div>'
-                    '<div class="exec-card-sub">Quantidade de exames por competência · meses sem registro não são zero</div>',
+        st.markdown('<div class="exec-card-title">Evolução mensal de exames</div>'
+                    '<div class="exec-card-sub">Competência × exames registrados</div>',
                     unsafe_allow_html=True)
         fig = go.Figure(go.Scatter(
             x=calendar, y=series, mode="lines",
-            line=dict(color=OCEAN, width=2.5, shape="spline", smoothing=.35),
-            fill="tozeroy", fillcolor="rgba(0,108,154,.10)",
+            line=dict(color=OCEAN, width=2),
+            fill="tozeroy", fillcolor="rgba(0,108,154,.08)",
             connectgaps=False,
-            hovertemplate="%{x|%m/%Y}<br><b>%{y:,.0f} exames</b><extra></extra>",
+            hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>",
         ))
         fig.update_layout(height=370, showlegend=False,
-                          margin=dict(l=10,r=12,t=25,b=20),
-                          plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)",
-                          font=dict(color=NAVY, size=11),
-                          hoverlabel=dict(bgcolor="white",font_color=NAVY))
-        fig.update_yaxes(gridcolor="#eef2f6", rangemode="tozero", zeroline=False)
+                          margin=dict(l=14,r=10,t=22,b=20),
+                          plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)")
+        fig.update_yaxes(gridcolor="#e9eff3", rangemode="tozero")
         fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-with right:
-    with st.container(border=True, key="exec-ranking-card"):
-        st.markdown('<div class="exec-card-title">Municípios em destaque</div>'
-                    '<div class="exec-card-sub">Volume de exames registrados · comparação absoluta</div>',
-                    unsafe_allow_html=True)
-        ranked = by_city.sort_values("quantidade", ascending=True)
-        fig = go.Figure(go.Bar(
-            x=ranked["quantidade"], y=ranked["municipio"],
-            orientation="h", marker=dict(color=OCEAN, line=dict(width=0)),
-            hovertemplate="%{y}<br><b>%{x:,.0f} exames</b><extra></extra>",
-        ))
-        fig.update_layout(height=370, showlegend=False,
-                          margin=dict(l=8,r=15,t=25,b=15), bargap=.38,
-                          plot_bgcolor="white",paper_bgcolor="rgba(0,0,0,0)",
-                          font=dict(color=NAVY, size=10),
-                          hoverlabel=dict(bgcolor="white",font_color=NAVY))
-        fig.update_yaxes(automargin=True, showgrid=False, title=None, tickfont=dict(size=10))
-        fig.update_xaxes(showgrid=True, gridcolor="#eef2f6", zeroline=False, title=None)
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-
-st.markdown('<div class="exec-section-heading exec-next-heading"><div>'
-            '<span class="exec-eyebrow">EXPLORAR O TERRITÓRIO</span><h2>Distribuição territorial ilustrativa</h2>'
-            '<p>Os círculos representam os volumes; as conexões são apenas visuais, não geográficas.</p>'
-            '</div></div>', unsafe_allow_html=True)
-with st.expander("Visualizar rede de bolhas dos 11 municípios", expanded=False):
-    city = by_city
-    territories = [
-        ("Uruguaiana",12,46),("Alegrete",42,40),("Sant'Ana do Livramento",50,84),
-        ("São Gabriel",82,44),("Itaqui",20,16),("Rosário do Sul",66,62),
-        ("Quaraí",26,76),("Manoel Viana",54,18),("Barra do Quaraí",6,70),
-        ("Santa Margarida do Sul",90,66),("Maçambará",34,8),
-    ]
-    totals = city.set_index("municipio")["quantidade"]
-    selected = set(st.session_state.get("city_preference", list(MUNICIPIOS.values())))
-    fig = go.Figure()
-    xs,ys=[],[]
-    for idx,(_,ax,ay) in enumerate(territories):
-        for _,bx,by in territories[idx+1:]:
-            if ((ax-bx)**2+(ay-by)**2)**.5 < 34:
-                xs.extend([ax,bx,None])
-                ys.extend([ay,by,None])
-    fig.add_trace(go.Scatter(x=xs,y=ys,mode="lines",hoverinfo="skip",showlegend=False,
-                             line=dict(color="#d7e0e8",width=1)))
-    max_vol = max(1, float(totals.max()) if not totals.empty else 1)
-    for municipality,x,y in territories:
-        volume=float(totals.loc[municipality]) if municipality in totals.index else 0
-        active=municipality in selected
-        size=(2.5+(volume/max_vol)**.5*11)*6.2
-        fig.add_trace(go.Scatter(
-            x=[x],y=[y],mode="markers",showlegend=False,
-            marker=dict(size=size,color="rgba(0,108,154,.25)" if active else "rgba(160,175,190,.2)",
-                        line=dict(color=OCEAN if active else "#b9c4cf",width=1.2)),
-            customdata=[[municipality,volume]],
-            hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,.0f} exames<extra></extra>"
-        ))
-        fig.add_trace(go.Scatter(x=[x],y=[y],mode="markers",showlegend=False,
-                                 marker=dict(size=6,color=ORANGE if active else "#9daeba"),
-                                 hoverinfo="skip"))
-    fig.update_xaxes(visible=False,range=[-9,109],fixedrange=True,constrain="domain")
-    fig.update_yaxes(visible=False,range=[109,-9],fixedrange=True,scaleanchor="x",scaleratio=1)
-    fig.update_layout(height=370,margin=dict(l=4,r=4,t=5,b=5),
-                      plot_bgcolor="#f4f6f8",paper_bgcolor="rgba(0,0,0,0)")
-    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 # Três cartões de navegação completos: link nativo sobre toda a área do cartão.
 st.markdown("""
 <style>
