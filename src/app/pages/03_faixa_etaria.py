@@ -123,7 +123,9 @@ st.markdown("""
 .q3-section {margin:2.1rem 0 1rem;padding-bottom:12px;border-bottom:2px solid #006C9A;}
 .q3-section strong {font-size:1.12rem;color:#1A3B5C;}
 .q3-section p {font-size:.86rem;color:#516476;margin:8px 0 0;line-height:1.65;}
-div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff;}
+div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff!important;}
+[data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(2) [data-testid="stMetric"] {border-left-color:#EE5325!important;}
+[data-testid="stHorizontalBlock"] > [data-testid="stColumn"] [data-testid="stMetric"] [data-testid="stMetricLabel"], [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] [data-testid="stMetric"] [data-testid="stMetricValue"] {color:#1A3B5C!important;}
 </style>
 """, unsafe_allow_html=True)
 
