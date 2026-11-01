@@ -101,6 +101,39 @@ def apply_custom_css():
     [data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"] {background:#006c9a!important;border-color:#4a9fd8!important;}
     .pet-hero {min-height:185px;padding-bottom:75px;}
     [data-testid="stMetricValue"] {font-size:1.85rem;}
+
+    /* Responsividade compartilhada — desktop, tablet e smartphone. */
+    *, *::before, *::after {box-sizing:border-box;}
+    [data-testid="stAppViewContainer"], .block-container {min-width:0;}
+    .block-container {width:100%;max-width:1480px;margin:0 auto;}
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {min-width:0;}
+    [data-testid="stPlotlyChart"],[data-testid="stPlotlyChart"] > div {max-width:100%;min-width:0;}
+    [data-testid="stImage"] img {max-width:100%;height:auto;}
+    .pet-hero-title,.pet-hero-desc,.exec-title,.exec-sub {overflow-wrap:anywhere;}
+    .pet-table-scroller,.q3-matrix-scroll {max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    @media (max-width:1100px) {
+      .block-container {padding:1.1rem 1.2rem 2rem;}
+      [data-testid="stSidebar"] {width:min(300px,85vw)!important;min-width:0!important;}
+    }
+    @media (max-width:768px) {
+      .block-container {padding:0.85rem 0.8rem 2rem;}
+      .pet-hero {padding:23px 20px 42px;min-height:0;margin-bottom:0;}
+      .pet-hero-title {font-size:clamp(1.55rem,6vw,2.2rem);}
+      .pet-hero-desc {font-size:.84rem;}
+      [data-testid="stMetric"] {min-height:100px;padding:14px 15px;}
+      [data-testid="stMetricValue"] {font-size:clamp(1.35rem,5vw,1.85rem)!important;}
+      [data-testid="stPlotlyChart"] {padding:5px;border-radius:12px;}
+      .stDownloadButton button {max-width:100%;white-space:normal;}
+      .pet-table th,.pet-table td,.q3-matrix th,.q3-matrix td {padding:10px 9px;}
+    }
+    @media (max-width:480px) {
+      .block-container {padding:0.65rem 0.55rem 2rem;}
+      .pet-hero {padding:18px 15px 28px;}
+      .pet-hero-title {font-size:1.55rem;}
+      [data-testid="stSidebar"] {width:min(300px,92vw)!important;}
+      [data-testid="stSidebar"] [data-testid="stButton"] button {min-height:42px;}
+      [data-testid="stPageLink"] a {overflow-wrap:anywhere;}
+    }
     </style>""", unsafe_allow_html=True)
 
 
