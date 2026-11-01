@@ -134,50 +134,6 @@ def apply_custom_css():
       [data-testid="stSidebar"] [data-testid="stButton"] button {min-height:42px;}
       [data-testid="stPageLink"] a {overflow-wrap:anywhere;}
     }
-
-    /* Filtros laterais: hierarquia visual, ações neutras e seleção compacta. */
-    [data-testid="stSidebar"] .filter-panel-heading {
-      display:flex;justify-content:space-between;align-items:center;
-      color:#b6d2e6!important;font-size:.68rem;font-weight:800;
-      letter-spacing:.13em;text-transform:uppercase;
-      margin:24px 0 12px;padding:12px 0 0;border-top:1px solid #416380;
-    }
-    [data-testid="stSidebar"] .filter-panel-heading span{
-      letter-spacing:0;text-transform:none;color:#eaf6ff!important;
-      background:#295574;border:1px solid #406e8a;padding:4px 8px;border-radius:7px;
-      font-size:.70rem;
-    }
-    [data-testid="stSidebar"] .filter-selection-note{
-      margin:10px 0 16px;font-size:.72rem;color:#b5cadc!important;line-height:1.45;
-    }
-    [data-testid="stSidebar"] [data-testid="stButton"] button{
-      background:#254969!important;border:1px solid #456986!important;
-      color:#e8f4fd!important;border-radius:9px!important;min-height:36px!important;
-      font-weight:600;box-shadow:none!important;
-      transition:background .15s,border-color .15s;
-    }
-    [data-testid="stSidebar"] [data-testid="stButton"] button:hover{
-      background:#305b7d!important;border-color:#72a0bd!important;
-    }
-    [data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"]{
-      background:#0577a9!important;border-color:#299dcb!important;
-      color:white!important;
-    }
-    [data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"]:hover{
-      background:#0687bd!important;
-    }
-    [data-testid="stSidebar"] [data-testid="stMultiSelect"]{
-      border-radius:10px;
-    }
-    [data-testid="stSidebar"] [data-testid="stMultiSelect"] [data-baseweb="select"]{
-      max-height:120px;overflow-y:auto;border-radius:9px;
-    }
-    [data-testid="stSidebar"] [data-testid="stMultiSelect"] [data-baseweb="tag"]{
-      background:#0b6e9d!important;color:#fff!important;border-radius:6px;
-    }
-    [data-testid="stSidebar"] [data-testid="stMultiSelect"] input{
-      min-width:80px!important;
-    }
     </style>""", unsafe_allow_html=True)
 
 
