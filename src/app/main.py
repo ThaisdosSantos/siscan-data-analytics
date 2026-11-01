@@ -64,15 +64,19 @@ st.markdown("""
   .exec-links{min-height:76px;}
 }
 
-/* KPIs da Visão Executiva: paleta PET-Saúde. */
-.exec-metric {background:#F4F6F8;border-color:#dae4ec;color:#1A3B5C;}
-.exec-metric.blue {background:#006C9A;border-color:#006C9A;color:white;}
-.exec-metric.orange {background:#EE5325;border-color:#EE5325;color:white;}
-.exec-metric.blue .exec-metric-label,
-.exec-metric.orange .exec-metric-label,
-.exec-metric.blue .exec-metric-value,
-.exec-metric.orange .exec-metric-value {color:white;}
-.exec-metric.orange .exec-metric-desc {color:#ffe5dc;}
+/* Cartões executivos: fundo branco e traço de destaque lateral. */
+.exec-metric,.exec-metric.blue,.exec-metric.orange{
+  background:#fff!important;color:#1A3B5C!important;
+  border:1px solid #e2e8ee!important;border-left:5px solid #006C9A!important;
+  border-radius:10px;height:124px;box-sizing:border-box;
+  box-shadow:0 3px 12px rgba(26,59,92,.07);
+}
+.exec-metric.orange{border-left-color:#EE5325!important;}
+.exec-metric .exec-metric-label,.exec-metric.blue .exec-metric-label,
+.exec-metric.orange .exec-metric-label{color:#60758a!important;}
+.exec-metric .exec-metric-value,.exec-metric.blue .exec-metric-value,
+.exec-metric.orange .exec-metric-value{color:#1A3B5C!important;}
+.exec-metric-desc,.exec-metric.orange .exec-metric-desc{color:#8192a5!important;}
 </style>
 """, unsafe_allow_html=True)
 
