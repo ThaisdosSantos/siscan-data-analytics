@@ -64,6 +64,14 @@ st.markdown("""
   .exec-links{min-height:76px;}
 }
 
+
+.st-key-exec-ranking-card [data-testid="stPlotlyChart"]{
+  border:none!important;box-shadow:none!important;padding:0!important;background:transparent!important;
+}
+.st-key-exec-ranking-card {border-radius:14px!important;background:white!important;}
+@media (max-width:768px) {
+  .st-key-exec-ranking-card,.st-key-exec-month-card {min-width:0;}
+}
 /* Ajuda compacta dentro dos KPIs, sem botões adicionais abaixo. */
 .exec-metric {position:relative;overflow:visible;}
 .exec-metric-help {position:absolute;right:12px;top:12px;z-index:10;}
@@ -151,162 +159,54 @@ audit = ("Competências sem registros: " + ", ".join(missing) + ". " if missing 
 st.markdown(
     '<div class="exec-warning">⚠️ <b>Auditoria temporal:</b> '
     + html.escape(audit)
+    + 'Os ' + html.escape(fmt_num(total)) + ' exames são procedimentos registrados em '
+    + str(months) + ' competências, não mulheres únicas rastreadas. '
     + 'A taxa de alteração é uma estimativa operacional, não um indicador clínico validado.</div>',
     unsafe_allow_html=True,
 )
 
-left, right = st.columns([1, 1.45], gap="medium")
+st.markdown(
+    '<div style="margin:20px 0 12px;color:#1A3B5C;font-weight:750;font-size:1.1rem">'
+    'Panorama executivo do período</div>',
+    unsafe_allow_html=True,
+)
+city = (df.groupby("municipio", as_index=False)["quantidade"]
+        .sum(min_count=1).sort_values("quantidade", ascending=True))
+left, right = st.columns([3, 2], gap="medium")
 with left:
-    with st.container(border=True, key="exec-bubble-card"):
-        st.markdown('<div class="exec-card-title">Visualização territorial</div>'
-                    '<div class="exec-card-sub">Bolhas proporcionais ao volume de exames</div>',
-                    unsafe_allow_html=True)
-        city = (df.groupby("municipio", as_index=False)["quantidade"]
-                .sum(min_count=1).sort_values("municipio"))
-        # Coordenadas fixas e regra de conexões do diagrama territorial.
-        # Uma aresta existe para cada par com distância euclidiana < 34.
-        # São posições visuais, não coordenadas geográficas.
-        territories = [
-            ("Uruguaiana", 12, 46),
-            ("Alegrete", 42, 40),
-            ("Sant'Ana do Livramento", 50, 84),
-            ("São Gabriel", 82, 44),
-            ("Itaqui", 20, 16),
-            ("Rosário do Sul", 66, 62),
-            ("Quaraí", 26, 76),
-            ("Manoel Viana", 54, 18),
-            ("Barra do Quaraí", 6, 70),
-            ("Santa Margarida do Sul", 90, 66),
-            ("Maçambará", 34, 8),
-        ]
-        totals = city.set_index("municipio")["quantidade"]
-        visible = set(totals.index)
-        selected = set(st.session_state.get("city_preference", list(MUNICIPIOS.values())))
-        fig = go.Figure()
-
-        # A rede é independente da seleção; apenas a cor indica desativação.
-        xs, ys = [], []
-        for i, (_, ax, ay) in enumerate(territories):
-            for _, bx, by in territories[i + 1:]:
-                if ((ax - bx)**2 + (ay - by)**2)**0.5 < 34:
-                    xs.extend([ax, bx, None])
-                    ys.extend([ay, by, None])
-        fig.add_trace(go.Scatter(
-            x=xs, y=ys, mode="lines", showlegend=False, hoverinfo="skip",
-            line=dict(color="#d7e0e8", width=1.0),
-        ))
-
-        # O tamanho reflete os volumes da Gold. Círculos desativados ficam esmaecidos.
-        max_vol = max(1, float(totals.max()) if not totals.empty else 1)
-        for municipality, x, y in territories:
-            volume = float(totals.loc[municipality]) if municipality in visible else 0.0
-            enabled = municipality in selected
-            radius = 2.5 + (volume / max_vol)**0.5 * 11
-            size = radius * 6.2
-            fig.add_trace(go.Scatter(
-                x=[x], y=[y], mode="markers",
-                marker=dict(
-                    size=size,
-                    color="rgba(0,108,154,0.25)" if enabled else "rgba(160,175,190,0.20)",
-                    line=dict(color=OCEAN if enabled else "#b9c4cf", width=1.2),
-                ),
-                customdata=[[municipality, volume]],
-                hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,.0f} exames<extra></extra>",
-                showlegend=False,
-            ))
-            fig.add_trace(go.Scatter(
-                x=[x], y=[y], mode="markers",
-                marker=dict(size=6, color=ORANGE if enabled else "#9daeba"),
-                hoverinfo="skip", showlegend=False,
-            ))
-
-        fig.update_xaxes(visible=False, range=[-9, 109], fixedrange=True,
-                         constrain="domain")
-        # SVG original usa origem no canto superior esquerdo.
-        fig.update_yaxes(visible=False, range=[109, -9], fixedrange=True,
-                         scaleanchor="x", scaleratio=1)
-        fig.update_layout(
-            height=330, margin=dict(l=3, r=3, t=5, b=5),
-            plot_bgcolor="#f4f6f8", paper_bgcolor="rgba(0,0,0,0)",
-            hoverlabel=dict(bgcolor="white", font_color=NAVY),
-        )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-        st.caption("Passe o mouse sobre uma bolha para consultar o município.")
-
-with right:
     with st.container(border=True, key="exec-month-card"):
         st.markdown('<div class="exec-card-title">Evolução mensal de exames</div>'
                     '<div class="exec-card-sub">Competência × exames registrados</div>',
                     unsafe_allow_html=True)
         fig = go.Figure(go.Scatter(
             x=calendar, y=series, mode="lines",
-            line=dict(color=OCEAN, width=2),
-            fill="tozeroy", fillcolor="rgba(0,108,154,.08)",
+            line=dict(color=OCEAN, width=2.3),
+            fill="tozeroy", fillcolor="rgba(0,108,154,.09)",
             connectgaps=False,
             hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>",
         ))
-        fig.update_layout(height=370, showlegend=False,
-                          margin=dict(l=14,r=10,t=22,b=20),
-                          plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)")
+        fig.update_layout(height=445, showlegend=False,
+                          margin=dict(l=15, r=12, t=25, b=22),
+                          plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)",
+                          font=dict(color=NAVY))
         fig.update_yaxes(gridcolor="#e9eff3", rangemode="tozero")
         fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-# Três cartões de navegação completos: link nativo sobre toda a área do cartão.
-st.markdown("""
-<style>
-.exec-nav-subtitle{color:#72879d;font-size:.76rem;margin-top:1px;pointer-events:none;line-height:1.35;}
-.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados{
-  position:relative;background:#fff;border:1px solid #d7dde3;border-radius:13px;
-  padding:15px 16px;min-height:78px;box-shadow:0 3px 9px rgba(26,59,92,.07);
-  transition:border-color .15s,box-shadow .15s,transform .15s;
-}
-.st-key-exec-nav-panorama:hover,.st-key-exec-nav-outubro:hover,.st-key-exec-nav-alterados:hover{
-  border-color:#EE5325;box-shadow:0 7px 20px rgba(26,59,92,.13);transform:translateY(-1px);
-}
-.st-key-exec-nav-panorama [data-testid="stPageLink"] a,
-.st-key-exec-nav-outubro [data-testid="stPageLink"] a,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a{
-  position:static!important;display:block!important;color:#1A3B5C!important;
-  text-decoration:none!important;font-family:Fraunces,Georgia,serif;
-  font-size:1rem;font-weight:650;line-height:1.3;
-  padding:0!important;margin:0!important;background:transparent!important;
-}
-.st-key-exec-nav-panorama [data-testid="stPageLink"] a::after,
-.st-key-exec-nav-outubro [data-testid="stPageLink"] a::after,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a::after {
-  content:"";position:absolute;inset:0;z-index:2;cursor:pointer;
-}
-.st-key-exec-nav-panorama::after,.st-key-exec-nav-outubro::after,
-.st-key-exec-nav-alterados::after{
-  content:"→";position:absolute;right:16px;top:50%;
-  transform:translateY(-50%);color:#EE5325;font-size:1.35rem;
-  font-weight:500;pointer-events:none;
-}
-.st-key-exec-nav-panorama [data-testid="stPageLink"] a,
-.st-key-exec-nav-outubro [data-testid="stPageLink"] a,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a {
-  padding-right:35px!important;
-}
-.st-key-exec-nav-panorama [data-testid="stPageLink"],
-.st-key-exec-nav-outubro [data-testid="stPageLink"],
-.st-key-exec-nav-alterados [data-testid="stPageLink"] {margin:0!important;}
-.st-key-exec-nav-panorama .stCaptionContainer,
-.st-key-exec-nav-outubro .stCaptionContainer,
-.st-key-exec-nav-alterados .stCaptionContainer{margin-top:2px!important;}
-</style>
-""", unsafe_allow_html=True)
-nav = [
-    ("Panorama geral", "Volume por competência e município",
-     "pages/01_panorama_geral.py", "exec-nav-panorama"),
-    ("Outubro Rosa", "Setembro × outubro e meses seguintes",
-     "pages/02_outubro_rosa.py", "exec-nav-outubro"),
-    ("Exames alterados", "Pico de alterações por faixa etária",
-     "pages/05_exames_alterados.py", "exec-nav-alterados"),
-]
-for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), nav):
-    with col:
-        with st.container(key=key):
-            st.page_link(page, label=title, use_container_width=True)
-            st.markdown('<div class="exec-nav-subtitle">' + html.escape(subtitle)
-                        + '</div>', unsafe_allow_html=True)
+with right:
+    with st.container(border=True, key="exec-ranking-card"):
+        st.markdown('<div class="exec-card-title">Volume por município</div>'
+                    '<div class="exec-card-sub">11 municípios da 10ª CRS · exames registrados</div>',
+                    unsafe_allow_html=True)
+        fig = go.Figure(go.Bar(
+            x=city["quantidade"], y=city["municipio"], orientation="h",
+            marker=dict(color=OCEAN),
+            hovertemplate="%{y}<br>%{x:,.0f} exames<extra></extra>",
+        ))
+        fig.update_layout(height=445, showlegend=False,
+                          margin=dict(l=8, r=18, t=25, b=22),
+                          plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)",
+                          font=dict(color=NAVY, size=10), bargap=.28)
+        fig.update_yaxes(automargin=True, showgrid=False, title=None)
+        fig.update_xaxes(gridcolor="#e9eff3", title=None, rangemode="tozero")
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
