@@ -64,6 +64,18 @@ st.markdown("""
   .exec-links{min-height:76px;}
 }
 
+/* Ajuda compacta dentro dos KPIs, sem botões adicionais abaixo. */
+.exec-metric {position:relative;overflow:visible;}
+.exec-metric-help {position:absolute;right:12px;top:12px;z-index:10;}
+.exec-metric-help summary {list-style:none;cursor:pointer;display:grid;place-items:center;
+  width:21px;height:21px;border-radius:50%;border:1px solid #90a7b9;
+  color:#43647f;font:bold 13px Arial,sans-serif;background:#f3f7fa;}
+.exec-metric-help summary::-webkit-details-marker {display:none;}
+.exec-metric-help summary:focus-visible {outline:2px solid #006C9A;outline-offset:3px;}
+.exec-metric-tip {position:absolute;right:0;top:28px;width:min(255px,70vw);
+  padding:11px 13px;border:1px solid #d8e3eb;border-radius:9px;
+  background:#fff;color:#1A3B5C;font:500 .77rem/1.55 Manrope,Arial,sans-serif;
+  box-shadow:0 8px 24px rgba(26,59,92,.2);z-index:20;}
 /* Cartões executivos: fundo branco e traço de destaque lateral. */
 .exec-metric,.exec-metric.blue,.exec-metric.orange{
   background:#fff!important;color:#1A3B5C!important;
@@ -116,38 +128,27 @@ kpis = [
 for col, (label, value, color) in zip(st.columns(4, gap="small"), kpis):
     with col:
         desc = '<div class="exec-metric-desc">Estimativa operacional</div>' if color == "orange" else ""
+        hint = ""
+        if label == "MESES COM REGISTROS":
+            explanation = (
+                "Agosto/2022 está ausente da série Gold. "
+                "Ausência de registro não significa zero exames."
+                if 2022 in selected_years()
+                else "A contagem considera os meses com registros nos anos e municípios selecionados."
+            )
+            hint = ('<details class="exec-metric-help"><summary aria-label="Explicação sobre os meses" title="Entenda os meses">!</summary>'
+                    '<div class="exec-metric-tip">' + html.escape(explanation) + '</div></details>')
+        elif label == "EXAMES ALTERADOS":
+            hint = ('<details class="exec-metric-help"><summary aria-label="Explicação sobre exames alterados" title="Entenda a taxa">!</summary>'
+                    '<div class="exec-metric-tip">Estimativa operacional de exames alterados. '
+                    'O denominador pode incluir amostras inadequadas; não é indicador clínico validado.</div></details>')
         st.markdown(
             '<div class="exec-metric ' + color + '"><div class="exec-metric-label">'
-            + html.escape(label) + '</div><div class="exec-metric-value">'
-            + html.escape(value) + '</div>' + desc + '</div>',
+            + html.escape(label) + '</div>' + hint
+            + '<div class="exec-metric-value">' + html.escape(value)
+            + '</div>' + desc + '</div>',
             unsafe_allow_html=True,
         )
-        if label == "MESES COM REGISTROS":
-            with st.popover("ⓘ Entenda os meses", use_container_width=True):
-                st.markdown("**Por que o número de meses pode ser menor?**")
-                st.write(
-                    f"O recorte possui **{months} meses com registros** de "
-                    f"**{12 * len(selected_years())} meses previstos**."
-                )
-                if 2022 in selected_years():
-                    st.info(
-                        "Agosto de 2022 está ausente da série temporal Gold. "
-                        "Ausência de registro não equivale a zero exames."
-                    )
-                else:
-                    st.caption("A contagem considera os anos e municípios selecionados.")
-        elif label == "EXAMES ALTERADOS":
-            with st.popover("ⓘ Entenda a taxa", use_container_width=True):
-                st.markdown("**O que representa o percentual?**")
-                st.write(
-                    "Proporção operacional de exames classificados como alterados "
-                    "em relação ao denominador informado como válido na tabela Gold Q5."
-                )
-                st.warning(
-                    "Não foi possível confirmar a exclusão de todas as amostras "
-                    "rejeitadas ou insatisfatórias do denominador. "
-                    "Não é indicador clínico validado nem cobertura populacional."
-                )
 
 # Ausência de registro não é equivalente a zero.
 calendar = pd.DatetimeIndex([d for d in year_month_index() if d.year in selected_years()])
