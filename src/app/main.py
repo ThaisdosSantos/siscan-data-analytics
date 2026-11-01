@@ -310,7 +310,3 @@ for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), nav):
             st.page_link(page, label=title, use_container_width=True)
             st.markdown('<div class="exec-nav-subtitle">' + html.escape(subtitle)
                         + '</div>', unsafe_allow_html=True)
-
-st.caption("Fonte: SISCAN/DATASUS · Databricks camada Gold. "
-           "Volumes representam exames registrados, não mulheres únicas ou cobertura populacional. "
-           "As bolhas e linhas são um diagrama ilustrativo, sem representar coordenadas ou conexões geográficas.")
