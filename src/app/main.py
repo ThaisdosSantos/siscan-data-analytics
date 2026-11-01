@@ -148,6 +148,8 @@ monthly["data"] = pd.to_datetime(dict(year=monthly["ano"], month=monthly["mes"],
 series = monthly.set_index("data")["quantidade"].reindex(calendar)
 missing = [d.strftime("%m/%Y") for d in calendar if pd.isna(series.loc[d])]
 audit = ("Competências sem registros: " + ", ".join(missing) + ". " if missing else "")
+st.markdown('<div style="height:22px" aria-hidden="true"></div>', unsafe_allow_html=True)
+
 left, right = st.columns([1, 1.45], gap="medium")
 with left:
     with st.container(border=True, key="exec-bubble-card"):
