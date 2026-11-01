@@ -130,18 +130,9 @@ for col, (label, value, color) in zip(st.columns(4, gap="small"), kpis):
         desc = '<div class="exec-metric-desc">Estimativa operacional</div>' if color == "orange" else ""
         hint = ""
         if label == "MESES COM REGISTROS":
-            explanation = (
-                "Agosto/2022 está ausente da série Gold. "
-                "Ausência de registro não significa zero exames."
-                if 2022 in selected_years()
-                else "A contagem considera os meses com registros nos anos e municípios selecionados."
-            )
+            explanation = "Agosto/2022 está ausente"
             hint = ('<details class="exec-metric-help"><summary aria-label="Explicação sobre os meses" title="Entenda os meses">!</summary>'
                     '<div class="exec-metric-tip">' + html.escape(explanation) + '</div></details>')
-        elif label == "EXAMES ALTERADOS":
-            hint = ('<details class="exec-metric-help"><summary aria-label="Explicação sobre exames alterados" title="Entenda a taxa">!</summary>'
-                    '<div class="exec-metric-tip">Estimativa operacional de exames alterados. '
-                    'O denominador pode incluir amostras inadequadas; não é indicador clínico validado.</div></details>')
         st.markdown(
             '<div class="exec-metric ' + color + '"><div class="exec-metric-label">'
             + html.escape(label) + '</div>' + hint
