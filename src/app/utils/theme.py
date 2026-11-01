@@ -57,6 +57,21 @@ def apply_custom_css():
         box-shadow:0 1px 2px rgba(26,59,92,.04),0 15px 32px -24px rgba(26,59,92,.3);}
     div[data-testid="stMetricLabel"] {font-weight:700;color:#50667b;font-size:.85rem;}
     div[data-testid="stMetricValue"] {color:#1A3B5C;font-weight:760;}
+    /* KPIs das páginas analíticas: mantém a identidade PET-Saúde.
+       A Visão Executiva possui cartões HTML próprios e permanece branca. */
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child
+      [data-testid="stMetric"] {background:#006C9A;border-color:#006C9A;}
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child
+      [data-testid="stMetric"] {background:#EE5325;border-color:#EE5325;}
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child
+      [data-testid="stMetric"] [data-testid="stMetricLabel"],
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child
+      [data-testid="stMetric"] [data-testid="stMetricValue"],
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child
+      [data-testid="stMetric"] [data-testid="stMetricLabel"],
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child
+      [data-testid="stMetric"] [data-testid="stMetricValue"] {color:white!important;}
+
     [data-testid="stPlotlyChart"] {background:#fff;border:1px solid #e5eaf0;
         padding:12px;border-radius:16px;box-shadow:0 12px 28px -24px rgba(26,59,92,.24);}
     [data-testid="stDataFrame"] {border:1px solid #dfe6ec;border-radius:13px;}
