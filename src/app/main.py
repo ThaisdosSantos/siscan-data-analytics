@@ -51,7 +51,18 @@ st.markdown("""
 .st-key-exec-month-card [data-testid="stPlotlyChart"]{border:none!important;
     box-shadow:none!important;background:transparent!important;padding:0!important}
 .st-key-exec-bubble-card,.st-key-exec-month-card{border-radius:14px!important;background:white!important}
-@media(max-width:850px){.exec-hero{padding:24px 18px 64px}.exec-metric{height:124px}}
+@media(max-width:850px){
+  .exec-hero{padding:24px 18px 48px;margin-bottom:0;}
+  .exec-metric{height:124px;}
+}
+@media(max-width:600px){
+  .exec-title{font-size:clamp(1.55rem,6vw,2.1rem);}
+  .exec-hero{padding:20px 16px 28px;}
+  .exec-metric{height:auto;min-height:112px;padding:16px;}
+  .exec-card-title{font-size:1.05rem;}
+  .exec-warning{padding:11px 12px;}
+  .exec-links{min-height:76px;}
+}
 </style>
 """, unsafe_allow_html=True)
 
