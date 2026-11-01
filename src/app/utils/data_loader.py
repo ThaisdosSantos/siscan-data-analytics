@@ -146,11 +146,14 @@ def year_month_index(years=None):
 
 
 def sidebar_filters():
-    """Navegação e filtros globais no padrão Lovable."""
+    """Menu e filtros globais compactos, acessíveis e persistentes."""
     years = list(range(2020, 2026))
     cities = list(MUNICIPIOS.values())
     st.session_state["years_preference"] = selected_years()
     st.session_state.setdefault("city_preference", cities.copy())
+    st.session_state["city_preference"] = [
+        city for city in cities if city in st.session_state["city_preference"]
+    ]
 
     def set_years(value):
         st.session_state["years_preference"] = years.copy() if value else []
@@ -163,18 +166,15 @@ def sidebar_filters():
             selected.add(year)
         st.session_state["years_preference"] = [y for y in years if y in selected]
 
-    def toggle_city(city):
-        selected = set(st.session_state["city_preference"])
-        if st.session_state["_city_" + city]:
-            selected.add(city)
-        else:
-            selected.discard(city)
-        st.session_state["city_preference"] = [c for c in cities if c in selected]
+    def change_cities():
+        st.session_state["city_preference"] = [
+            city for city in cities if city in st.session_state["_city_selector"]
+        ]
 
     def set_cities(value):
-        st.session_state["city_preference"] = cities.copy() if value else []
-        for city in cities:
-            st.session_state["_city_" + city] = value
+        selected = cities.copy() if value else []
+        st.session_state["city_preference"] = selected
+        st.session_state["_city_selector"] = selected.copy()
 
     with st.sidebar:
         st.markdown('<div class="lovable-brand"><span class="lovable-mark">✳</span><span><strong>SISCAN</strong><small>PET-Saúde · 10ª CRS</small></span></div>', unsafe_allow_html=True)
@@ -188,37 +188,48 @@ def sidebar_filters():
             ("pages/05_exames_alterados.py", "Exames alterados", ":material/biotech:"),
         ]:
             st.page_link(path, label=label, icon=icon)
-        st.divider()
-        st.markdown('<div class="lovable-label">ANO</div>', unsafe_allow_html=True)
-        left_year, right_year = st.columns(2, gap="small")
-        with left_year:
-            st.button("Todos", key="lovable_year_all", use_container_width=True,
-                      on_click=set_years, args=(True,))
-        with right_year:
-            st.button("Limpar", key="lovable_year_clear", use_container_width=True,
-                      on_click=set_years, args=(False,))
+
+        st.markdown('<div class="filter-panel-heading">PERÍODO <span>2020–2025</span></div>', unsafe_allow_html=True)
+        left, right = st.columns(2, gap="small")
+        with left:
+            st.button("Selecionar todos", key="lovable_year_all",
+                      use_container_width=True, on_click=set_years, args=(True,))
+        with right:
+            st.button("Limpar", key="lovable_year_clear",
+                      use_container_width=True, on_click=set_years, args=(False,))
         for row in (years[:3], years[3:]):
             cols = st.columns(3, gap="small")
             for col, year in zip(cols, row):
                 with col:
                     active = year in selected_years()
-                    st.button(str(year) + (" ✓" if active else ""),
-                              key=f"lovable_year_{year}", type="primary" if active else "secondary",
+                    st.button(f"{year}" + (" ✓" if active else ""),
+                              key=f"lovable_year_{year}",
+                              type="primary" if active else "secondary",
                               use_container_width=True, on_click=toggle_year, args=(year,))
-        st.caption(f"Anos selecionados: {years_label()}")
-        selected = st.session_state["city_preference"]
-        st.markdown(f'<div class="lovable-label">MUNICÍPIOS ({len(selected)}/11)</div>', unsafe_allow_html=True)
-        left, right = st.columns(2)
+        st.markdown(
+            '<div class="filter-selection-note">' +
+            ("Selecionados: " + years_label() if selected_years() else "Nenhum ano selecionado") +
+            '</div>', unsafe_allow_html=True
+        )
+
+        st.markdown('<div class="filter-panel-heading">MUNICÍPIOS <span>' +
+                    f'{len(st.session_state["city_preference"])}/11' +
+                    '</span></div>', unsafe_allow_html=True)
+        left, right = st.columns(2, gap="small")
         with left:
-            st.button("Todos", key="lovable_city_all", use_container_width=True,
+            st.button("Selecionar todos", key="lovable_city_all", use_container_width=True,
                       on_click=set_cities, args=(True,))
         with right:
             st.button("Limpar", key="lovable_city_none", use_container_width=True,
                       on_click=set_cities, args=(False,))
-        with st.container(height=300, border=False):
-            for city in cities:
-                key = "_city_" + city
-                if key not in st.session_state:
-                    st.session_state[key] = city in selected
-                st.checkbox(city, key=key, on_change=toggle_city, args=(city,))
+        if "_city_selector" not in st.session_state:
+            st.session_state["_city_selector"] = st.session_state["city_preference"].copy()
+        st.multiselect(
+            "Selecionar municípios", options=cities,
+            key="_city_selector", on_change=change_cities,
+            placeholder="Buscar ou selecionar municípios",
+            label_visibility="collapsed",
+            help="Selecione um ou mais municípios. Digite para buscar; remova uma seleção pelo X.",
+        )
+        st.markdown('<div class="filter-selection-note">Selecione os municípios no campo acima.</div>', unsafe_allow_html=True)
         st.markdown('<div class="lovable-footer">Fonte: SISCAN/DATASUS · 2020–2025<br>TCC Engenharia de Software · Informação e Saúde Digital</div>', unsafe_allow_html=True)
