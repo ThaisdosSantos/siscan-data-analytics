@@ -134,31 +134,6 @@ def apply_custom_css():
       [data-testid="stSidebar"] [data-testid="stButton"] button {min-height:42px;}
       [data-testid="stPageLink"] a {overflow-wrap:anywhere;}
     }
-
-    /* Filtros em lista recolhível: contraste e hierarquia discretos. */
-    [data-testid="stSidebar"] [data-testid="stExpander"]{
-      background:#214a6b;border:1px solid #416985;border-radius:10px;
-      margin:7px 0;
-    }
-    [data-testid="stSidebar"] [data-testid="stExpander"] summary{
-      padding:10px 12px;font-weight:700;color:#d4ecfc;
-    }
-    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stTextInput"] input{
-      background:#f8fbfe;color:#193c5d;border-radius:8px;
-      font-size:.85rem;
-    }
-    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stCheckbox"]{
-      margin:0;padding:0;
-    }
-    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stCheckbox"] label{
-      padding:4px 6px;border-radius:5px;min-height:29px;
-    }
-    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stCheckbox"] label:hover{
-      background:#2a5d80;
-    }
-    [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stButton"] button{
-      font-size:.72rem;padding:5px;white-space:normal;
-    }
     </style>""", unsafe_allow_html=True)
 
 
