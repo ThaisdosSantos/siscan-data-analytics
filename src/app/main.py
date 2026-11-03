@@ -246,95 +246,62 @@ with right:
         fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-# Três cartões de navegação completos: link nativo sobre toda a área do cartão.
+# Cartões de navegação com títulos idênticos e toda a superfície clicável.
 st.markdown("""
 <style>
-.exec-nav-subtitle{color:#72879d;font-size:.76rem;margin-top:1px;pointer-events:none;line-height:1.35;}
-.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados{
-  position:relative;background:#fff;border:1px solid #d7dde3;border-radius:13px;
-  padding:15px 16px;min-height:78px;box-shadow:0 3px 9px rgba(26,59,92,.07);
+.exec-nav-subtitle{
+  color:#72879d!important;font-size:.76rem!important;
+  margin-top:1px!important;line-height:1.35!important;
+  text-align:left!important;pointer-events:none;
+}
+.st-key-exec-nav-panorama,
+.st-key-exec-nav-outubro,
+.st-key-exec-nav-alterados{
+  position:relative!important;background:#fff!important;
+  border:1px solid #d7dde3!important;border-radius:13px!important;
+  padding:15px 16px!important;min-height:78px!important;
+  box-shadow:0 3px 9px rgba(26,59,92,.07)!important;
   transition:border-color .15s,box-shadow .15s,transform .15s;
 }
-.st-key-exec-nav-panorama:hover,.st-key-exec-nav-outubro:hover,.st-key-exec-nav-alterados:hover{
-  border-color:#EE5325;box-shadow:0 7px 20px rgba(26,59,92,.13);transform:translateY(-1px);
+.st-key-exec-nav-panorama:hover,
+.st-key-exec-nav-outubro:hover,
+.st-key-exec-nav-alterados:hover{
+  border-color:#EE5325!important;
+  box-shadow:0 7px 20px rgba(26,59,92,.13)!important;
+  transform:translateY(-1px);
 }
-.st-key-exec-nav-panorama [data-testid="stPageLink"] a,
-.st-key-exec-nav-outubro [data-testid="stPageLink"] a,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a{
-  position:static!important;display:block!important;color:#1A3B5C!important;
-  text-decoration:none!important;font-family:Fraunces,Georgia,serif;
-  font-size:1rem;font-weight:650;line-height:1.3;
-  padding:0!important;margin:0!important;background:transparent!important;
-}
-.st-key-exec-nav-panorama [data-testid="stPageLink"] a::after,
-.st-key-exec-nav-outubro [data-testid="stPageLink"] a::after,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a::after {
-  content:"";position:absolute;inset:0;z-index:2;cursor:pointer;
-}
-.st-key-exec-nav-panorama::after,.st-key-exec-nav-outubro::after,
+.st-key-exec-nav-panorama::after,
+.st-key-exec-nav-outubro::after,
 .st-key-exec-nav-alterados::after{
   content:"→";position:absolute;right:16px;top:50%;
-  transform:translateY(-50%);color:#EE5325;font-size:1.35rem;
-  font-weight:500;pointer-events:none;
+  transform:translateY(-50%);color:#EE5325;
+  font-size:1.35rem;font-weight:500;pointer-events:none;
 }
-.st-key-exec-nav-panorama [data-testid="stPageLink"] a,
-.st-key-exec-nav-outubro [data-testid="stPageLink"] a,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a {
-  padding-right:35px!important;
-}
-.st-key-exec-nav-panorama [data-testid="stPageLink"],
-.st-key-exec-nav-outubro [data-testid="stPageLink"],
-.st-key-exec-nav-alterados [data-testid="stPageLink"] {margin:0!important;}
-.st-key-exec-nav-panorama .stCaptionContainer,
-.st-key-exec-nav-outubro .stCaptionContainer,
-.st-key-exec-nav-alterados .stCaptionContainer{margin-top:2px!important;}
-
-.st-key-exec-nav-panorama [data-testid="stButton"] button{
-  display:block!important;text-align:left!important;width:100%!important;
-  padding:0 35px 0 0!important;margin:0!important;min-height:0!important;
-  background:transparent!important;border:0!important;border-radius:0!important;
-  box-shadow:none!important;color:#1A3B5C!important;
-  font-family:Fraunces,Georgia,serif!important;font-size:1rem!important;
-  font-weight:650!important;line-height:1.3!important;
-}
-.st-key-exec-nav-panorama [data-testid="stButton"] button{
-  display:flex!important;align-items:center!important;justify-content:flex-start!important;
-}
-.st-key-exec-nav-panorama [data-testid="stButton"] button p,
-.st-key-exec-nav-panorama [data-testid="stButton"] button [data-testid="stMarkdownContainer"]{
-  text-align:left!important;justify-content:flex-start!important;
-  margin:0!important;width:auto!important;flex:0 1 auto!important;
-}
-.st-key-exec-nav-panorama [data-testid="stButton"] button:hover,
-.st-key-exec-nav-panorama [data-testid="stButton"] button:focus{
-  background:transparent!important;color:#1A3B5C!important;
-}
-.st-key-exec-nav-panorama [data-testid="stButton"] button::after{
-  content:"";position:absolute;inset:0;z-index:2;cursor:pointer;
-}
-/* Uniformiza a cor dos títulos dos três cartões, inclusive o texto interno de st.page_link. */
-.st-key-exec-nav-outubro [data-testid="stPageLink"] a,
-.st-key-exec-nav-outubro [data-testid="stPageLink"] a *,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a,
-.st-key-exec-nav-alterados [data-testid="stPageLink"] a *{
-  color:#1A3B5C!important;
-}
-/* Panorama: título idêntico aos links vizinhos e alvo clicável sobre o cartão. */
-.st-key-exec-nav-panorama .exec-nav-title{
-  font-family:Fraunces,Georgia,serif!important;font-size:1rem!important;
-  font-weight:650!important;line-height:1.3!important;color:#1A3B5C!important;
+.st-key-exec-nav-panorama .exec-nav-title,
+.st-key-exec-nav-outubro .exec-nav-title,
+.st-key-exec-nav-alterados .exec-nav-title{
+  font-family:Fraunces,Georgia,serif!important;
+  font-size:1rem!important;font-weight:650!important;
+  line-height:1.3!important;color:#1A3B5C!important;
   text-align:left!important;margin:0 35px 2px 0!important;
 }
-.st-key-exec-nav-panorama [data-testid="stVerticalBlock"]{
+.st-key-exec-nav-panorama [data-testid="stVerticalBlock"],
+.st-key-exec-nav-outubro [data-testid="stVerticalBlock"],
+.st-key-exec-nav-alterados [data-testid="stVerticalBlock"]{
   gap:0!important;
 }
-.st-key-exec-nav-panorama [data-testid="stButton"]{
+.st-key-exec-nav-panorama [data-testid="stButton"],
+.st-key-exec-nav-outubro [data-testid="stButton"],
+.st-key-exec-nav-alterados [data-testid="stButton"]{
   height:0!important;min-height:0!important;margin:0!important;padding:0!important;
 }
-.st-key-exec-nav-panorama [data-testid="stButton"] button{
-  position:absolute!important;inset:0!important;display:block!important;
-  width:100%!important;height:100%!important;min-height:0!important;
-  opacity:0!important;cursor:pointer!important;z-index:3!important;
+.st-key-exec-nav-panorama [data-testid="stButton"] button,
+.st-key-exec-nav-outubro [data-testid="stButton"] button,
+.st-key-exec-nav-alterados [data-testid="stButton"] button{
+  position:absolute!important;inset:0!important;
+  display:block!important;width:100%!important;height:100%!important;
+  min-height:0!important;opacity:0!important;cursor:pointer!important;
+  z-index:3!important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -349,17 +316,11 @@ nav = [
 for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), nav):
     with col:
         with st.container(key=key):
-            if key == "exec-nav-panorama":
-                # Texto igual aos demais cartões; botão transparente mantém a navegação.
-                st.markdown(
-                    '<div class="exec-nav-title">' + html.escape(title) + '</div>'
-                    '<div class="exec-nav-subtitle">' + html.escape(subtitle) + '</div>',
-                    unsafe_allow_html=True,
-                )
-                if st.button("Abrir Panorama geral", key="exec-open-panorama",
-                             use_container_width=True):
-                    st.switch_page(page)
-            else:
-                st.page_link(page, label=title, use_container_width=True)
-                st.markdown('<div class="exec-nav-subtitle">' + html.escape(subtitle)
-                            + '</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="exec-nav-title">' + html.escape(title) + '</div>'
+                '<div class="exec-nav-subtitle">' + html.escape(subtitle) + '</div>',
+                unsafe_allow_html=True,
+            )
+            if st.button("Abrir " + title, key="exec-open-" + key,
+                         use_container_width=True):
+                st.switch_page(page)
