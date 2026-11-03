@@ -143,11 +143,17 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                 connectgaps=False,
                 hovertemplate="Ano: %{x}<br>Exames alterados: %{y:,.0f}<extra></extra>",
             )
-            # Em facetas, o título Y repetido se sobrepõe às escalas locais.
-            # Mantemos os números em cada painel e informamos a medida na legenda textual.
+            # Preserva a identificação da medida sem repetir o título em cada
+            # subplot, evitando sobreposição com as escalas dos municípios.
             fig_yearly.update_yaxes(
                 matches=None, showticklabels=True, title_text=None,
                 rangemode="tozero", gridcolor="#E9EDF1", zeroline=False
+            )
+            fig_yearly.add_annotation(
+                x=-0.065, y=0.5, xref="paper", yref="paper",
+                text="Exames alterados", textangle=-90, showarrow=False,
+                font=dict(family="Arial", size=13, color="#1A3B5C"),
+                xanchor="center", yanchor="middle",
             )
             fig_yearly.update_xaxes(
                 matches=None, showticklabels=True, type="category",
@@ -156,7 +162,7 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
             fig_yearly.update_layout(
                 height=max(480, 285 * ((len(municipalities) + 2) // 3)),
                 showlegend=False,
-                margin=dict(l=25, r=15, t=55, b=35),
+                margin=dict(l=95, r=15, t=55, b=35),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="white",
                 font=dict(color="#1A3B5C", size=11),
