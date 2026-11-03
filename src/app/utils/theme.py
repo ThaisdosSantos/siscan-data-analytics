@@ -532,6 +532,22 @@ def apply_custom_css():
       width:1px!important;height:1px!important;opacity:0!important;
       overflow:hidden!important;pointer-events:none!important;
     }
+    /* Remove o quadrado branco real do Streamlit/BaseWeb, sem esconder o texto.
+       O ::before do label é o único marcador visual. */
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label > div:first-child:not(:has(p)),
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label > span:first-child,
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label [role="checkbox"],
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label input[type="checkbox"] ~ div,
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label input[type="checkbox"] ~ span {
+      opacity:0!important;visibility:hidden!important;
+      position:absolute!important;width:1px!important;height:1px!important;
+      min-width:0!important;min-height:0!important;padding:0!important;
+      margin:0!important;border:0!important;pointer-events:none!important;
+      overflow:hidden!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label > div:has(p){
+      margin:0!important;padding:0!important;flex:1 1 auto!important;
+    }
     [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label:focus-within {
       outline:2px solid #54a4d5!important;outline-offset:1px!important;
     }
