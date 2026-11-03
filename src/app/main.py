@@ -312,6 +312,23 @@ st.markdown("""
 .st-key-exec-nav-panorama [data-testid="stButton"] button::after{
   content:"";position:absolute;inset:0;z-index:2;cursor:pointer;
 }
+/* Panorama: título idêntico aos links vizinhos e alvo clicável sobre o cartão. */
+.st-key-exec-nav-panorama .exec-nav-title{
+  font-family:Fraunces,Georgia,serif!important;font-size:1rem!important;
+  font-weight:650!important;line-height:1.3!important;color:#1A3B5C!important;
+  text-align:left!important;margin:0 35px 2px 0!important;
+}
+.st-key-exec-nav-panorama [data-testid="stVerticalBlock"]{
+  gap:0!important;
+}
+.st-key-exec-nav-panorama [data-testid="stButton"]{
+  height:0!important;min-height:0!important;margin:0!important;padding:0!important;
+}
+.st-key-exec-nav-panorama [data-testid="stButton"] button{
+  position:absolute!important;inset:0!important;display:block!important;
+  width:100%!important;height:100%!important;min-height:0!important;
+  opacity:0!important;cursor:pointer!important;z-index:3!important;
+}
 </style>
 """, unsafe_allow_html=True)
 nav = [
@@ -326,10 +343,16 @@ for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), nav):
     with col:
         with st.container(key=key):
             if key == "exec-nav-panorama":
-                # A navegação via callback evita o overlay CSS que interceptava o link.
-                if st.button(title, key="exec-open-panorama", use_container_width=True):
+                # Texto igual aos demais cartões; botão transparente mantém a navegação.
+                st.markdown(
+                    '<div class="exec-nav-title">' + html.escape(title) + '</div>'
+                    '<div class="exec-nav-subtitle">' + html.escape(subtitle) + '</div>',
+                    unsafe_allow_html=True,
+                )
+                if st.button("Abrir Panorama geral", key="exec-open-panorama",
+                             use_container_width=True):
                     st.switch_page(page)
             else:
                 st.page_link(page, label=title, use_container_width=True)
-            st.markdown('<div class="exec-nav-subtitle">' + html.escape(subtitle)
-                        + '</div>', unsafe_allow_html=True)
+                st.markdown('<div class="exec-nav-subtitle">' + html.escape(subtitle)
+                            + '</div>', unsafe_allow_html=True)
