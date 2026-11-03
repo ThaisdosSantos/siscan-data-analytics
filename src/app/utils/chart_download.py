@@ -1,5 +1,6 @@
 """Gráfico Plotly com menu contextual de exportação PNG."""
 import json
+import copy
 from plotly.utils import PlotlyJSONEncoder
 import streamlit.components.v1 as components
 
@@ -9,7 +10,40 @@ def chart_with_right_click_download(fig, *, filename, height=None, export_fig=No
     height = int(height if height is not None else (fig.layout.height or 430))
     name = filename.removesuffix(".png")
     min_width = max(0, int(min_chart_width))
-    export_spec = json.dumps((export_fig or fig).to_plotly_json(), cls=PlotlyJSONEncoder)
+    if export_fig is None:
+        # O tooltip interativo não faz parte de um PNG. Gera uma cópia com
+        # valores persistentes sem alterar o gráfico apresentado na página.
+        export_fig = copy.deepcopy(fig)
+        for trace in export_fig.data:
+            kind = getattr(trace, "type", "")
+            if kind == "bar":
+                horizontal = getattr(trace, "orientation", None) == "h"
+                axis = "x" if horizontal else "y"
+                is_percent = (
+                    "%" in str(getattr(export_fig.layout, "title", ""))
+                    or "%" in str(getattr(trace, "hovertemplate", ""))
+                )
+                label_format = f"%{{{axis}:.2f}}%" if is_percent else f"%{{{axis}:,.0f}}"
+                trace.update(
+                    texttemplate=label_format, textposition="outside",
+                    textfont=dict(size=12, color="#1A3B5C"), cliponaxis=False,
+                )
+            elif kind == "scatter" and "lines" in str(getattr(trace, "mode", "")):
+                # Pontos de séries temporais são rotulados apenas no arquivo
+                # para que cada valor possa ser lido sem passar o mouse.
+                if getattr(trace, "y", None) is not None:
+                    trace.update(
+                        texttemplate="%{y:,.0f}", textposition="top center",
+                        textfont=dict(size=10, color="#1A3B5C"),
+                    )
+            elif kind == "pie":
+                trace.update(textinfo="percent", textposition="inside",
+                             insidetextfont=dict(color="#FFFFFF", size=13))
+        export_fig.update_layout(
+            paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+            font=dict(color="#1A3B5C"),
+        )
+    export_spec = json.dumps(export_fig.to_plotly_json(), cls=PlotlyJSONEncoder)
     figure = fig.to_html(
         full_html=False, include_plotlyjs="cdn",
         config={"responsive": True, "displayModeBar": True, "displaylogo": False,
@@ -59,15 +93,17 @@ async function downloadPng(){
   close();
   if(!window.Plotly)return;
   const temp=document.createElement("div");
-  temp.style.cssText="position:absolute;left:-20000px;top:0;width:1500px;height:720px;pointer-events:none";
+  const exportHeight=Math.max(720,Number(exportSpec.layout?.height)||720);
+  const exportWidth=1500;
+  temp.style.cssText="position:absolute;left:-20000px;top:0;width:"+exportWidth+"px;height:"+exportHeight+"px;pointer-events:none";
   document.body.appendChild(temp);
   try{
-    const layout={...exportSpec.layout,width:1500,height:720,autosize:false,
+    const layout={...exportSpec.layout,width:exportWidth,height:exportHeight,autosize:false,
       paper_bgcolor:"#ffffff",plot_bgcolor:"#ffffff",
       font:{...exportSpec.layout.font,color:"#1A3B5C"},
       margin:{l:100,r:185,t:95,b:90,...exportSpec.layout.margin}};
     await Plotly.newPlot(temp,exportSpec.data,layout,{staticPlot:true,displayModeBar:false,responsive:false});
-    await Plotly.downloadImage(temp,{format:"png",filename:filename,scale:2,width:1500,height:720});
+    await Plotly.downloadImage(temp,{format:"png",filename:filename,scale:2,width:exportWidth,height:exportHeight});
   }catch(err){
     console.error("Falha ao exportar imagem:",err);
     const chart=wrap.querySelector(".js-plotly-plot");
