@@ -151,6 +151,56 @@ def apply_custom_css():
       .pet-scope-label{flex-basis:100%;margin-bottom:2px;}
       .pet-scope-chip{padding:6px 10px;font-size:.71rem;}
     }
+
+    /* Painel de filtros, inspirado nos estados compacto/expandido. */
+    .st-key-siscan_filter_panel{
+      background:#20496b;border:1px solid #355d7d;border-radius:18px;
+      padding:11px 10px 12px;margin:8px 0 15px;
+    }
+    .st-key-siscan_filter_panel .filter-panel-title{
+      font-size:.67rem;letter-spacing:.17em;font-weight:800;color:#9fc8e2!important;
+      padding:3px 5px 10px;
+    }
+    .st-key-siscan_filter_panel [data-testid="stExpander"]{
+      background:#1c4161!important;border:1px solid #37617f!important;
+      border-radius:14px!important;margin:4px 0 8px;overflow:hidden;
+    }
+    .st-key-siscan_filter_panel [data-testid="stExpander"] summary{
+      padding:11px 10px!important;color:#f1f8fd!important;
+      font-size:.83rem;font-weight:650;
+    }
+    .st-key-siscan_filter_panel [data-testid="stExpander"] summary:hover{
+      background:#265579!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stExpander"] [data-testid="stCaptionContainer"]{
+      color:#b8d0e2!important;font-size:.7rem!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stButton"] button{
+      min-height:32px!important;padding:3px 5px!important;border-radius:18px!important;
+      font-size:.74rem!important;border:1px solid #3a6685!important;
+      background:#214769!important;color:#d3e7f3!important;
+      box-shadow:none!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stButton"] button[kind="primary"]{
+      background:#006C9A!important;border-color:#55a4cc!important;
+      color:white!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"]{
+      border-bottom:1px solid rgba(162,194,214,.10);
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] label{
+      min-height:31px!important;padding:3px 4px!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] input{
+      accent-color:#EE5325!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] label:hover{
+      background:#295776;border-radius:7px;
+    }
+    @media(max-width:480px){
+      .st-key-siscan_filter_panel{padding:10px 8px;}
+      .st-key-siscan_filter_panel [data-testid="stButton"] button{min-height:40px!important;}
+    }
     </style>""", unsafe_allow_html=True)
 
 
