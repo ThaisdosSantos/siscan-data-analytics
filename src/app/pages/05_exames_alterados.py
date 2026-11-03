@@ -177,7 +177,8 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
             )
             st.caption("Clique com o botão direito no gráfico para baixar em PNG.")
             chart_with_right_click_download(
-                fig_yearly, filename="exames_alterados_anuais_municipios.png", height=fig_yearly.layout.height
+                fig_yearly, filename="exames_alterados_anuais_municipios.png",
+                height=fig_yearly.layout.height, min_chart_width=820
             )
         else:
             st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
