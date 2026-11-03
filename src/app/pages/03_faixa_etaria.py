@@ -220,7 +220,48 @@ with a:
         )
         st.markdown('<div style="font-size:1.12rem;color:#1A3B5C;font-weight:700">Distribuição dos exames</div>'
                     '<div style="color:#7C8FA0;font-size:.77rem">Por grupo etário</div>', unsafe_allow_html=True)
-        chart_with_right_click_download(style_chart(fig, height=320), filename="faixa_etaria_distribuicao.png", height=320)
+        # A legenda HTML fica fora do Plotly e não é capturada no PNG.
+        # Criamos uma cópia exclusiva para exportação com legenda incorporada.
+        import copy
+        styled_donut = style_chart(fig, height=320)
+        export_donut = copy.deepcopy(styled_donut)
+        export_donut.update_traces(
+            domain=dict(x=[0.05, 0.70], y=[0.05, 0.95]),
+            texttemplate="%{percent:.2%}",
+            textposition="inside",
+            insidetextfont=dict(color="#FFFFFF", size=15),
+            showlegend=True,
+        )
+        export_donut.update_layout(
+            showlegend=True,
+            legend=dict(
+                title=dict(text="Faixa etária"),
+                x=0.77, xanchor="left", y=0.5, yanchor="middle",
+                orientation="v",
+                font=dict(size=17, color="#1A3B5C"),
+                bgcolor="rgba(255,255,255,0)",
+                itemsizing="constant",
+            ),
+            annotations=[
+                dict(
+                    text=(
+                        f"<span style='font-size:32px;color:#006C9A'>{target_percent:.0f}%</span>"
+                        "<br><span style='font-size:12px;color:#7C8FA0'>na faixa-alvo</span>"
+                    ) if pd.notna(target_percent) else "N/D",
+                    x=0.375, y=0.5, xref="paper", yref="paper",
+                    showarrow=False, align="center",
+                )
+            ],
+            margin=dict(l=80, r=120, t=65, b=65),
+            paper_bgcolor="#FFFFFF",
+            plot_bgcolor="#FFFFFF",
+        )
+        chart_with_right_click_download(
+            styled_donut,
+            filename="faixa_etaria_distribuicao.png",
+            height=320,
+            export_fig=export_donut,
+        )
         legend_rows = []
         for group in donut_order:
             val = pct(sums.get(group, 0), total)
