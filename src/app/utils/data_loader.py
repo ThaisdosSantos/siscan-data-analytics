@@ -145,58 +145,143 @@ def year_month_index(years=None):
 
 
 
-def sidebar_filters():
-    """Filtros globais: várias escolhas sem recarregar até confirmar o formulário."""
+def _initialize_filter_draft():
+    """Restaura a seleção temporária ao alternar páginas."""
     years = list(range(2020, 2026))
     cities = list(MUNICIPIOS.values())
     st.session_state["years_preference"] = selected_years()
     st.session_state.setdefault("city_preference", cities.copy())
     st.session_state["city_preference"] = [
-        city for city in cities if city in st.session_state["city_preference"]
+        c for c in cities if c in st.session_state["city_preference"]
     ]
-
-    # Estado temporário dos widgets, separado do recorte aplicado nas tabelas Gold.
-    # Quando o Streamlit recria os widgets após trocar de página,
-    # os valores são recuperados das preferências persistentes.
-    st.session_state.setdefault("filter_draft_years", selected_years())
+    st.session_state.setdefault(
+        "_draft_years", st.session_state["years_preference"].copy()
+    )
+    st.session_state.setdefault(
+        "_draft_cities", st.session_state["city_preference"].copy()
+    )
+    # Chaves próprias dos widgets: sobrevivem à troca de página via cópia persistente.
+    st.session_state.setdefault(
+        "filter_draft_years", st.session_state["_draft_years"].copy()
+    )
     for city in cities:
         st.session_state.setdefault(
-            "filter_draft_city_" + city, city in st.session_state["city_preference"]
+            "filter_draft_city_" + city, city in st.session_state["_draft_cities"]
         )
 
-    def submit_filters(action="apply"):
-        selected_years_draft = list(st.session_state.get("filter_draft_years", []))
-        selected_cities_draft = [
-            city for city in cities
-            if st.session_state.get("filter_draft_city_" + city, False)
-        ]
-        if action == "all_years":
-            selected_years_draft = years.copy()
-        elif action == "clear_years":
-            selected_years_draft = []
-        elif action == "all_cities":
-            selected_cities_draft = cities.copy()
-        elif action == "clear_cities":
-            selected_cities_draft = []
 
-        # Atualização atômica: a página só consulta o novo recorte no envio.
-        st.session_state["years_preference"] = [
-            year for year in years if year in selected_years_draft
-        ]
-        st.session_state["city_preference"] = [
-            city for city in cities if city in selected_cities_draft
-        ]
-        st.session_state["filter_draft_years"] = st.session_state["years_preference"].copy()
+@st.fragment
+def _render_filter_controls():
+    """Atualiza apenas a barra lateral durante a seleção, sem recalcular gráficos."""
+    years = list(range(2020, 2026))
+    cities = list(MUNICIPIOS.values())
+
+    def current_years():
+        return [int(y) for y in st.session_state.get("filter_draft_years", []) if int(y) in years]
+
+    def current_cities():
+        return [c for c in cities if st.session_state.get("filter_draft_city_" + c, False)]
+
+    def keep_draft():
+        st.session_state["_draft_years"] = current_years()
+        st.session_state["_draft_cities"] = current_cities()
+
+    def set_years(choose_all):
+        chosen = years.copy() if choose_all else []
+        st.session_state["filter_draft_years"] = chosen
+        keep_draft()
+
+    def set_cities(choose_all):
         for city in cities:
-            st.session_state["filter_draft_city_" + city] = city in selected_cities_draft
+            st.session_state["filter_draft_city_" + city] = bool(choose_all)
+        keep_draft()
 
+    with st.container(key="siscan_filter_panel"):
+        st.markdown(
+            '<div class="filter-panel-title">☷ &nbsp; FILTROS</div>',
+            unsafe_allow_html=True,
+        )
+        with st.expander(
+            f"Anos · {len(current_years())}/6", expanded=False,
+            icon=":material/calendar_month:",
+        ):
+            n = len(current_years())
+            st.markdown(
+                '<div class="filter-progress" role="progressbar" '
+                f'aria-label="Anos selecionados" aria-valuenow="{n}" '
+                'aria-valuemin="0" aria-valuemax="6">'
+                f'<span style="width:{100*n/6:.2f}%"></span></div>',
+                unsafe_allow_html=True,
+            )
+            all_col, clear_col = st.columns(2, gap="small")
+            with all_col:
+                st.button("Todos", key="filter_all_years", use_container_width=True,
+                          on_click=set_years, args=(True,))
+            with clear_col:
+                st.button("Limpar", key="filter_clear_years", use_container_width=True,
+                          on_click=set_years, args=(False,))
+            st.pills(
+                "Anos disponíveis", years, selection_mode="multi",
+                key="filter_draft_years", label_visibility="collapsed",
+                on_change=keep_draft,
+            )
+            chosen = current_years()
+            period = years_label(chosen)
+            st.markdown(
+                '<p class="filter-period-label">'
+                + ("Período completo" if len(chosen) == 6 else
+                   "Nenhum ano" if not chosen else "Período: " + period)
+                + '</p>', unsafe_allow_html=True,
+            )
+        with st.expander(
+            f"Municípios · {len(current_cities())}/11", expanded=False,
+            icon=":material/location_on:",
+        ):
+            n = len(current_cities())
+            st.markdown(
+                '<div class="filter-progress" role="progressbar" '
+                f'aria-label="Municípios selecionados" aria-valuenow="{n}" '
+                'aria-valuemin="0" aria-valuemax="11">'
+                f'<span style="width:{100*n/11:.2f}%"></span></div>',
+                unsafe_allow_html=True,
+            )
+            all_col, clear_col = st.columns(2, gap="small")
+            with all_col:
+                st.button("Todos", key="filter_all_cities", use_container_width=True,
+                          on_click=set_cities, args=(True,))
+            with clear_col:
+                st.button("Limpar", key="filter_clear_cities", use_container_width=True,
+                          on_click=set_cities, args=(False,))
+            with st.container(height=255, border=False):
+                for city in cities:
+                    st.checkbox(city, key="filter_draft_city_" + city,
+                                on_change=keep_draft)
+        applied_years = st.session_state["years_preference"]
+        applied_cities = st.session_state["city_preference"]
+        is_changed = current_years() != applied_years or current_cities() != applied_cities
+        if is_changed:
+            st.caption("Seleção alterada · clique em Aplicar filtros")
+        if st.button(
+            "Aplicar filtros", type="primary", key="filter_apply",
+            use_container_width=True, disabled=not is_changed,
+        ):
+            keep_draft()
+            st.session_state["years_preference"] = current_years()
+            st.session_state["city_preference"] = current_cities()
+            st.rerun(scope="app")
+
+
+def sidebar_filters():
+    """Navegação global com filtros reativos locais e aplicação explícita."""
+    _initialize_filter_draft()
     with st.sidebar:
         st.markdown(
             '<div class="lovable-brand"><span class="lovable-mark">✳</span>'
             '<span><strong>SISCAN</strong><small>PET-Saúde · 10ª CRS</small></span></div>',
             unsafe_allow_html=True,
         )
-        st.markdown('<div class="lovable-label">EXPLORAR</div>', unsafe_allow_html=True)
+        st.markdown('<div class="lovable-label">EXPLORAR</div>',
+                    unsafe_allow_html=True)
         for path, label, icon in [
             ("main.py", "Visão executiva", ":material/speed:"),
             ("pages/01_panorama_geral.py", "Panorama geral", ":material/bar_chart:"),
@@ -206,79 +291,8 @@ def sidebar_filters():
             ("pages/05_exames_alterados.py", "Exames alterados", ":material/ecg_heart:"),
         ]:
             st.page_link(path, label=label, icon=icon)
-
         st.divider()
-        with st.container(key="siscan_filter_panel"):
-            st.markdown(
-                '<div class="filter-panel-title">☷ &nbsp; FILTROS</div>',
-                unsafe_allow_html=True,
-            )
-            with st.form("siscan_filters_form", border=False):
-                with st.expander(
-                    f"Anos · {len(selected_years())}/6",
-                    expanded=False, icon=":material/calendar_month:",
-                ):
-                    years_count = len(selected_years())
-                    st.markdown(
-                        '<div class="filter-progress" role="progressbar" '
-                        f'aria-label="Anos selecionados" aria-valuenow="{years_count}" '
-                        'aria-valuemin="0" aria-valuemax="6">'
-                        f'<span style="width:{years_count / 6 * 100:.2f}%"></span></div>',
-                        unsafe_allow_html=True,
-                    )
-                    y_all, y_clear = st.columns(2, gap="small")
-                    with y_all:
-                        st.form_submit_button(
-                            "Todos", key="filter_all_years", use_container_width=True,
-                            on_click=submit_filters, args=("all_years",),
-                        )
-                    with y_clear:
-                        st.form_submit_button(
-                            "Limpar", key="filter_clear_years", use_container_width=True,
-                            on_click=submit_filters, args=("clear_years",),
-                        )
-                    st.pills(
-                        "Anos disponíveis", years,
-                        selection_mode="multi", key="filter_draft_years",
-                        label_visibility="collapsed",
-                    )
-                    st.markdown(
-                        '<p class="filter-period-label">' +
-                        ("Período completo" if years_count == 6
-                         else "Nenhum ano" if not years_count
-                         else "Período: " + years_label()) + '</p>',
-                        unsafe_allow_html=True,
-                    )
-                with st.expander(
-                    f"Municípios · {len(st.session_state['city_preference'])}/11",
-                    expanded=False, icon=":material/location_on:",
-                ):
-                    city_count = len(st.session_state["city_preference"])
-                    st.markdown(
-                        '<div class="filter-progress" role="progressbar" '
-                        f'aria-label="Municípios selecionados" aria-valuenow="{city_count}" '
-                        'aria-valuemin="0" aria-valuemax="11">'
-                        f'<span style="width:{city_count / 11 * 100:.2f}%"></span></div>',
-                        unsafe_allow_html=True,
-                    )
-                    c_all, c_clear = st.columns(2, gap="small")
-                    with c_all:
-                        st.form_submit_button(
-                            "Todos", key="filter_all_cities", use_container_width=True,
-                            on_click=submit_filters, args=("all_cities",),
-                        )
-                    with c_clear:
-                        st.form_submit_button(
-                            "Limpar", key="filter_clear_cities", use_container_width=True,
-                            on_click=submit_filters, args=("clear_cities",),
-                        )
-                    with st.container(height=255, border=False):
-                        for city in cities:
-                            st.checkbox(city, key="filter_draft_city_" + city)
-                st.form_submit_button(
-                    "Aplicar filtros", type="primary", use_container_width=True,
-                    on_click=submit_filters,
-                )
+        _render_filter_controls()
         st.markdown(
             '<div class="lovable-footer">Fonte: SISCAN/DATASUS · 2020–2025'
             '<br>TCC Engenharia de Software · Informação e Saúde Digital</div>',
