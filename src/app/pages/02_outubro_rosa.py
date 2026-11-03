@@ -63,14 +63,14 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         title=f"Exames de setembro a dezembro · {period}"
     )
     fig.update_xaxes(type="category")
-    fig.update_traces(hovertemplate="Ano: %{x}<br>Exames: %{y:,.0f}<extra>%{fullData.name}</extra>")
+    fig.update_traces(hovertemplate="Ano: %{x}<br>Exames: %{y:,.2f}<extra>%{fullData.name}</extra>")
     st.caption("Clique com o botão direito no gráfico para baixar em PNG.")
     fig = style_chart(fig)
     # A versão exportada mostra valores absolutos; no site, preservamos
     # o gráfico original e seus tooltips sem rótulos sobrepostos.
     export_fig = copy.deepcopy(fig)
     export_fig.update_traces(
-        texttemplate="%{y:,.0f}", textposition="outside",
+        texttemplate="%{y:,.2f}", textposition="outside",
         textfont=dict(size=13, color="#1A3B5C"),
         cliponaxis=False,
     )
