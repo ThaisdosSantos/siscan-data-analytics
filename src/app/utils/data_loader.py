@@ -191,6 +191,11 @@ def _render_filter_controls():
         st.session_state["filter_draft_years"] = chosen
         keep_draft()
 
+    def toggle_city(city):
+        key = "filter_draft_city_" + city
+        st.session_state[key] = not st.session_state.get(key, False)
+        keep_draft()
+
     def set_cities(choose_all):
         for city in cities:
             st.session_state["filter_draft_city_" + city] = bool(choose_all)
@@ -283,8 +288,11 @@ def _render_filter_controls():
                               on_click=set_cities, args=(False,))
                 with st.container(height=255, border=False, key="siscan_city_scroll"):
                     for city in cities:
-                        st.checkbox(city, key="filter_draft_city_" + city,
-                                    on_change=keep_draft)
+                        selected = st.session_state.get("filter_draft_city_" + city, False)
+                        st.button(city, key="filter_city_button_" + city,
+                                  type="primary" if selected else "secondary",
+                                  use_container_width=True, on_click=toggle_city,
+                                  args=(city,))
         applied_years = st.session_state["years_preference"]
         applied_cities = st.session_state["city_preference"]
         is_changed = current_years() != applied_years or current_cities() != applied_cities
