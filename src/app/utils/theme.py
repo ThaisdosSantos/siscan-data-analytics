@@ -636,6 +636,40 @@ def apply_custom_css():
       white-space:nowrap!important;overflow:hidden!important;
       text-overflow:ellipsis!important;
     }
+
+    /* Cabeçalhos de filtros: ocultar a seta nativa em ambos os estados.
+       Os ícones de calendário/localização ficam fixos via SVG, sem duplicação. */
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary svg,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary svg,
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stExpanderToggleIcon"],
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stExpanderToggleIcon"],
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stIconMaterial"],
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stIconMaterial"]{
+      display:none!important;visibility:hidden!important;width:0!important;
+      min-width:0!important;margin:0!important;padding:0!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stMarkdownContainer"]::before,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stMarkdownContainer"]::before{
+      content:""!important;position:absolute!important;
+      display:block!important;left:33px!important;top:50%!important;
+      transform:translateY(-50%)!important;width:15px!important;height:15px!important;
+      background-size:contain!important;background-position:center!important;
+      background-repeat:no-repeat!important;pointer-events:none!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stMarkdownContainer"]::before{
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2354a4d5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M7 3v4M17 3v4M3 10h18'/%3E%3C/svg%3E")!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stMarkdownContainer"]::before{
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2354a4d5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 0 1 16 0Z'/%3E%3Ccircle cx='12' cy='10' r='2.5'/%3E%3C/svg%3E")!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary{
+      padding-left:57px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details:not([open])>summary [data-testid="stMarkdownContainer"]::after,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details:not([open])>summary [data-testid="stMarkdownContainer"]::after{
+      left:57px!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
