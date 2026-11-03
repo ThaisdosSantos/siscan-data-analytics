@@ -551,6 +551,17 @@ def apply_custom_css():
     [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label:focus-within {
       outline:2px solid #54a4d5!important;outline-offset:1px!important;
     }
+
+    /* Oculta apenas o chevron nativo do expander: + / − já indicam o estado. */
+    [data-testid="stSidebar"] .st-key-siscan_year_panel summary [data-testid="stExpanderToggleIcon"],
+    [data-testid="stSidebar"] .st-key-siscan_city_panel summary [data-testid="stExpanderToggleIcon"],
+    [data-testid="stSidebar"] .st-key-siscan_year_panel summary > svg:first-child,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel summary > svg:first-child,
+    [data-testid="stSidebar"] .st-key-siscan_year_panel summary > span:first-child:has(svg),
+    [data-testid="stSidebar"] .st-key-siscan_city_panel summary > span:first-child:has(svg) {
+      display:none!important;width:0!important;min-width:0!important;
+      margin:0!important;padding:0!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
