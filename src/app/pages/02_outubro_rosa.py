@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 from utils.theme import apply_custom_css, page_header, style_chart, display_table, fmt_num, fmt_pct, ORANGE, OCEAN, SKY, NAVY
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered, require, sidebar_filters, years_label
+from utils.data_loader import filtered, require, sidebar_filters, years_label, MUNICIPIOS
 
 st.set_page_config(page_title="Outubro Rosa | SISCAN", layout="wide")
 apply_custom_css()
@@ -164,6 +164,88 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         "quando a diferença absoluta é pequena. Não representam, por si só, "
         "maior efetividade da campanha."
     )
+
+    # Índice sazonal (base = média das competências disponíveis).
+    # A fonte permanece a fato_exames_temporais_territoriais da Gold.
+    # Não preencher competências ausentes com zero.
+    temporal = filtered("temporal")
+    if {"ano", "mes", "quantidade"}.issubset(temporal.columns) and not temporal.empty:
+        st.subheader("Índice Sazonal Regional por Mês")
+        mensal = (
+            temporal.dropna(subset=["ano", "mes", "quantidade"])
+            .groupby(["ano", "mes"], as_index=False)["quantidade"]
+            .sum(min_count=1)
+        )
+        mensal = mensal.loc[mensal["mes"].between(1, 12)]
+        media_base = mensal["quantidade"].mean()
+        if pd.notna(media_base) and media_base > 0:
+            indice = (
+                mensal.groupby("mes", as_index=False)["quantidade"]
+                .mean()
+                .rename(columns={"quantidade": "media_mes"})
+            )
+            indice["indice_sazonal"] = indice["media_mes"].div(media_base).mul(100)
+            nomes = {
+                1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr",
+                5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago",
+                9: "Set", 10: "Out", 11: "Nov", 12: "Dez",
+            }
+            indice["Mês"] = indice["mes"].astype(int).map(nomes)
+            meses_eixo = list(nomes.values())
+            indice["cor"] = indice["mes"].map(
+                lambda mes: "Outubro" if mes == 10 else "Demais meses"
+            )
+            selected = st.session_state.get("city_preference", list(MUNICIPIOS.values()))
+            base_label = (
+                "Média 10ª CRS = 100"
+                if set(selected) == set(MUNICIPIOS.values())
+                else "Média dos municípios selecionados = 100"
+            )
+            st.caption(
+                f"Base: {base_label}. Considera apenas competências com registros; "
+                "meses sem dados não são tratados como zero."
+            )
+            fig_sazonal = px.bar(
+                indice, x="Mês", y="indice_sazonal", color="cor",
+                category_orders={"Mês": meses_eixo},
+                color_discrete_map={"Outubro": ORANGE, "Demais meses": OCEAN},
+                labels={"indice_sazonal": "Índice sazonal (base 100)", "cor": ""},
+                title=f"Índice sazonal por mês · {period}",
+                custom_data=["media_mes"],
+            )
+            fig_sazonal.update_traces(
+                hovertemplate=(
+                    "Mês: %{x}<br>Índice sazonal: %{y:.2f}"
+                    "<br>Média de exames: %{customdata[0]:,.1f}<extra></extra>"
+                )
+            )
+            fig_sazonal.update_layout(showlegend=False)
+            fig_sazonal.update_yaxes(rangemode="tozero", tickformat=".0f")
+            fig_sazonal.add_hline(
+                y=100, line_dash="dash", line_color=NAVY,
+                annotation_text="Referência: 100",
+                annotation_position="top left",
+            )
+            export_sazonal = copy.deepcopy(fig_sazonal)
+            export_sazonal.update_traces(
+                texttemplate="%{y:.2f}", textposition="outside",
+                textfont=dict(size=14, color=NAVY),
+                cliponaxis=False,
+            )
+            export_sazonal.update_layout(
+                paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+                margin=dict(l=110, r=90, t=100, b=95),
+            )
+            chart_with_right_click_download(
+                style_chart(fig_sazonal),
+                filename="outubro_rosa_indice_sazonal_regional.png",
+                height=430,
+                export_fig=export_sazonal,
+            )
+        else:
+            st.info("Não há dados suficientes para exibir o índice sazonal neste recorte.")
+    else:
+        st.info("O índice sazonal não está disponível para os filtros selecionados.")
 
     table = city.rename(columns={
         "municipio":"Município",
