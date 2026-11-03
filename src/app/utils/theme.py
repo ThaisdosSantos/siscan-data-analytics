@@ -598,6 +598,21 @@ def apply_custom_css():
     [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button:focus-visible{
       outline:2px solid #5aaee0!important;outline-offset:1px!important;
     }
+
+    /* Nome do município alinhado imediatamente após o círculo de seleção. */
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button {
+      justify-content:flex-start!important;
+      text-align:left!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button p,
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button [data-testid="stMarkdownContainer"],
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button span {
+      text-align:left!important;
+      margin-left:0!important;
+      margin-right:0!important;
+      width:auto!important;
+      flex:0 1 auto!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
