@@ -271,7 +271,41 @@ with b:
                         font=dict(size=12)),
             bargap=0.12,
         )
-        chart_with_right_click_download(style_chart(fig, height=max(480, 40 * len(cities_order) + 90)), filename="faixa_etaria_composicao_municipios.png", height=max(480, 40 * len(cities_order) + 90), min_chart_width=650)
+        # Exportação específica: rótulos centralizados nas barras com contraste
+        # adaptado à cor de cada grupo. O gráfico interativo permanece intacto.
+        import copy
+        chart_height = max(480, 40 * len(cities_order) + 90)
+        styled_fig = style_chart(fig, height=chart_height)
+        export_fig = copy.deepcopy(styled_fig)
+        text_colors = {
+            "25–64 anos": "#FFFFFF",  # branco sobre azul oceano
+            "<25 anos": "#143650",    # azul-marinho sobre azul-claro
+            "≥65 anos": "#FFFFFF",    # branco sobre laranja
+        }
+        for trace in export_fig.data:
+            trace.update(
+                texttemplate="%{x:.1f}",
+                textposition="inside",
+                insidetextanchor="middle",
+                textfont=dict(
+                    family="Arial", size=15,
+                    color=text_colors.get(trace.name, "#143650"),
+                ),
+                cliponaxis=True,
+            )
+        export_fig.update_layout(
+            paper_bgcolor="#FFFFFF",
+            plot_bgcolor="#FFFFFF",
+            margin=dict(l=190, r=65, t=40, b=110),
+            uniformtext=dict(minsize=11, mode="show"),
+        )
+        chart_with_right_click_download(
+            styled_fig,
+            filename="faixa_etaria_composicao_municipios.png",
+            height=chart_height,
+            min_chart_width=650,
+            export_fig=export_fig,
+        )
 
 st.markdown("""
 <div class="q3-section">
