@@ -218,7 +218,6 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             height=fig.layout.height, min_chart_width=820
         )
 
-    st.subheader("Dados detalhados")
     detail = df[["municipio", "ano", "mes", "quantidade"]].copy()
     detail["mes"] = detail["mes"].astype(int).map({
         i+1: month for i, month in enumerate(
@@ -228,10 +227,14 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     detail = detail.rename(columns={
         "municipio":"Município", "ano":"Ano", "mes":"Mês", "quantidade":"Exames registrados"
     })
-    display_table(detail, integer_columns=['Ano', 'Exames registrados'])
-    st.download_button("⬇️ Exportar dados filtrados (CSV)",
-                       detail.to_csv(index=False, sep=";").encode("utf-8-sig"),
-                       file_name="siscan_panorama.csv", mime="text/csv")
+    with st.expander("Ver dados detalhados de exames registrados", expanded=False):
+        display_table(detail, integer_columns=['Ano', 'Exames registrados'])
+        st.download_button(
+            "⬇️ Exportar dados filtrados (CSV)",
+            detail.to_csv(index=False, sep=";").encode("utf-8-sig"),
+            file_name="siscan_panorama.csv",
+            mime="text/csv",
+        )
     st.caption("**Como interpretar:** maior volume não significa necessariamente maior cobertura "
                "populacional ou melhor desempenho. A participação municipal usa como denominador "
                "o total de exames dos municípios selecionados.")
