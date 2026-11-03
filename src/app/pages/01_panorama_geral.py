@@ -81,6 +81,95 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     fig.update_xaxes(tickformat=",d", range=[0, max(1, bars.quantidade.max())*1.22])
     display_chart(fig)
 
+    st.subheader("Evolução anual de exames por município")
+    st.caption(
+        "Quantidade de exames citopatológicos registrados por município e ano. "
+        "Cada gráfico apresenta a evolução do seu município; anos sem registros "
+        "permanecem sem ponto, em vez de serem interpretados como zero."
+    )
+    annual = (
+        df.dropna(subset=["municipio", "ano"])
+        .groupby(["municipio", "ano"], as_index=False)["quantidade"]
+        .sum(min_count=1)
+    )
+    if not annual.empty:
+        order = st.selectbox(
+            "Ordenar gráficos dos municípios por",
+            ["Ordem alfabética (A–Z)", "Maior para menor número de exames"],
+            key="sort_facetas_panorama",
+        )
+        municipalities = sorted(annual["municipio"].unique())
+        if order == "Maior para menor número de exames":
+            totals = annual.groupby("municipio")["quantidade"].sum(min_count=1)
+            municipalities.sort(
+                key=lambda city: (
+                    -totals.loc[city] if pd.notna(totals.loc[city]) else float("inf"),
+                    city.casefold(),
+                )
+            )
+
+        # Grade completa apenas para manter os anos sem registros como lacunas.
+        years_axis = sorted(years)
+        grid = pd.MultiIndex.from_product(
+            [municipalities, years_axis], names=["municipio", "ano"]
+        )
+        annual = annual.set_index(["municipio", "ano"]).reindex(grid).reset_index()
+        annual["ano_rotulo"] = annual["ano"].astype(int).astype(str)
+
+        fig = px.line(
+            annual,
+            x="ano_rotulo",
+            y="quantidade",
+            facet_col="municipio",
+            facet_col_wrap=3,
+            facet_col_spacing=0.045,
+            facet_row_spacing=0.085,
+            category_orders={
+                "municipio": municipalities,
+                "ano_rotulo": [str(year) for year in years_axis],
+            },
+            markers=True,
+            color_discrete_sequence=[OCEAN],
+            labels={
+                "ano_rotulo": "Ano",
+                "quantidade": "Exames registrados",
+                "municipio": "Município",
+            },
+        )
+        fig.for_each_annotation(
+            lambda annotation: annotation.update(
+                text=annotation.text.split("=", 1)[-1],
+                font=dict(size=12, color="#1A3B5C"),
+            )
+        )
+        fig.update_traces(
+            line=dict(width=2.5),
+            marker=dict(size=7),
+            connectgaps=False,
+            hovertemplate="Ano: %{x}<br>Exames registrados: %{y:,.0f}<extra></extra>",
+        )
+        fig.update_xaxes(
+            matches=None, showticklabels=True, type="category",
+            categoryorder="array",
+            categoryarray=[str(year) for year in years_axis],
+        )
+        fig.update_yaxes(
+            matches=None, showticklabels=True, rangemode="tozero",
+            tickformat=",d", gridcolor="#E9EDF1", zeroline=False,
+        )
+        fig.update_layout(
+            height=max(480, 285 * ((len(municipalities) + 2) // 3)),
+            showlegend=False,
+            margin=dict(l=25, r=15, t=55, b=35),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="white",
+            font=dict(color="#1A3B5C", size=11),
+        )
+        st.plotly_chart(
+            fig, use_container_width=True,
+            config={"displayModeBar": False, "responsive": True},
+        )
+
     st.subheader("Dados detalhados")
     detail = df[["municipio", "ano", "mes", "quantidade"]].copy()
     detail["mes"] = detail["mes"].astype(int).map({
