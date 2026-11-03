@@ -284,7 +284,7 @@ with b:
         }
         for trace in export_fig.data:
             trace.update(
-                texttemplate="%{x:.1f}",
+                texttemplate="%{x:.2f}",
                 textposition="inside",
                 insidetextanchor="middle",
                 textfont=dict(
