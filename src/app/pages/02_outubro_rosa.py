@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.theme import apply_custom_css, page_header, style_chart, display_table, fmt_num, fmt_pct, ORANGE, OCEAN, SKY, NAVY
+from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered, require, sidebar_filters, years_label
 
 st.set_page_config(page_title="Outubro Rosa | SISCAN", layout="wide")
@@ -62,7 +63,9 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
     )
     fig.update_xaxes(type="category")
     fig.update_traces(hovertemplate="Ano: %{x}<br>Exames: %{y:,.0f}<extra>%{fullData.name}</extra>")
-    st.plotly_chart(style_chart(fig), use_container_width=True)
+    st.caption("Clique com o botão direito no gráfico para baixar em PNG.")
+    fig = style_chart(fig)
+    chart_with_right_click_download(fig, filename="outubro_rosa_setembro_dezembro.png", height=fig.layout.height)
 
     city = octdf.groupby("municipio", as_index=False)[
         ["exames_mes", "exames_referencia_setembro"]
