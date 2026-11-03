@@ -189,36 +189,53 @@ def sidebar_filters():
         ]:
             st.page_link(path, label=label, icon=icon)
         st.divider()
-        st.markdown('<div class="lovable-label">ANO</div>', unsafe_allow_html=True)
-        left_year, right_year = st.columns(2, gap="small")
-        with left_year:
-            st.button("Todos", key="lovable_year_all", use_container_width=True,
-                      on_click=set_years, args=(True,))
-        with right_year:
-            st.button("Limpar", key="lovable_year_clear", use_container_width=True,
-                      on_click=set_years, args=(False,))
-        for row in (years[:3], years[3:]):
-            cols = st.columns(3, gap="small")
-            for col, year in zip(cols, row):
-                with col:
-                    active = year in selected_years()
-                    st.button(str(year) + (" ✓" if active else ""),
-                              key=f"lovable_year_{year}", type="primary" if active else "secondary",
-                              use_container_width=True, on_click=toggle_year, args=(year,))
-        st.caption(f"Anos selecionados: {years_label()}")
-        selected = st.session_state["city_preference"]
-        st.markdown(f'<div class="lovable-label">MUNICÍPIOS ({len(selected)}/11)</div>', unsafe_allow_html=True)
-        left, right = st.columns(2)
-        with left:
-            st.button("Todos", key="lovable_city_all", use_container_width=True,
-                      on_click=set_cities, args=(True,))
-        with right:
-            st.button("Limpar", key="lovable_city_none", use_container_width=True,
-                      on_click=set_cities, args=(False,))
-        with st.container(height=300, border=False):
-            for city in cities:
-                key = "_city_" + city
-                if key not in st.session_state:
-                    st.session_state[key] = city in selected
-                st.checkbox(city, key=key, on_change=toggle_city, args=(city,))
+        with st.container(key="siscan_filter_panel"):
+            st.markdown(
+                '<div class="filter-panel-title">☷ &nbsp; FILTROS</div>',
+                unsafe_allow_html=True,
+            )
+            with st.expander(
+                f"▦  Anos   ·   {len(selected_years())}/6",
+                expanded=False,
+            ):
+                st.caption("Nenhum ano" if not selected_years()
+                           else f"Período: {years_label()}")
+                y_all, y_clear = st.columns(2, gap="small")
+                with y_all:
+                    st.button("Todos", key="lovable_year_all", use_container_width=True,
+                              on_click=set_years, args=(True,))
+                with y_clear:
+                    st.button("Limpar", key="lovable_year_clear", use_container_width=True,
+                              on_click=set_years, args=(False,))
+                for row in (years[:3], years[3:]):
+                    cols = st.columns(3, gap="small")
+                    for col, year in zip(cols, row):
+                        with col:
+                            active = year in selected_years()
+                            st.button(str(year),
+                                      key=f"lovable_year_{year}",
+                                      type="primary" if active else "secondary",
+                                      use_container_width=True,
+                                      on_click=toggle_year, args=(year,))
+            with st.expander(
+                f"♧  Municípios   ·   {len(st.session_state['city_preference'])}/11",
+                expanded=False,
+            ):
+                count = len(st.session_state["city_preference"])
+                st.caption("Todos os municípios" if count == 11 else
+                           f"{count} de 11 municípios selecionados")
+                c_all, c_clear = st.columns(2, gap="small")
+                with c_all:
+                    st.button("Todos", key="lovable_city_all", use_container_width=True,
+                              on_click=set_cities, args=(True,))
+                with c_clear:
+                    st.button("Limpar", key="lovable_city_none", use_container_width=True,
+                              on_click=set_cities, args=(False,))
+                with st.container(height=255, border=False):
+                    for city in cities:
+                        key = "_city_" + city
+                        # O valor persistente é único entre todas as páginas.
+                        if key not in st.session_state:
+                            st.session_state[key] = city in st.session_state["city_preference"]
+                        st.checkbox(city, key=key, on_change=toggle_city, args=(city,))
         st.markdown('<div class="lovable-footer">Fonte: SISCAN/DATASUS · 2020–2025<br>TCC Engenharia de Software · Informação e Saúde Digital</div>', unsafe_allow_html=True)
