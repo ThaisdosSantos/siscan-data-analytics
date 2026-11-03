@@ -76,9 +76,9 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                  color_discrete_sequence=[OCEAN],
                  labels={"quantidade":"Exames registrados", "municipio":"Município"},
                  text="quantidade")
-    fig.update_traces(texttemplate="%{text:,.2f}", textposition="outside",
+    fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside",
                       cliponaxis=False,
-                      hovertemplate="%{y}<br>%{x:,.2f} exames<extra></extra>")
+                      hovertemplate="%{y}<br>%{x:,.0f} exames<extra></extra>")
     fig.update_xaxes(tickformat=",d", range=[0, max(1, bars.quantidade.max())*1.22])
     display_chart(fig, filename="panorama_volume_municipio.png")
 
