@@ -41,4 +41,37 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
     limiar=st.number_input("Limiar exploratório para destaque (%); não é um limite oficial",min_value=0.0,max_value=100.0,value=5.0,step=0.5)
     pivot["alerta_exploratorio"]=pivot.taxa_insatisfatorias_pct.add(pivot.taxa_rejeitadas_pct).gt(limiar)
     st.caption("Limiar configurável, exclusivamente visual; não representa tolerância ministerial.")
-    export_table(pivot.reset_index(),"siscan_adequabilidade.csv")
+    # Linha consolidada ao final: soma contagens e recalcula taxas pelo total,
+    # evitando a soma incorreta de percentuais entre municípios.
+    table = pivot.reset_index()
+    columns_to_sum = ["Insatisfatória", "Rejeitada", "Satisfatória", "total"]
+    totals = table[columns_to_sum].sum()
+    denominator = totals["total"]
+    total_row = {
+        "municipio": "Total",
+        **{column: totals[column] for column in columns_to_sum},
+        "taxa_insatisfatorias_pct": (
+            totals["Insatisfatória"] / denominator * 100 if denominator > 0 else float("nan")
+        ),
+        "taxa_rejeitadas_pct": (
+            totals["Rejeitada"] / denominator * 100 if denominator > 0 else float("nan")
+        ),
+        "alerta_exploratorio": "—",
+    }
+    table = pd.concat([table, pd.DataFrame([total_row])], ignore_index=True)
+    st.markdown(
+        """
+        <style>
+        .pet-table tbody tr:last-child {
+            background: #e7f1f8 !important;
+            font-weight: 750;
+            border-top: 2px solid #006C9A;
+        }
+        .pet-table tbody tr:last-child td {
+            font-weight: 750;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    export_table(table, "siscan_adequabilidade.csv")
