@@ -17,7 +17,6 @@ df = filtered("outubro")
 if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_setembro"]):
     selected_cities = st.session_state.get("city_preference", [])
     period = years_label()
-    st.caption(f"**Recorte ativo:** {period} · {len(selected_cities)} municípios selecionados")
 
     octdf = df.loc[df["mes"] == 10].copy()
     if octdf.empty:
