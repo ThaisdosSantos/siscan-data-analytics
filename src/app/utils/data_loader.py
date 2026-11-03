@@ -237,7 +237,7 @@ def _render_filter_controls():
         )
         with st.container(key="siscan_year_panel"):
             with st.expander(
-                "Anos", expanded=False, icon=":material/calendar_month:",
+                "Anos", expanded=False,
             ):
                 n = len(draft_years)
                 st.markdown(
@@ -269,7 +269,7 @@ def _render_filter_controls():
                 )
         with st.container(key="siscan_city_panel"):
             with st.expander(
-                "Municípios", expanded=False, icon=":material/location_on:",
+                "Municípios", expanded=False,
             ):
                 n = len(draft_cities)
                 st.markdown(
