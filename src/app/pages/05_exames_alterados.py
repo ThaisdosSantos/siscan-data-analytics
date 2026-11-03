@@ -239,7 +239,12 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
             plot_bgcolor="#FFFFFF",
             font=dict(color="#1A3B5C"),
         )
-        # Usa a altura definida acima: display_chart aplica 430px a todos os gráficos.
-        st.plotly_chart(fig, use_container_width=True)
+        # Em telas estreitas, a matriz pode ser rolada horizontalmente sem
+        # comprimir os valores das 15 faixas etárias.
+        st.caption("No celular, deslize o gráfico para os lados para ver todas as faixas etárias.")
+        chart_with_right_click_download(
+            fig, filename="matriz_territorial_exames_alterados.png",
+            height=fig.layout.height, min_chart_width=1050,
+        )
     with st.expander("Ver dados detalhados de exames alterados", expanded=False):
         export_table(matrix, "siscan_exames_alterados.csv")
