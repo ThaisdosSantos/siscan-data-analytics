@@ -146,38 +146,56 @@ def year_month_index(years=None):
 
 
 def sidebar_filters():
-    """Navegação e filtros globais no padrão Lovable."""
+    """Filtros globais: várias escolhas sem recarregar até confirmar o formulário."""
     years = list(range(2020, 2026))
     cities = list(MUNICIPIOS.values())
     st.session_state["years_preference"] = selected_years()
     st.session_state.setdefault("city_preference", cities.copy())
+    st.session_state["city_preference"] = [
+        city for city in cities if city in st.session_state["city_preference"]
+    ]
 
-    def set_years(value):
-        st.session_state["years_preference"] = years.copy() if value else []
+    # Estado temporário dos widgets, separado do recorte aplicado nas tabelas Gold.
+    # Quando o Streamlit recria os widgets após trocar de página,
+    # os valores são recuperados das preferências persistentes.
+    st.session_state.setdefault("filter_draft_years", selected_years())
+    for city in cities:
+        st.session_state.setdefault(
+            "filter_draft_city_" + city, city in st.session_state["city_preference"]
+        )
 
-    def toggle_year(year):
-        selected = set(st.session_state["years_preference"])
-        if year in selected:
-            selected.remove(year)
-        else:
-            selected.add(year)
-        st.session_state["years_preference"] = [y for y in years if y in selected]
+    def submit_filters(action="apply"):
+        selected_years_draft = list(st.session_state.get("filter_draft_years", []))
+        selected_cities_draft = [
+            city for city in cities
+            if st.session_state.get("filter_draft_city_" + city, False)
+        ]
+        if action == "all_years":
+            selected_years_draft = years.copy()
+        elif action == "clear_years":
+            selected_years_draft = []
+        elif action == "all_cities":
+            selected_cities_draft = cities.copy()
+        elif action == "clear_cities":
+            selected_cities_draft = []
 
-    def toggle_city(city):
-        selected = set(st.session_state["city_preference"])
-        if st.session_state["_city_" + city]:
-            selected.add(city)
-        else:
-            selected.discard(city)
-        st.session_state["city_preference"] = [c for c in cities if c in selected]
-
-    def set_cities(value):
-        st.session_state["city_preference"] = cities.copy() if value else []
+        # Atualização atômica: a página só consulta o novo recorte no envio.
+        st.session_state["years_preference"] = [
+            year for year in years if year in selected_years_draft
+        ]
+        st.session_state["city_preference"] = [
+            city for city in cities if city in selected_cities_draft
+        ]
+        st.session_state["filter_draft_years"] = st.session_state["years_preference"].copy()
         for city in cities:
-            st.session_state["_city_" + city] = value
+            st.session_state["filter_draft_city_" + city] = city in selected_cities_draft
 
     with st.sidebar:
-        st.markdown('<div class="lovable-brand"><span class="lovable-mark">✳</span><span><strong>SISCAN</strong><small>PET-Saúde · 10ª CRS</small></span></div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="lovable-brand"><span class="lovable-mark">✳</span>'
+            '<span><strong>SISCAN</strong><small>PET-Saúde · 10ª CRS</small></span></div>',
+            unsafe_allow_html=True,
+        )
         st.markdown('<div class="lovable-label">EXPLORAR</div>', unsafe_allow_html=True)
         for path, label, icon in [
             ("main.py", "Visão executiva", ":material/speed:"),
@@ -188,56 +206,60 @@ def sidebar_filters():
             ("pages/05_exames_alterados.py", "Exames alterados", ":material/ecg_heart:"),
         ]:
             st.page_link(path, label=label, icon=icon)
+
         st.divider()
         with st.container(key="siscan_filter_panel"):
             st.markdown(
                 '<div class="filter-panel-title">☷ &nbsp; FILTROS</div>',
                 unsafe_allow_html=True,
             )
-            with st.expander(
-                f"Anos   ·   {len(selected_years())}/6",
-                expanded=False,
-                icon=":material/calendar_month:",
-            ):
-                st.caption("Nenhum ano" if not selected_years()
-                           else f"Período: {years_label()}")
-                y_all, y_clear = st.columns(2, gap="small")
-                with y_all:
-                    st.button("Todos", key="lovable_year_all", use_container_width=True,
-                              on_click=set_years, args=(True,))
-                with y_clear:
-                    st.button("Limpar", key="lovable_year_clear", use_container_width=True,
-                              on_click=set_years, args=(False,))
-                for row in (years[:3], years[3:]):
-                    cols = st.columns(3, gap="small")
-                    for col, year in zip(cols, row):
-                        with col:
-                            active = year in selected_years()
-                            st.button(str(year),
-                                      key=f"lovable_year_{year}",
-                                      type="primary" if active else "secondary",
-                                      use_container_width=True,
-                                      on_click=toggle_year, args=(year,))
-            with st.expander(
-                f"Municípios   ·   {len(st.session_state['city_preference'])}/11",
-                expanded=False,
-                icon=":material/location_on:",
-            ):
-                count = len(st.session_state["city_preference"])
-                st.caption("Todos os municípios" if count == 11 else
-                           f"{count} de 11 municípios selecionados")
-                c_all, c_clear = st.columns(2, gap="small")
-                with c_all:
-                    st.button("Todos", key="lovable_city_all", use_container_width=True,
-                              on_click=set_cities, args=(True,))
-                with c_clear:
-                    st.button("Limpar", key="lovable_city_none", use_container_width=True,
-                              on_click=set_cities, args=(False,))
-                with st.container(height=255, border=False):
-                    for city in cities:
-                        key = "_city_" + city
-                        # O valor persistente é único entre todas as páginas.
-                        if key not in st.session_state:
-                            st.session_state[key] = city in st.session_state["city_preference"]
-                        st.checkbox(city, key=key, on_change=toggle_city, args=(city,))
-        st.markdown('<div class="lovable-footer">Fonte: SISCAN/DATASUS · 2020–2025<br>TCC Engenharia de Software · Informação e Saúde Digital</div>', unsafe_allow_html=True)
+            with st.form("siscan_filters_form", border=False):
+                with st.expander(
+                    f"Anos   ·   {len(selected_years())}/6",
+                    expanded=False, icon=":material/calendar_month:",
+                ):
+                    st.caption("Selecione os anos e confirme ao final.")
+                    st.pills(
+                        "Anos disponíveis", years,
+                        selection_mode="multi", key="filter_draft_years",
+                        label_visibility="collapsed",
+                    )
+                    y_all, y_clear = st.columns(2, gap="small")
+                    with y_all:
+                        st.form_submit_button(
+                            "Todos", use_container_width=True,
+                            on_click=submit_filters, args=("all_years",),
+                        )
+                    with y_clear:
+                        st.form_submit_button(
+                            "Limpar", use_container_width=True,
+                            on_click=submit_filters, args=("clear_years",),
+                        )
+                with st.expander(
+                    f"Municípios   ·   {len(st.session_state['city_preference'])}/11",
+                    expanded=False, icon=":material/location_on:",
+                ):
+                    st.caption("Marque os municípios antes de aplicar.")
+                    c_all, c_clear = st.columns(2, gap="small")
+                    with c_all:
+                        st.form_submit_button(
+                            "Todos", use_container_width=True,
+                            on_click=submit_filters, args=("all_cities",),
+                        )
+                    with c_clear:
+                        st.form_submit_button(
+                            "Limpar", use_container_width=True,
+                            on_click=submit_filters, args=("clear_cities",),
+                        )
+                    with st.container(height=255, border=False):
+                        for city in cities:
+                            st.checkbox(city, key="filter_draft_city_" + city)
+                st.form_submit_button(
+                    "Aplicar filtros", type="primary", use_container_width=True,
+                    on_click=submit_filters,
+                )
+        st.markdown(
+            '<div class="lovable-footer">Fonte: SISCAN/DATASUS · 2020–2025'
+            '<br>TCC Engenharia de Software · Informação e Saúde Digital</div>',
+            unsafe_allow_html=True,
+        )
