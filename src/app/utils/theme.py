@@ -272,6 +272,36 @@ def apply_custom_css():
       background:#EE5325!important;border-color:#EE5325!important;
       color:#fff!important;min-height:41px!important;border-radius:10px!important;
     }
+
+    /* Correção de contraste no cabeçalho aberto e seleção por pílulas. */
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stExpander"] details,
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stExpander"] details > summary,
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stExpander"] summary,
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stExpander"] summary[aria-expanded="true"] {
+        background:#1c4161!important;color:#f0f8ff!important;
+        border-color:#37617f!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stExpander"] summary *,
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stExpander"] summary p {
+        color:#f0f8ff!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stPills"] button[data-testid="stBaseButton-pillsActive"],
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stPills"] button[aria-pressed="true"],
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stPills"] button[aria-selected="true"] {
+        background:#EE5325!important;color:white!important;
+        border:1px solid #EE5325!important;box-shadow:none!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stPills"] button[data-testid="stBaseButton-pills"],
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stPills"] button[aria-pressed="false"] {
+        background:#1c4161!important;color:#a8bfd0!important;
+        border:1px solid #37617f!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stPills"] button[data-testid="stBaseButton-pillsActive"]:hover{
+        background:#db491e!important;color:white!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stCheckbox"] [data-testid="stCheckbox"]{
+        accent-color:#EE5325;
+    }
     </style>""", unsafe_allow_html=True)
 
 
