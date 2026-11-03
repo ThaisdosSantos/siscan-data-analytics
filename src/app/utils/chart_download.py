@@ -31,11 +31,16 @@ border-radius:8px;padding:5px;background:white;box-shadow:0 7px 20px #1a3b5c33}
 #menu button{cursor:pointer;border:0;border-radius:5px;background:white;
 color:#1A3B5C;padding:10px 12px;font-size:13px}
 #menu button:hover,#menu button:focus-visible{background:#e8f3f9;outline:2px solid #006C9A}
+#mobile-save{display:none;position:absolute;bottom:6px;right:9px;z-index:1001;
+background:#006C9A;color:#fff;border:0;border-radius:8px;padding:9px 12px;
+font:600 12px Arial,sans-serif;box-shadow:0 2px 8px #1a3b5c33;cursor:pointer}
+@media(hover:none), (pointer:coarse){#mobile-save{display:block}}
+
 </style></head><body><div id="wrap">
 <div id="chart-scroll"><div id="chart-content">__FIGURE__</div></div>
 <div id="menu" role="menu" aria-label="Exportar gráfico">
 <button type="button" role="menuitem" id="save">⬇ Baixar imagem PNG</button>
-</div></div>
+</div><button type="button" id="mobile-save" aria-label="Baixar gráfico em PNG">⬇ Baixar PNG</button></div>
 <script>
 (function(){
 const wrap=document.getElementById("wrap"),menu=document.getElementById("menu");
@@ -50,7 +55,7 @@ wrap.addEventListener("contextmenu",event=>{
   menu.style.top=Math.max(0,Math.min(event.clientY-rect.top,rect.height-menu.offsetHeight))+"px";
   button.focus();
 });
-button.addEventListener("click",async()=>{
+async function downloadPng(){
   close();
   if(!window.Plotly)return;
   const temp=document.createElement("div");
@@ -71,7 +76,9 @@ button.addEventListener("click",async()=>{
     Plotly.purge(temp);
     temp.remove();
   }
-});
+}
+button.addEventListener("click",downloadPng);
+document.getElementById("mobile-save").addEventListener("click",downloadPng);
 document.addEventListener("click",e=>{if(!menu.contains(e.target))close()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
 if("ResizeObserver" in window){
