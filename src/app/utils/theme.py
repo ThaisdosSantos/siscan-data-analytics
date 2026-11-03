@@ -201,6 +201,77 @@ def apply_custom_css():
       .st-key-siscan_filter_panel{padding:10px 8px;}
       .st-key-siscan_filter_panel [data-testid="stButton"] button{min-height:40px!important;}
     }
+
+    /* Estado visual dos filtros de acordo com a referência: laranja = selecionado. */
+    .st-key-siscan_filter_panel .filter-progress{
+      height:4px;width:100%;border-radius:99px;background:#183a57;
+      overflow:hidden;margin:4px 0 13px;
+    }
+    .st-key-siscan_filter_panel .filter-progress span{
+      display:block;height:100%;background:#EE5325;border-radius:99px;
+      transition:width .18s ease-out;
+    }
+    .st-key-siscan_filter_panel .filter-period-label{
+      margin:8px 2px 3px;font-size:.71rem;color:#a3bbcf!important;
+      line-height:1.4;
+    }
+    .st-key-siscan_filter_panel [data-testid="stPills"]{
+      width:100%;
+    }
+    .st-key-siscan_filter_panel [data-testid="stPills"] > div{
+      display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px!important;width:100%;
+    }
+    .st-key-siscan_filter_panel [data-testid="stPills"] button{
+      width:100%!important;min-width:0!important;
+      border-radius:999px!important;
+      min-height:35px!important;padding:6px 3px!important;
+      background:#1d4262!important;border:1px solid #386584!important;
+      color:#9bb5c8!important;font-size:.77rem!important;
+      font-weight:650!important;box-shadow:none!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stPills"] button[aria-pressed="true"],
+    .st-key-siscan_filter_panel [data-testid="stPills"] button[data-selected="true"],
+    .st-key-siscan_filter_panel [data-testid="stPills"] button[aria-checked="true"]{
+      background:#EE5325!important;border-color:#EE5325!important;
+      color:white!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stPills"] button:hover{
+      border-color:#6a99b4!important;color:white!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stPills"] button[aria-pressed="true"]:hover,
+    .st-key-siscan_filter_panel [data-testid="stPills"] button[data-selected="true"]:hover{
+      background:#e64c20!important;border-color:#e64c20!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"]{
+      background:transparent;border-bottom:none!important;
+      margin:2px 0!important;padding:0!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] label{
+      display:flex;align-items:center;border:1px solid #345a77!important;
+      background:#1b405e!important;border-radius:99px!important;
+      padding:4px 10px!important;min-height:33px!important;
+      transition:border-color .15s,background .15s;
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] label:hover{
+      background:#255174!important;border-color:#5785a3!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] label:has(input:checked),
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] label:has([aria-checked="true"]){
+      border-color:#477390!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] [data-baseweb="checkbox"]>div:first-child,
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] [role="checkbox"]{
+      border-radius:50%!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] input:checked + div,
+    .st-key-siscan_filter_panel [data-testid="stCheckbox"] [aria-checked="true"]{
+      background-color:#EE5325!important;border-color:#EE5325!important;
+    }
+    .st-key-siscan_filter_panel [data-testid="stFormSubmitButton"] button[kind="primary"]{
+      background:#EE5325!important;border-color:#EE5325!important;
+      color:#fff!important;min-height:41px!important;border-radius:10px!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
