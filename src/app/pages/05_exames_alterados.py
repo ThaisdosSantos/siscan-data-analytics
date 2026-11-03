@@ -175,7 +175,7 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                 plot_bgcolor="white",
                 font=dict(color="#1A3B5C", size=11),
             )
-            st.caption("Clique com o botão direito no gráfico para baixar em PNG.")
+            st.caption("No celular, deslize o gráfico para os lados. No computador, clique com o botão direito para baixar em PNG.")
             chart_with_right_click_download(
                 fig_yearly, filename="exames_alterados_anuais_municipios.png",
                 height=fig_yearly.layout.height, min_chart_width=820
