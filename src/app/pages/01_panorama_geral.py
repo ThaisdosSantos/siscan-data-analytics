@@ -214,7 +214,8 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         )
         st.caption("Clique com o botão direito no gráfico para baixar em PNG.")
         chart_with_right_click_download(
-            fig, filename="panorama_exames_anuais_municipios.png", height=fig.layout.height
+            fig, filename="panorama_exames_anuais_municipios.png",
+            height=fig.layout.height, min_chart_width=820
         )
 
     st.subheader("Dados detalhados")
