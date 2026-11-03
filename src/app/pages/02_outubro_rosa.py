@@ -185,16 +185,22 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 .rename(columns={"quantidade": "media_mes"})
             )
             indice["indice_sazonal"] = indice["media_mes"].div(media_base).mul(100)
-            nomes = {
-                1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr",
-                5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago",
-                9: "Set", 10: "Out", 11: "Nov", 12: "Dez",
-            }
-            indice["Mês"] = indice["mes"].astype(int).map(nomes)
-            meses_eixo = list(nomes.values())
-            indice["cor"] = indice["mes"].map(
-                lambda mes: "Outubro" if mes == 10 else "Demais meses"
+            # Mesmas janelas da seção 7 do notebook Gold.
+            # A categorização é descritiva; o índice continua numérico.
+            indice["mes"] = indice["mes"].astype(int)
+            indice["janela_sazonal"] = indice["mes"].map(
+                lambda mes: (
+                    "Janela fraca (mai-set)" if 5 <= mes <= 9
+                    else "Pico (nov-dez)" if mes in (11, 12)
+                    else "Neutro"
+                )
             )
+            janelas = ["Janela fraca (mai-set)", "Neutro", "Pico (nov-dez)"]
+            cores_janelas = {
+                "Janela fraca (mai-set)": OCEAN,
+                "Neutro": ORANGE,
+                "Pico (nov-dez)": SKY,
+            }
             selected = st.session_state.get("city_preference", list(MUNICIPIOS.values()))
             base_label = (
                 "Média 10ª CRS = 100"
@@ -207,10 +213,17 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 "A linha tracejada indica a referência 100."
             )
             fig_sazonal = px.bar(
-                indice, x="Mês", y="indice_sazonal", color="cor",
-                category_orders={"Mês": meses_eixo},
-                color_discrete_map={"Outubro": ORANGE, "Demais meses": OCEAN},
-                labels={"indice_sazonal": "Índice sazonal (base 100)", "cor": ""},
+                indice, x="mes", y="indice_sazonal", color="janela_sazonal",
+                category_orders={
+                    "mes": list(range(1, 13)),
+                    "janela_sazonal": janelas,
+                },
+                color_discrete_map=cores_janelas,
+                labels={
+                    "mes": "Mês",
+                    "indice_sazonal": "Índice sazonal regional",
+                    "janela_sazonal": "Janela sazonal",
+                },
                 custom_data=["media_mes"],
             )
             fig_sazonal.update_traces(
@@ -219,11 +232,31 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                     "<br>Média de exames: %{customdata[0]:,.1f}<extra></extra>"
                 )
             )
-            fig_sazonal.update_layout(showlegend=False)
-            fig_sazonal.update_yaxes(rangemode="tozero", tickformat=".0f")
+            fig_sazonal.update_xaxes(
+                type="category",
+                categoryorder="array",
+                categoryarray=list(range(1, 13)),
+                title_text="Mês",
+            )
+            fig_sazonal.update_yaxes(
+                rangemode="tozero", tickformat=".0f",
+                title_text="Índice sazonal regional",
+            )
+            fig_sazonal.update_layout(
+                showlegend=True,
+                legend=dict(
+                    title_text="Janela sazonal",
+                    orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="left", x=0,
+                    font=dict(size=12, color=NAVY),
+                ),
+                bargap=0.15,
+                margin=dict(l=60, r=20, t=85, b=55),
+            )
+            # Linha base sem anotação sobreposta às barras.
             fig_sazonal.add_hline(
                 y=100, line_dash="dash", line_color=NAVY,
-                line_width=2,
+                line_width=1.5,
             )
             export_sazonal = copy.deepcopy(fig_sazonal)
             export_sazonal.update_traces(
