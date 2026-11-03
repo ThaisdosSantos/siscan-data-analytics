@@ -25,6 +25,94 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                title="Exames alterados por faixa etária")
     fig.update_xaxes(tickangle=-45)
     display_chart(format_percent_chart(fig))
+    # Série anual por município: utiliza as quantidades já existentes na Gold.
+    # Ausências de ano são mantidas como lacunas, nunca convertidas em zero.
+    st.markdown("### Evolução anual de exames alterados por município")
+    st.caption(
+        "Quantidade de exames citopatológicos alterados por município e ano. "
+        "Cada painel usa sua própria escala vertical para facilitar a leitura; "
+        "compare os valores absolutos pelos eixos e pelo cursor."
+    )
+    if "ano" not in df.columns:
+        st.info("O gráfico anual requer a coluna 'ano' na tabela Gold de exames alterados.")
+    else:
+        yearly = (
+            df.dropna(subset=["ano"])
+            .groupby(["municipio", "ano"], as_index=False)["quantidade_alterados"]
+            .sum(min_count=1)
+        )
+        if not yearly.empty:
+            municipalities = sorted(yearly["municipio"].unique())
+            available_years = sorted(yearly["ano"].astype(int).unique())
+            # Também exibe lacunas dos anos selecionados, sem criar contagens artificiais.
+            from utils.data_loader import selected_years
+            years = selected_years()
+            axis_years = years if years else available_years
+            idx = pd.MultiIndex.from_product(
+                [municipalities, axis_years], names=["municipio", "ano"]
+            )
+            yearly = (
+                yearly.set_index(["municipio", "ano"])
+                .reindex(idx)
+                .reset_index()
+            )
+            yearly["ano_label"] = yearly["ano"].astype(str)
+            fig_yearly = px.line(
+                yearly,
+                x="ano_label",
+                y="quantidade_alterados",
+                facet_col="municipio",
+                facet_col_wrap=3,
+                facet_col_spacing=0.045,
+                facet_row_spacing=0.085,
+                category_orders={
+                    "municipio": municipalities,
+                    "ano_label": [str(y) for y in axis_years],
+                },
+                markers=True,
+                color_discrete_sequence=[OCEAN],
+                labels={
+                    "ano_label": "Ano",
+                    "quantidade_alterados": "Exames alterados",
+                    "municipio": "Município",
+                },
+            )
+            fig_yearly.for_each_annotation(
+                lambda annotation: annotation.update(
+                    text=annotation.text.split("=", 1)[-1],
+                    font=dict(size=12, color="#1A3B5C"),
+                )
+            )
+            fig_yearly.update_traces(
+                line=dict(width=2.5),
+                marker=dict(size=7),
+                connectgaps=False,
+                hovertemplate="Ano: %{x}<br>Exames alterados: %{y:,.0f}<extra></extra>",
+            )
+            fig_yearly.update_yaxes(
+                matches=None, showticklabels=True,
+                rangemode="tozero", gridcolor="#E9EDF1", zeroline=False
+            )
+            fig_yearly.update_xaxes(
+                matches=None, showticklabels=True, type="category",
+                categoryorder="array", categoryarray=[str(y) for y in axis_years]
+            )
+            fig_yearly.update_layout(
+                height=max(480, 285 * ((len(municipalities) + 2) // 3)),
+                showlegend=False,
+                margin=dict(l=25, r=15, t=55, b=35),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="white",
+                font=dict(color="#1A3B5C", size=11),
+            )
+            st.plotly_chart(
+                fig_yearly,
+                use_container_width=True,
+                config={"displayModeBar": False, "responsive": True},
+            )
+        else:
+            st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
+
     matrix=df.groupby(["municipio","faixa_etaria"],as_index=False)[["quantidade_alterados","total_exames_validos"]].sum(min_count=1)
     matrix["taxa"]=matrix.quantidade_alterados.div(matrix.total_exames_validos.where(matrix.total_exames_validos>0)).mul(100)
     heat=matrix.pivot(index="municipio",columns="faixa_etaria",values="taxa")
