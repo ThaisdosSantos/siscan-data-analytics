@@ -202,10 +202,14 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                     hovertext=None,
                 )
         fig.update_layout(
+            template="plotly_white",
             height=max(500, 43 * len(heat.index) + 155),
             margin=dict(l=25, r=15, t=70, b=65),
+            paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="#FFFFFF",
+            font=dict(color="#1A3B5C"),
         )
-        display_chart(fig)
+        # Usa a altura definida acima: display_chart aplica 430px a todos os gráficos.
+        st.plotly_chart(fig, use_container_width=True)
     with st.expander("Ver dados detalhados de exames alterados", expanded=False):
         export_table(matrix, "siscan_exames_alterados.csv")
