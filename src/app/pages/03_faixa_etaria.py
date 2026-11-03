@@ -295,7 +295,45 @@ with b:
         )
         # Barras horizontais empilhadas 100%, alinhadas à referência visual.
         bar_order = ["25–64 anos", "<25 anos", "≥65 anos"]
-        cities_order = list(dict.fromkeys(agg["municipio"].tolist()))
+        st.markdown("""
+        <style>
+        .st-key-sort_composicao_etaria [data-testid="stSelectbox"] label p {
+            color:#1A3B5C!important;font-size:.88rem!important;font-weight:700!important;
+        }
+        .st-key-sort_composicao_etaria [data-baseweb="select"] > div {
+            background:#fff!important;border:1.5px solid #8FAFC5!important;
+            border-radius:9px!important;min-height:43px!important;
+        }
+        .st-key-sort_composicao_etaria [data-baseweb="select"] > div:hover,
+        .st-key-sort_composicao_etaria [data-baseweb="select"] > div:focus-within {
+            border-color:#006C9A!important;
+        }
+        .st-key-sort_composicao_etaria [data-baseweb="select"] * {
+            color:#1A3B5C!important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        with st.container(key="sort_composicao_etaria"):
+            sort_mode = st.selectbox(
+                "Ordenar por",
+                ["A–Z", "Maior para menor"],
+                key="ordenacao_composicao_etaria",
+                help="Maior para menor: percentual de exames na faixa-alvo (25–64 anos).",
+            )
+        cities_order = sorted(agg["municipio"].dropna().unique(), key=normalize)
+        if sort_mode == "Maior para menor":
+            target_shares = (
+                agg.loc[agg["grupo"].eq("25–64 anos")]
+                .set_index("municipio")["percentual"]
+            )
+            cities_order.sort(
+                key=lambda city: (
+                    -float(target_shares.loc[city])
+                    if city in target_shares.index and pd.notna(target_shares.loc[city])
+                    else float("inf"),
+                    normalize(city),
+                )
+            )
         fig = px.bar(
             agg, x="percentual", y="municipio", color="grupo",
             orientation="h", barmode="stack",
