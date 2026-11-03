@@ -1,5 +1,6 @@
 """Acesso somente leitura à Gold, com CSV local ou Databricks SQL."""
 import os
+import base64
 import re
 import unicodedata
 from pathlib import Path
@@ -312,8 +313,16 @@ def sidebar_filters():
     """Navegação global com filtros reativos locais e aplicação explícita."""
     _initialize_filter_draft()
     with st.sidebar:
+        # A logo institucional fica em src/assets e é incorporada ao HTML,
+        # sem depender de hospedagem externa ou da URL do repositório.
+        logo_path = ROOT / "src" / "assets" / "LogoPET-Saude.jpeg"
+        logo_base64 = base64.b64encode(logo_path.read_bytes()).decode("ascii")
         st.markdown(
-            '<div class="lovable-brand"><span class="lovable-mark">✳</span>'
+            '<div class="lovable-brand">'
+            '<span class="lovable-mark">'
+            '<img src="data:image/jpeg;base64,' + logo_base64 + '" '
+            'alt="Logo PET-Saúde" loading="eager" />'
+            '</span>'
             '<span><strong>SISCAN</strong><small>PET-Saúde · 10ª CRS</small></span></div>',
             unsafe_allow_html=True,
         )
