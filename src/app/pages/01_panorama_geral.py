@@ -68,7 +68,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     fig.update_xaxes(tickmode="array", tickvals=axis_dates,
                      ticktext=[f"{short_pt[d.month-1]}/{str(d.year)[2:]}" for d in axis_dates])
     fig.update_yaxes(tickformat=",d")
-    display_chart(fig)
+    display_chart(fig, filename="panorama_evolucao_mensal.png")
 
     st.subheader("Volume de exames por município")
     bars = bycity.sort_values("quantidade", ascending=True)
@@ -80,7 +80,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                       cliponaxis=False,
                       hovertemplate="%{y}<br>%{x:,.0f} exames<extra></extra>")
     fig.update_xaxes(tickformat=",d", range=[0, max(1, bars.quantidade.max())*1.22])
-    display_chart(fig)
+    display_chart(fig, filename="panorama_volume_municipio.png")
 
     st.subheader("Evolução anual de exames por município")
     st.caption(
