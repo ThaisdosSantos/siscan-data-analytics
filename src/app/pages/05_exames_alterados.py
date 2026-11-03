@@ -143,8 +143,10 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                 connectgaps=False,
                 hovertemplate="Ano: %{x}<br>Exames alterados: %{y:,.0f}<extra></extra>",
             )
+            # Em facetas, o título Y repetido se sobrepõe às escalas locais.
+            # Mantemos os números em cada painel e informamos a medida na legenda textual.
             fig_yearly.update_yaxes(
-                matches=None, showticklabels=True,
+                matches=None, showticklabels=True, title_text=None,
                 rangemode="tozero", gridcolor="#E9EDF1", zeroline=False
             )
             fig_yearly.update_xaxes(
