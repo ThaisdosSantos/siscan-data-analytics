@@ -199,7 +199,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             cores_janelas = {
                 "Janela fraca (mai-set)": OCEAN,
                 "Neutro": ORANGE,
-                "Pico (nov-dez)": SKY,
+                "Pico (nov-dez)": NAVY,
             }
             selected = st.session_state.get("city_preference", list(MUNICIPIOS.values()))
             base_label = (
@@ -237,21 +237,28 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 categoryorder="array",
                 categoryarray=list(range(1, 13)),
                 title_text="Mês",
+                tickfont=dict(size=12, color=NAVY),
+                showgrid=False,
             )
             fig_sazonal.update_yaxes(
                 rangemode="tozero", tickformat=".0f",
                 title_text="Índice sazonal regional",
+                gridcolor="#E4EBF1",
+                tickfont=dict(size=12, color=NAVY),
             )
             fig_sazonal.update_layout(
                 showlegend=True,
                 legend=dict(
                     title_text="Janela sazonal",
-                    orientation="h", yanchor="bottom", y=1.02,
-                    xanchor="left", x=0,
+                    orientation="v",
+                    x=1.02, xanchor="left", y=1, yanchor="top",
                     font=dict(size=12, color=NAVY),
+                    bgcolor="rgba(255,255,255,0)",
+                    itemsizing="constant",
                 ),
-                bargap=0.15,
-                margin=dict(l=60, r=20, t=85, b=55),
+                bargap=0.12,
+                margin=dict(l=70, r=195, t=30, b=60),
+                font=dict(color=NAVY),
             )
             # Linha base sem anotação sobreposta às barras.
             fig_sazonal.add_hline(
@@ -271,7 +278,15 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                     font=dict(family="Arial", size=22, color=NAVY),
                 ),
                 paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
-                margin=dict(l=110, r=90, t=100, b=95),
+                margin=dict(l=95, r=255, t=110, b=80),
+                legend=dict(
+                    title_text="Janela sazonal",
+                    orientation="v",
+                    x=1.02, xanchor="left", y=1, yanchor="top",
+                    font=dict(size=16, color=NAVY),
+                    bgcolor="rgba(255,255,255,0)",
+                    itemsizing="constant",
+                ),
             )
             chart_with_right_click_download(
                 style_chart(fig_sazonal),
