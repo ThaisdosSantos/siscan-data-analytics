@@ -25,7 +25,7 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                labels={"faixa_etaria":"Faixa etária","taxa":"Proporção (%)"},
                title="Exames alterados por faixa etária")
     fig.update_xaxes(tickangle=-45)
-    display_chart(format_percent_chart(fig))
+    display_chart(format_percent_chart(fig), filename="exames_alterados_faixa_etaria.png")
     # Série anual por município: utiliza as quantidades já existentes na Gold.
     # Ausências de ano são mantidas como lacunas, nunca convertidas em zero.
     st.markdown("### Evolução anual de exames alterados por município")
