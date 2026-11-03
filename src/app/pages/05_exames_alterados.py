@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN
+from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
 apply_custom_css()
@@ -158,10 +159,9 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                 plot_bgcolor="white",
                 font=dict(color="#1A3B5C", size=11),
             )
-            st.plotly_chart(
-                fig_yearly,
-                use_container_width=True,
-                config={"displayModeBar": False, "responsive": True},
+            st.caption("Clique com o botão direito no gráfico para baixar em PNG.")
+            chart_with_right_click_download(
+                fig_yearly, filename="exames_alterados_anuais_municipios.png", height=fig_yearly.layout.height
             )
         else:
             st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
