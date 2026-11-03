@@ -1,5 +1,6 @@
 """Comparação descritiva Setembro–Outubro, sem inferência causal."""
 import copy
+import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -120,7 +121,26 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         )
         fig.update_xaxes(tickformat=".2f", ticksuffix="%")
         fig.update_layout(showlegend=False)
-        chart_with_right_click_download(style_chart(fig), filename="outubro_rosa_variacao_municipal.png", height=430)
+        # Exportação: rótulos numéricos no PNG (o tooltip não existe em imagem).
+        # Mantém o gráfico interativo sem rótulos para não poluir a tela.
+        export_fig = copy.deepcopy(fig)
+        export_fig.update_traces(
+            texttemplate="%{x:+.2f}%",
+            textposition="outside",
+            textfont=dict(size=14, color=NAVY),
+            cliponaxis=False,
+        )
+        export_fig.update_layout(
+            paper_bgcolor="#FFFFFF",
+            plot_bgcolor="#FFFFFF",
+            margin=dict(l=240, r=150, t=90, b=75),
+        )
+        chart_with_right_click_download(
+            style_chart(fig),
+            filename="outubro_rosa_variacao_municipal.png",
+            height=430,
+            export_fig=export_fig,
+        )
     st.caption(
         "Percentuais calculados sobre bases pequenas podem ser elevados mesmo "
         "quando a diferença absoluta é pequena. Não representam, por si só, "
