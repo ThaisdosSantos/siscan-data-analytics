@@ -19,10 +19,12 @@ def chart_with_right_click_download(fig, *, filename, height=None, export_fig=No
             if kind == "bar":
                 horizontal = getattr(trace, "orientation", None) == "h"
                 axis = "x" if horizontal else "y"
-                is_percent = (
-                    "%" in str(getattr(export_fig.layout, "title", ""))
-                    or "%" in str(getattr(trace, "hovertemplate", ""))
-                )
+                # Nunca procurar "%" no hovertemplate: os próprios campos
+                # Plotly (%{x}, %{y}) contêm esse caractere, mesmo para contagens.
+                # A unidade vem exclusivamente do título do eixo numérico.
+                axis_obj = getattr(export_fig.layout, "xaxis" if horizontal else "yaxis")
+                axis_title = str(getattr(getattr(axis_obj, "title", None), "text", "") or "").lower()
+                is_percent = "%" in axis_title or "percentual" in axis_title or "taxa" in axis_title or "proporção" in axis_title
                 label_format = f"%{{{axis}:.2f}}%" if is_percent else f"%{{{axis}:,.0f}}"
                 trace.update(
                     texttemplate=label_format, textposition="outside",
