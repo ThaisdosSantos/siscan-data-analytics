@@ -213,17 +213,14 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 indice.groupby("janela_sazonal")["indice_sazonal"]
                 .agg(["min", "max"])
             )
-            rotulos = {
+            # Manter o nome curto na legenda evita cortes em telas menores.
+            # Os índices mínimos/máximos aparecem em uma faixa própria.
+            textos_intervalos = {
                 janela: (
-                    f"{janela} · {intervalos.loc[janela, 'min']:.2f}"
-                    f"–{intervalos.loc[janela, 'max']:.2f}"
+                    f"{intervalos.loc[janela, 'min']:.2f} a "
+                    f"{intervalos.loc[janela, 'max']:.2f}"
                 )
                 for janela in janelas if janela in intervalos.index
-            }
-            indice["janela_rotulo"] = indice["janela_sazonal"].map(rotulos)
-            rotulos_ordem = [rotulos[janela] for janela in janelas if janela in rotulos]
-            cores_rotulos = {
-                rotulos[janela]: cores_janelas[janela] for janela in rotulos
             }
             selected = st.session_state.get("city_preference", list(MUNICIPIOS.values()))
             base_label = (
@@ -237,20 +234,20 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 "A linha tracejada indica a referência 100. "
                 "Janelas fixas da análise 2020–2025: mai–set (fraca), "
                 "jan–abr e out (neutro), nov–dez (pico). "
-                "Os intervalos na legenda são mínimos e máximos observados no recorte, "
+                "Os intervalos exibidos abaixo do gráfico são mínimos e máximos observados no recorte, "
                 "não critérios de classificação."
             )
             fig_sazonal = px.bar(
-                indice, x="mes", y="indice_sazonal", color="janela_rotulo",
+                indice, x="mes", y="indice_sazonal", color="janela_sazonal",
                 category_orders={
                     "mes": list(range(1, 13)),
-                    "janela_rotulo": rotulos_ordem,
+                    "janela_sazonal": janelas,
                 },
-                color_discrete_map=cores_rotulos,
+                color_discrete_map=cores_janelas,
                 labels={
                     "mes": "Mês",
                     "indice_sazonal": "Índice sazonal regional",
-                    "janela_rotulo": "Janela sazonal · intervalo observado",
+                    "janela_sazonal": "Janela sazonal",
                 },
                 custom_data=["media_mes"],
             )
@@ -277,7 +274,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             fig_sazonal.update_layout(
                 showlegend=True,
                 legend=dict(
-                    title_text="Janela sazonal · intervalo observado",
+                    title_text="Janela sazonal",
                     orientation="v",
                     x=1.02, xanchor="left", y=1, yanchor="top",
                     font=dict(size=12, color=NAVY),
@@ -308,7 +305,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
                 margin=dict(l=95, r=255, t=110, b=80),
                 legend=dict(
-                    title_text="Janela sazonal · intervalo observado",
+                    title_text="Janela sazonal",
                     orientation="v",
                     x=1.02, xanchor="left", y=1, yanchor="top",
                     font=dict(size=16, color=NAVY),
@@ -322,6 +319,22 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 height=430,
                 export_fig=export_sazonal,
             )
+            # Mínimo/máximo de cada janela, identificados com sua cor.
+            cards = st.columns(3)
+            for col, janela in zip(cards, janelas):
+                if janela not in textos_intervalos:
+                    continue
+                with col:
+                    cor = cores_janelas[janela]
+                    st.markdown(
+                        f'<div style="border-left:4px solid {cor};padding:9px 12px;'
+                        'border-radius:7px;background:#F4F6F8;min-height:66px">'
+                        f'<div style="font-size:.78rem;color:#1A3B5C;font-weight:700">'
+                        f'{janela}</div>'
+                        f'<div style="font-size:1.05rem;color:#1A3B5C">'
+                        f'{textos_intervalos[janela]}</div></div>',
+                        unsafe_allow_html=True,
+                    )
         else:
             st.info("Não há dados suficientes para exibir o índice sazonal neste recorte.")
     else:
