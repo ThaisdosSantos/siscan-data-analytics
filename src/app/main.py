@@ -288,6 +288,22 @@ st.markdown("""
 .st-key-exec-nav-panorama .stCaptionContainer,
 .st-key-exec-nav-outubro .stCaptionContainer,
 .st-key-exec-nav-alterados .stCaptionContainer{margin-top:2px!important;}
+
+.st-key-exec-nav-panorama [data-testid="stButton"] button{
+  display:block!important;text-align:left!important;width:100%!important;
+  padding:0 35px 0 0!important;margin:0!important;min-height:0!important;
+  background:transparent!important;border:0!important;border-radius:0!important;
+  box-shadow:none!important;color:#1A3B5C!important;
+  font-family:Fraunces,Georgia,serif!important;font-size:1rem!important;
+  font-weight:650!important;line-height:1.3!important;
+}
+.st-key-exec-nav-panorama [data-testid="stButton"] button:hover,
+.st-key-exec-nav-panorama [data-testid="stButton"] button:focus{
+  background:transparent!important;color:#1A3B5C!important;
+}
+.st-key-exec-nav-panorama [data-testid="stButton"] button::after{
+  content:"";position:absolute;inset:0;z-index:2;cursor:pointer;
+}
 </style>
 """, unsafe_allow_html=True)
 nav = [
@@ -301,6 +317,11 @@ nav = [
 for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), nav):
     with col:
         with st.container(key=key):
-            st.page_link(page, label=title, use_container_width=True)
+            if key == "exec-nav-panorama":
+                # A navegação via callback evita o overlay CSS que interceptava o link.
+                if st.button(title, key="exec-open-panorama", use_container_width=True):
+                    st.switch_page(page)
+            else:
+                st.page_link(page, label=title, use_container_width=True)
             st.markdown('<div class="exec-nav-subtitle">' + html.escape(subtitle)
                         + '</div>', unsafe_allow_html=True)
