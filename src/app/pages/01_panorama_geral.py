@@ -181,18 +181,33 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             hovertemplate="Ano: %{x}<br>Exames registrados: %{y:,.0f}<extra></extra>",
         )
         fig.update_xaxes(
-            matches=None, showticklabels=True, type="category",
-            categoryorder="array",
+            matches=None, showticklabels=True, title_text=None,
+            type="category", categoryorder="array",
             categoryarray=[str(year) for year in years_axis],
         )
         fig.update_yaxes(
-            matches=None, showticklabels=True, rangemode="tozero",
-            tickformat=",d", gridcolor="#E9EDF1", zeroline=False,
+            matches=None, showticklabels=True, title_text=None,
+            rangemode="tozero", tickformat=",d",
+            gridcolor="#E9EDF1", zeroline=False,
+        )
+        # Um título por eixo para o conjunto completo de facetas.
+        # Os valores e os anos continuam visíveis em cada município.
+        fig.add_annotation(
+            x=-0.065, y=0.5, xref="paper", yref="paper",
+            text="Exames registrados", textangle=-90, showarrow=False,
+            font=dict(family="Arial", size=13, color="#1A3B5C"),
+            xanchor="center", yanchor="middle",
+        )
+        fig.add_annotation(
+            x=0.5, y=-0.065, xref="paper", yref="paper",
+            text="Ano", showarrow=False,
+            font=dict(family="Arial", size=13, color="#1A3B5C"),
+            xanchor="center", yanchor="top",
         )
         fig.update_layout(
             height=max(480, 285 * ((len(municipalities) + 2) // 3)),
             showlegend=False,
-            margin=dict(l=25, r=15, t=55, b=35),
+            margin=dict(l=95, r=15, t=55, b=75),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="white",
             font=dict(color="#1A3B5C", size=11),
