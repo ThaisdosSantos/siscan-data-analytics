@@ -44,7 +44,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         st.info(
             f"Em outubro de {period}, foram registrados **{fmt_num(octval)} exames**, "
             f"**{fmt_num(abs(diff))} {direction}** que em setembro "
-            f"(**{formatted_variation}**). A comparação não permite atribuir a mudança à campanha."
+            f"(**{formatted_variation}**)."
         )
 
     plot = df.groupby(["ano", "mes"], as_index=False)["exames_mes"].sum(min_count=1)
