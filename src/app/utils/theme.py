@@ -613,6 +613,27 @@ def apply_custom_css():
       width:auto!important;
       flex:0 1 auto!important;
     }
+
+    /* Alinhamento fixo à esquerda, independente do wrapper interno de st.button. */
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button {
+      position:relative!important;display:flex!important;
+      justify-content:flex-start!important;align-items:center!important;
+      padding:5px 10px 5px 38px!important;text-align:left!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button::before {
+      position:absolute!important;left:9px!important;top:50%!important;
+      transform:translateY(-50%)!important;margin:0!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button [data-testid="stMarkdownContainer"] {
+      display:block!important;position:static!important;
+      flex:0 1 auto!important;min-width:0!important;max-width:100%!important;
+      margin:0!important;padding:0!important;text-align:left!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button [data-testid="stMarkdownContainer"] p {
+      display:block!important;margin:0!important;padding:0!important;
+      text-align:left!important;width:auto!important;
+      white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
