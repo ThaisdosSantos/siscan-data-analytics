@@ -4,6 +4,7 @@ import html
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from utils.chart_download import chart_with_right_click_download
 
 from utils.theme import apply_custom_css, active_scope_html, fmt_num, fmt_pct, pct, OCEAN, NAVY, ORANGE
 from utils.data_loader import (
@@ -224,7 +225,7 @@ with left:
             plot_bgcolor="#f4f6f8", paper_bgcolor="rgba(0,0,0,0)",
             hoverlabel=dict(bgcolor="white", font_color=NAVY),
         )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        chart_with_right_click_download(fig, filename="visao_executiva_territorial.png", height=fig.layout.height)
         st.caption("Passe o mouse sobre uma bolha para consultar o município.")
 
 with right:
@@ -244,7 +245,7 @@ with right:
                           plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)")
         fig.update_yaxes(gridcolor="#e9eff3", rangemode="tozero")
         fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        chart_with_right_click_download(fig, filename="visao_executiva_evolucao_mensal.png", height=fig.layout.height)
 
 # Cartões de navegação com títulos idênticos e toda a superfície clicável.
 st.markdown("""
