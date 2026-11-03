@@ -55,7 +55,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
     plot["periodo"] = plot["mes"].map(month_names)
     fig = px.bar(
         plot, x="ano", y="exames_mes", color="periodo", barmode="group",
-        color_discrete_map={"Setembro":SKY,"Outubro":ORANGE,"Novembro":OCEAN,"Dezembro":NAVY},
+        color_discrete_map={"Setembro":SKY,"Outubro":ORANGE,"Novembro":"#218B65","Dezembro":NAVY},
         category_orders={"periodo":list(month_names.values())},
         labels={"ano":"Ano","exames_mes":"Exames","periodo":"Mês"},
         title=f"Exames de setembro a dezembro · {period}"
