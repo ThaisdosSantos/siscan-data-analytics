@@ -562,6 +562,42 @@ def apply_custom_css():
       display:none!important;width:0!important;min-width:0!important;
       margin:0!important;padding:0!important;
     }
+
+    /* Opções de municípios agora são botões, sem nenhum checkbox quadrado. */
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"]{
+      width:100%!important;margin:1px 0!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button{
+      display:flex!important;align-items:center!important;justify-content:flex-start!important;
+      text-align:left!important;gap:9px!important;width:100%!important;
+      min-height:31px!important;margin:0!important;padding:5px 9px!important;
+      background:#1b405f!important;color:#dce9f3!important;
+      border:1px solid #345b79!important;border-radius:13px!important;
+      font:500 12px/1.3 Manrope,Arial,sans-serif!important;
+      box-shadow:none!important;transition:background .15s,border-color .15s!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button::before{
+      content:""!important;display:grid!important;place-items:center!important;
+      flex:0 0 17px!important;width:17px!important;height:17px!important;
+      border:1px solid #416785!important;border-radius:50%!important;
+      background:transparent!important;color:white!important;
+      font:700 11px/1 Arial,sans-serif!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button[kind="primary"],
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button[data-testid="stBaseButton-primary"]{
+      background:#1b405f!important;color:#fff!important;
+      border-color:#3b6684!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button[kind="primary"]::before,
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button[data-testid="stBaseButton-primary"]::before{
+      content:"✓"!important;background:#EE5325!important;border-color:#EE5325!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button:hover{
+      background:#254e6e!important;border-color:#537e9b!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button:focus-visible{
+      outline:2px solid #5aaee0!important;outline-offset:1px!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
