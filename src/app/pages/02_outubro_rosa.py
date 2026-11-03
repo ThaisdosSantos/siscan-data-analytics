@@ -128,7 +128,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         # As reduções são rotuladas dentro da barra para não cobrir a cidade.
         for trace in export_fig.data:
             trace.text = [
-                (f"{float(value):.2f}%".replace(".", ",") if pd.notna(value) else "—")
+                (f"{float(value):.2f}%" if pd.notna(value) else "—")
                 for value in trace.x
             ]
             is_reduction = trace.name == "Redução"
