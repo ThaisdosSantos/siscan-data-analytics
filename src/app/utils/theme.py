@@ -727,6 +727,60 @@ def apply_custom_css():
       right:10px!important;padding:4px 8px!important;
       background:#1b405f!important;border:1px solid #315977!important;
     }
+
+    /* Estrutura definitiva do cabeçalho compacto: ícones e texto posicionados
+       em coordenadas próprias, sem os deslocamentos dos wrappers do Streamlit. */
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary {
+      position:relative!important;display:block!important;
+      box-sizing:border-box!important;
+      padding:0!important;margin:0!important;height:48px!important;
+      min-height:48px!important;
+      background:#1b405f!important;border:0!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details:not([open])>summary,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details:not([open])>summary{
+      height:56px!important;min-height:56px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary::before,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary::before{
+      left:11px!important;top:50%!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stMarkdownContainer"],
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stMarkdownContainer"]{
+      display:contents!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stMarkdownContainer"] p{
+      position:absolute!important;top:50%!important;left:59px!important;
+      transform:translateY(-50%)!important;
+      margin:0!important;padding:0!important;
+      width:calc(100% - 118px)!important;
+      color:#f3f8fc!important;font:400 13px/1.1 Georgia,serif!important;
+      letter-spacing:0!important;text-align:left!important;
+      white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details:not([open])>summary [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details:not([open])>summary [data-testid="stMarkdownContainer"] p{
+      top:20px!important;transform:none!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stMarkdownContainer"]::before,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stMarkdownContainer"]::before{
+      left:36px!important;top:50%!important;width:14px!important;height:14px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details:not([open])>summary [data-testid="stMarkdownContainer"]::after,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details:not([open])>summary [data-testid="stMarkdownContainer"]::after{
+      position:absolute!important;left:59px!important;top:35px!important;
+      display:block!important;width:calc(100% - 119px)!important;
+      max-width:none!important;
+      font:400 10px/1.1 Manrope,Arial,sans-serif!important;
+      color:#8aaac1!important;
+      overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary::after,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary::after{
+      top:50%!important;right:10px!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
