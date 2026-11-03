@@ -88,8 +88,16 @@ def apply_custom_css():
     [data-testid="stAppViewContainer"] {background:#f8fafb!important;}
     [data-testid="stSidebar"] {width:300px!important;min-width:300px!important;}
     .lovable-brand {display:flex;align-items:center;gap:12px;padding:14px 6px 22px;}
-    .lovable-mark {display:grid;place-items:center;width:42px;height:42px;background:#ee5325;
-      border-radius:12px;font-size:24px;color:white!important;}
+    .lovable-mark {
+      display:grid;place-items:center;flex:0 0 46px;
+      width:46px;height:46px;background:#fff;
+      border:1px solid rgba(255,255,255,.25);
+      border-radius:12px;overflow:hidden;padding:3px;
+    }
+    .lovable-mark img {
+      display:block;width:100%;height:100%;object-fit:contain;
+      border-radius:7px;background:#fff;
+    }
     .lovable-brand strong {display:block;font-size:1.3rem;color:white;font-weight:800;}
     .lovable-brand small {display:block;color:#c3d7e6;font-size:.74rem;}
     .lovable-label {font-weight:800;color:#9cc5de!important;font-size:.68rem;letter-spacing:.15em;margin:14px 0 9px;}
