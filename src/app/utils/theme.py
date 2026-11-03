@@ -781,6 +781,36 @@ def apply_custom_css():
     [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary::after{
       top:50%!important;right:10px!important;
     }
+
+    /* Ícones Lucide-style correspondentes à referência do menu lateral. */
+    [data-testid="stSidebar"] .st-key-nav_panorama_icon [data-testid="stPageLink"] a,
+    [data-testid="stSidebar"] .st-key-nav_outubro_icon [data-testid="stPageLink"] a,
+    [data-testid="stSidebar"] .st-key-nav_exames_icon [data-testid="stPageLink"] a{
+      display:flex!important;align-items:center!important;
+      gap:10px!important;min-height:39px!important;
+    }
+    [data-testid="stSidebar"] .st-key-nav_panorama_icon [data-testid="stPageLink"] a::before,
+    [data-testid="stSidebar"] .st-key-nav_outubro_icon [data-testid="stPageLink"] a::before,
+    [data-testid="stSidebar"] .st-key-nav_exames_icon [data-testid="stPageLink"] a::before{
+      content:""!important;display:inline-block!important;
+      flex:0 0 17px!important;width:17px!important;height:17px!important;
+      background-color:currentColor!important;
+      -webkit-mask-size:contain!important;mask-size:contain!important;
+      -webkit-mask-position:center!important;mask-position:center!important;
+      -webkit-mask-repeat:no-repeat!important;mask-repeat:no-repeat!important;
+    }
+    [data-testid="stSidebar"] .st-key-nav_panorama_icon [data-testid="stPageLink"] a::before{
+      -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%203v18h18%22%2F%3E%3Cpath%20d%3D%22M8%2016v-5M13%2016V7M18%2016v-9%22%2F%3E%3C%2Fsvg%3E")!important;
+      mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%203v18h18%22%2F%3E%3Cpath%20d%3D%22M8%2016v-5M13%2016V7M18%2016v-9%22%2F%3E%3C%2Fsvg%3E")!important;
+    }
+    [data-testid="stSidebar"] .st-key-nav_outubro_icon [data-testid="stPageLink"] a::before{
+      -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%203c-3.5%200-6%202.2-6%205.4%200%202.5%202%205.2%206%209.2%204-4%206-6.7%206-9.2C18%205.2%2015.5%203%2012%203Z%22%2F%3E%3Cpath%20d%3D%22M9.4%205.6c-1%202.9%202%206.7%204.9%209.1M14.6%205.6c1%202.9-2%206.7-4.9%209.1%22%2F%3E%3Cpath%20d%3D%22M10.4%2014.2%207.6%2021l4.4-2.5L16.4%2021l-2.8-6.8%22%2F%3E%3C%2Fsvg%3E")!important;
+      mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%203c-3.5%200-6%202.2-6%205.4%200%202.5%202%205.2%206%209.2%204-4%206-6.7%206-9.2C18%205.2%2015.5%203%2012%203Z%22%2F%3E%3Cpath%20d%3D%22M9.4%205.6c-1%202.9%202%206.7%204.9%209.1M14.6%205.6c1%202.9-2%206.7-4.9%209.1%22%2F%3E%3Cpath%20d%3D%22M10.4%2014.2%207.6%2021l4.4-2.5L16.4%2021l-2.8-6.8%22%2F%3E%3C%2Fsvg%3E")!important;
+    }
+    [data-testid="stSidebar"] .st-key-nav_exames_icon [data-testid="stPageLink"] a::before{
+      -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012h4l3-7%204.3%2014%203.1-7H22%22%2F%3E%3C%2Fsvg%3E")!important;
+      mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012h4l3-7%204.3%2014%203.1-7H22%22%2F%3E%3C%2Fsvg%3E")!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
