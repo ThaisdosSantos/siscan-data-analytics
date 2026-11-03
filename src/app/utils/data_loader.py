@@ -180,12 +180,12 @@ def sidebar_filters():
         st.markdown('<div class="lovable-brand"><span class="lovable-mark">✳</span><span><strong>SISCAN</strong><small>PET-Saúde · 10ª CRS</small></span></div>', unsafe_allow_html=True)
         st.markdown('<div class="lovable-label">EXPLORAR</div>', unsafe_allow_html=True)
         for path, label, icon in [
-            ("main.py", "Visão executiva", ":material/dashboard:"),
-            ("pages/01_panorama_geral.py", "Panorama geral", ":material/monitoring:"),
-            ("pages/02_outubro_rosa.py", "Outubro Rosa", ":material/favorite:"),
-            ("pages/03_faixa_etaria.py", "Faixa etária", ":material/groups:"),
-            ("pages/04_adequabilidade.py", "Adequabilidade", ":material/verified:"),
-            ("pages/05_exames_alterados.py", "Exames alterados", ":material/biotech:"),
+            ("main.py", "Visão executiva", ":material/speed:"),
+            ("pages/01_panorama_geral.py", "Panorama geral", ":material/bar_chart:"),
+            ("pages/02_outubro_rosa.py", "Outubro Rosa", ":material/workspace_premium:"),
+            ("pages/03_faixa_etaria.py", "Faixa etária", ":material/group:"),
+            ("pages/04_adequabilidade.py", "Adequabilidade", ":material/science:"),
+            ("pages/05_exames_alterados.py", "Exames alterados", ":material/ecg_heart:"),
         ]:
             st.page_link(path, label=label, icon=icon)
         st.divider()
