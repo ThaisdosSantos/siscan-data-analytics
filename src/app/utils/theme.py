@@ -614,25 +614,27 @@ def apply_custom_css():
       flex:0 1 auto!important;
     }
 
-    /* Alinhamento fixo à esquerda, independente do wrapper interno de st.button. */
-    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button {
+    /* Marcador e nome com posições fixas: evita centralização do texto pelo Streamlit. */
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button{
       position:relative!important;display:flex!important;
       justify-content:flex-start!important;align-items:center!important;
-      padding:5px 10px 5px 38px!important;text-align:left!important;
+      text-align:left!important;padding:5px 8px 5px 36px!important;
     }
-    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button::before {
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button::before{
       position:absolute!important;left:9px!important;top:50%!important;
       transform:translateY(-50%)!important;margin:0!important;
     }
-    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button [data-testid="stMarkdownContainer"] {
-      display:block!important;position:static!important;
-      flex:0 1 auto!important;min-width:0!important;max-width:100%!important;
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button [data-testid="stMarkdownContainer"]{
+      position:absolute!important;left:36px!important;right:8px!important;
+      top:50%!important;transform:translateY(-50%)!important;
+      display:block!important;width:auto!important;max-width:none!important;
       margin:0!important;padding:0!important;text-align:left!important;
+      flex:none!important;
     }
-    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button [data-testid="stMarkdownContainer"] p {
-      display:block!important;margin:0!important;padding:0!important;
-      text-align:left!important;width:auto!important;
-      white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stButton"] button [data-testid="stMarkdownContainer"] p{
+      margin:0!important;padding:0!important;text-align:left!important;
+      white-space:nowrap!important;overflow:hidden!important;
+      text-overflow:ellipsis!important;
     }
     </style>""", unsafe_allow_html=True)
 
