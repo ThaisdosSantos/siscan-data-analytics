@@ -227,12 +227,12 @@ def sidebar_filters():
                     y_all, y_clear = st.columns(2, gap="small")
                     with y_all:
                         st.form_submit_button(
-                            "Todos", use_container_width=True,
+                            "Todos", key="filter_all_years", use_container_width=True,
                             on_click=submit_filters, args=("all_years",),
                         )
                     with y_clear:
                         st.form_submit_button(
-                            "Limpar", use_container_width=True,
+                            "Limpar", key="filter_clear_years", use_container_width=True,
                             on_click=submit_filters, args=("clear_years",),
                         )
                 with st.expander(
@@ -243,12 +243,12 @@ def sidebar_filters():
                     c_all, c_clear = st.columns(2, gap="small")
                     with c_all:
                         st.form_submit_button(
-                            "Todos", use_container_width=True,
+                            "Todos", key="filter_all_cities", use_container_width=True,
                             on_click=submit_filters, args=("all_cities",),
                         )
                     with c_clear:
                         st.form_submit_button(
-                            "Limpar", use_container_width=True,
+                            "Limpar", key="filter_clear_cities", use_container_width=True,
                             on_click=submit_filters, args=("clear_cities",),
                         )
                     with st.container(height=255, border=False):
