@@ -670,6 +670,63 @@ def apply_custom_css():
     [data-testid="stSidebar"] .st-key-siscan_city_panel details:not([open])>summary [data-testid="stMarkdownContainer"]::after{
       left:57px!important;
     }
+
+    /* Cabeçalhos compactos: + | ícone | título/subtítulo | contador.
+       Mesmas dimensões nos dois filtros e sem a seta nativa. */
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel{
+      padding:10px 9px 11px!important;border-radius:20px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel{
+      margin:0 0 6px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary{
+      height:51px!important;min-height:51px!important;
+      padding:0 52px 0 49px!important;align-items:center!important;
+      border-radius:16px!important;line-height:1!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details:not([open])>summary,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details:not([open])>summary{
+      height:55px!important;min-height:55px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stMarkdownContainer"],
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stMarkdownContainer"]{
+      display:block!important;position:static!important;
+      width:auto!important;min-width:0!important;max-width:100%!important;
+      margin:0!important;padding:0!important;align-self:center!important;
+      line-height:1!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stMarkdownContainer"] p{
+      margin:0!important;padding:0!important;
+      color:#f5f9fd!important;font:650 12px/1.2 Manrope,Arial,sans-serif!important;
+      text-align:left!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details:not([open])>summary [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details:not([open])>summary [data-testid="stMarkdownContainer"] p{
+      transform:translateY(-6px)!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details:not([open])>summary [data-testid="stMarkdownContainer"]::after,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details:not([open])>summary [data-testid="stMarkdownContainer"]::after{
+      top:32px!important;left:49px!important;
+      max-width:calc(100% - 110px)!important;
+      line-height:1.25!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary::before,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary::before{
+      left:10px!important;width:19px!important;height:19px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stMarkdownContainer"]::before,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stMarkdownContainer"]::before{
+      left:34px!important;top:50%!important;
+      width:14px!important;height:14px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary::after,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary::after{
+      right:10px!important;padding:4px 8px!important;
+      background:#1b405f!important;border:1px solid #315977!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
