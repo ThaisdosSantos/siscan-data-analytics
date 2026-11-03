@@ -170,11 +170,42 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
     matrix["taxa"]=matrix.quantidade_alterados.div(matrix.total_exames_validos.where(matrix.total_exames_validos>0)).mul(100)
     heat=matrix.pivot(index="municipio",columns="faixa_etaria",values="taxa")
     if not heat.empty:
-        fig=px.imshow(heat,aspect="auto",color_continuous_scale="Blues",
-                      labels={"x":"Faixa etária","y":"Município","color":"%"},
-                      title="Matriz territorial de proporção operacional")
-        fig.update_traces(hovertemplate="Faixa etária: %{x}<br>Município: %{y}<br>Proporção: %{z:.2f}%<extra></extra>")
+        st.caption("Valores nas células em (%) · — indica ausência de dados.")
+        fig=px.imshow(
+            heat, aspect="auto", color_continuous_scale="Blues",
+            labels={"x":"Faixa etária","y":"Município","color":"%"},
+            title="Matriz territorial de proporção operacional",
+        )
+        fig.update_traces(
+            xgap=3, ygap=3,
+            hovertemplate="Faixa etária: %{x}<br>Município: %{y}<br>Proporção: %{z:.2f}%<extra></extra>",
+        )
         fig.update_coloraxes(colorbar_tickformat=".2f", colorbar_ticksuffix="%")
+        # Rótulos permanentes para leitura também em imagens estáticas.
+        # Não converter dados ausentes em 0: exibir um travessão.
+        valid_values = heat.stack().dropna()
+        max_rate = float(valid_values.max()) if not valid_values.empty else 0.0
+        for city in heat.index:
+            for age in heat.columns:
+                value = heat.at[city, age]
+                has_value = pd.notna(value)
+                label = f"{value:.2f}".replace(".", ",") if has_value else "—"
+                # Texto claro em células escuras, azul-marinho nas demais.
+                font_color = (
+                    "#FFFFFF" if has_value and max_rate > 0
+                    and float(value) / max_rate >= 0.55 else "#1A3B5C"
+                )
+                fig.add_annotation(
+                    x=age, y=city, text=label, showarrow=False,
+                    font=dict(size=10, color=font_color),
+                    xanchor="center", yanchor="middle",
+                    hovertext=None,
+                )
+        fig.update_layout(
+            height=max(500, 43 * len(heat.index) + 155),
+            margin=dict(l=25, r=15, t=70, b=65),
+            plot_bgcolor="#FFFFFF",
+        )
         display_chart(fig)
     with st.expander("Ver dados detalhados de exames alterados", expanded=False):
         export_table(matrix, "siscan_exames_alterados.csv")
