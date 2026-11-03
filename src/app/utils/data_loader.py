@@ -215,14 +215,16 @@ def sidebar_filters():
             )
             with st.form("siscan_filters_form", border=False):
                 with st.expander(
-                    f"Anos   ·   {len(selected_years())}/6",
+                    f"Anos · {len(selected_years())}/6",
                     expanded=False, icon=":material/calendar_month:",
                 ):
-                    st.caption("Selecione os anos e confirme ao final.")
-                    st.pills(
-                        "Anos disponíveis", years,
-                        selection_mode="multi", key="filter_draft_years",
-                        label_visibility="collapsed",
+                    years_count = len(selected_years())
+                    st.markdown(
+                        '<div class="filter-progress" role="progressbar" '
+                        f'aria-label="Anos selecionados" aria-valuenow="{years_count}" '
+                        'aria-valuemin="0" aria-valuemax="6">'
+                        f'<span style="width:{years_count / 6 * 100:.2f}%"></span></div>',
+                        unsafe_allow_html=True,
                     )
                     y_all, y_clear = st.columns(2, gap="small")
                     with y_all:
@@ -235,11 +237,30 @@ def sidebar_filters():
                             "Limpar", key="filter_clear_years", use_container_width=True,
                             on_click=submit_filters, args=("clear_years",),
                         )
+                    st.pills(
+                        "Anos disponíveis", years,
+                        selection_mode="multi", key="filter_draft_years",
+                        label_visibility="collapsed",
+                    )
+                    st.markdown(
+                        '<p class="filter-period-label">' +
+                        ("Período completo" if years_count == 6
+                         else "Nenhum ano" if not years_count
+                         else "Período: " + years_label()) + '</p>',
+                        unsafe_allow_html=True,
+                    )
                 with st.expander(
-                    f"Municípios   ·   {len(st.session_state['city_preference'])}/11",
+                    f"Municípios · {len(st.session_state['city_preference'])}/11",
                     expanded=False, icon=":material/location_on:",
                 ):
-                    st.caption("Marque os municípios antes de aplicar.")
+                    city_count = len(st.session_state["city_preference"])
+                    st.markdown(
+                        '<div class="filter-progress" role="progressbar" '
+                        f'aria-label="Municípios selecionados" aria-valuenow="{city_count}" '
+                        'aria-valuemin="0" aria-valuemax="11">'
+                        f'<span style="width:{city_count / 11 * 100:.2f}%"></span></div>',
+                        unsafe_allow_html=True,
+                    )
                     c_all, c_clear = st.columns(2, gap="small")
                     with c_all:
                         st.form_submit_button(
