@@ -37,8 +37,11 @@ def chart_with_right_click_download(fig, *, filename, height=None, export_fig=No
                         textfont=dict(size=10, color="#1A3B5C"),
                     )
             elif kind == "pie":
-                trace.update(textinfo="percent", textposition="inside",
-                             insidetextfont=dict(color="#FFFFFF", size=13))
+                trace.update(
+                    texttemplate="%{percent:.2%}",
+                    textposition="inside",
+                    insidetextfont=dict(color="#FFFFFF", size=13),
+                )
         export_fig.update_layout(
             paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
             font=dict(color="#1A3B5C"),
