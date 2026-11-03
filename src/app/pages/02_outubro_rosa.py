@@ -1,4 +1,5 @@
 """Comparação descritiva Setembro–Outubro, sem inferência causal."""
+import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -65,7 +66,26 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
     fig.update_traces(hovertemplate="Ano: %{x}<br>Exames: %{y:,.0f}<extra>%{fullData.name}</extra>")
     st.caption("Clique com o botão direito no gráfico para baixar em PNG.")
     fig = style_chart(fig)
-    chart_with_right_click_download(fig, filename="outubro_rosa_setembro_dezembro.png", height=fig.layout.height)
+    # A versão exportada mostra valores absolutos; no site, preservamos
+    # o gráfico original e seus tooltips sem rótulos sobrepostos.
+    export_fig = copy.deepcopy(fig)
+    export_fig.update_traces(
+        texttemplate="%{y:,.0f}", textposition="outside",
+        textfont=dict(size=13, color="#1A3B5C"),
+        cliponaxis=False,
+    )
+    export_fig.update_layout(
+        paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+        font=dict(color="#1A3B5C", size=13),
+        title=dict(font=dict(size=22, color="#1A3B5C")),
+        uniformtext=dict(minsize=10, mode="show"),
+        margin=dict(l=100, r=185, t=100, b=90),
+    )
+    export_fig.update_yaxes(rangemode="tozero")
+    chart_with_right_click_download(
+        fig, filename="outubro_rosa_setembro_dezembro.png",
+        height=fig.layout.height, export_fig=export_fig,
+    )
 
     city = octdf.groupby("municipio", as_index=False)[
         ["exames_mes", "exames_referencia_setembro"]
