@@ -341,9 +341,14 @@ with b:
                 cliponaxis=True,
             )
         export_fig.update_layout(
+            title=dict(
+                text="Composição etária por município",
+                x=0.5, xanchor="center",
+                font=dict(family="Arial", size=24, color="#1A3B5C"),
+            ),
             paper_bgcolor="#FFFFFF",
             plot_bgcolor="#FFFFFF",
-            margin=dict(l=190, r=65, t=40, b=110),
+            margin=dict(l=190, r=65, t=100, b=110),
             uniformtext=dict(minsize=11, mode="show"),
         )
         chart_with_right_click_download(
