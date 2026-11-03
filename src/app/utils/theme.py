@@ -134,17 +134,59 @@ def apply_custom_css():
       [data-testid="stSidebar"] [data-testid="stButton"] button {min-height:42px;}
       [data-testid="stPageLink"] a {overflow-wrap:anywhere;}
     }
+
+    /* Resumo do recorte — padrão compartilhado de todas as páginas. */
+    .pet-active-scope{display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+      margin-top:17px;max-width:100%;font-family:Manrope,Arial,sans-serif;}
+    .pet-scope-label{font-size:.65rem;letter-spacing:.17em;font-weight:800;
+      color:#b0d3e9!important;margin-right:3px;white-space:nowrap;}
+    .pet-scope-chip{display:inline-flex;align-items:center;gap:7px;
+      border-radius:999px;background:rgba(255,255,255,.11);
+      border:1px solid rgba(194,222,241,.19);color:#f5fbff!important;
+      padding:6px 12px;font-size:.74rem;font-weight:600;line-height:1.25;
+      max-width:100%;white-space:normal;}
+    .pet-scope-icon{color:#8ac9ee!important;font-size:.9rem;line-height:1;}
+    @media(max-width:550px){
+      .pet-active-scope{gap:6px;margin-top:14px;}
+      .pet-scope-label{flex-basis:100%;margin-bottom:2px;}
+      .pet-scope-chip{padding:6px 10px;font-size:.71rem;}
+    }
     </style>""", unsafe_allow_html=True)
 
 
+def active_scope_html():
+    """Chips compactos do recorte aplicado, sincronizados com os filtros globais."""
+    from utils.data_loader import MUNICIPIOS, selected_years, years_label
+
+    years = selected_years()
+    selected_cities = st.session_state.get("city_preference", list(MUNICIPIOS.values()))
+    count = len(selected_cities)
+    period = years_label(years)
+    city_text = "Todos os 11 municípios" if count == len(MUNICIPIOS) else f"{count} de 11 municípios"
+
+    return (
+        '<div class="pet-active-scope" role="status" aria-label="Recorte ativo">'
+        '<span class="pet-scope-label">RECORTE ATIVO</span>'
+        '<span class="pet-scope-chip"><span class="pet-scope-icon" aria-hidden="true">▦</span>'
+        + html.escape(period) + '</span>'
+        '<span class="pet-scope-chip"><span class="pet-scope-icon" aria-hidden="true">♧</span>'
+        + html.escape(city_text) + '</span>'
+        '</div>'
+    )
+
+
 def page_header(kicker, title, description=""):
-    """Hero do Lovable implementado em HTML/CSS, sem dependências React."""
+    """Cabeçalho comum com indicadores do recorte ativo em todas as páginas."""
+    description_html = (
+        '<div class="pet-hero-desc">' + html.escape(str(description)) + '</div>'
+        if description else ""
+    )
     st.markdown(
         '<header class="pet-hero"><p class="pet-hero-kicker">'
         + html.escape(str(kicker)) + '</p><h1 class="pet-hero-title">'
-        + html.escape(str(title)) + '</h1><div class="pet-hero-desc">'
-        + html.escape(str(description)) + '</div></header>',
-        unsafe_allow_html=True
+        + html.escape(str(title)) + '</h1>' + description_html
+        + active_scope_html() + '</header>',
+        unsafe_allow_html=True,
     )
 
 
