@@ -127,9 +127,14 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         # Strings prontas evitam exibir toda a precisão decimal no PNG.
         # As reduções são rotuladas dentro da barra para não cobrir a cidade.
         for trace in export_fig.data:
+            # Recupera os valores do DataFrame, não de trace.x: no Plotly 6
+            # o eixo numérico pode ser serializado como estrutura binária.
+            values = plot_city.loc[
+                plot_city["direcao"] == trace.name, "variacao_pct"
+            ]
             trace.text = [
-                (f"{float(value):.2f}%".replace(".", ",") if pd.notna(value) else "—")
-                for value in trace.x
+                f"{value:.2f}%" if pd.notna(value) else "—"
+                for value in values
             ]
             is_reduction = trace.name == "Redução"
             trace.update(
