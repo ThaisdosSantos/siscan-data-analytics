@@ -502,6 +502,39 @@ def apply_custom_css():
       background:#EE5325!important;border-color:#EE5325!important;
       color:white!important;border-radius:10px!important;min-height:39px!important;
     }
+
+    /* Indicador de seleção circular: substitui visual nativo quadrado.
+       O checkbox continua sendo o widget acessível do Streamlit. */
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label {
+      position:relative!important;display:flex!important;align-items:center!important;
+      justify-content:flex-start!important;gap:0!important;
+      padding:5px 10px 5px 32px!important;width:100%!important;
+      min-height:32px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label::before {
+      content:""!important;position:absolute!important;left:9px!important;
+      top:50%!important;transform:translateY(-50%)!important;
+      width:17px!important;height:17px!important;
+      border-radius:50%!important;border:1px solid #416785!important;
+      background:transparent!important;display:grid!important;place-items:center!important;
+      color:#fff!important;font:700 12px/1 Arial,sans-serif!important;
+      box-sizing:border-box!important;pointer-events:none!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label:has(input:checked)::before,
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label:has([aria-checked="true"])::before {
+      content:"✓"!important;background:#EE5325!important;border-color:#EE5325!important;
+    }
+    /* Oculta somente o desenho quadrado do BaseWeb, preservando input e rótulo. */
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label > span:first-child,
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label > div:first-child:has(input),
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] [data-baseweb="checkbox"] > span:first-child {
+      position:absolute!important;left:0!important;top:0!important;
+      width:1px!important;height:1px!important;opacity:0!important;
+      overflow:hidden!important;pointer-events:none!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label:focus-within {
+      outline:2px solid #54a4d5!important;outline-offset:1px!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
