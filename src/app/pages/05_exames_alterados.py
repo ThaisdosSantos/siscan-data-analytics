@@ -201,6 +201,9 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                     xanchor="center", yanchor="middle",
                     hovertext=None,
                 )
+        # Contraste dos rótulos dos eixos, sem negrito.
+        fig.update_xaxes(tickfont=dict(color="#1A3B5C", size=12, family="Arial"))
+        fig.update_yaxes(tickfont=dict(color="#1A3B5C", size=12, family="Arial"))
         fig.update_layout(
             template="plotly_white",
             height=max(500, 43 * len(heat.index) + 155),
