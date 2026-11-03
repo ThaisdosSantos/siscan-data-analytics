@@ -156,13 +156,21 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                 xanchor="center", yanchor="middle",
             )
             fig_yearly.update_xaxes(
-                matches=None, showticklabels=True, type="category",
-                categoryorder="array", categoryarray=[str(y) for y in axis_years]
+                matches=None, showticklabels=True, title_text=None,
+                type="category", categoryorder="array",
+                categoryarray=[str(y) for y in axis_years]
+            )
+            # Um único título horizontal para todo o conjunto de facetas.
+            fig_yearly.add_annotation(
+                x=0.5, y=-0.065, xref="paper", yref="paper",
+                text="Ano", showarrow=False,
+                font=dict(family="Arial", size=13, color="#1A3B5C"),
+                xanchor="center", yanchor="top",
             )
             fig_yearly.update_layout(
                 height=max(480, 285 * ((len(municipalities) + 2) // 3)),
                 showlegend=False,
-                margin=dict(l=95, r=15, t=55, b=35),
+                margin=dict(l=95, r=15, t=55, b=75),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="white",
                 font=dict(color="#1A3B5C", size=11),
