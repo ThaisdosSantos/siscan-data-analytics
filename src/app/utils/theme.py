@@ -428,6 +428,45 @@ def apply_custom_css():
       min-height:27px!important;font:500 11px Manrope,Arial,sans-serif!important;
       box-shadow:none!important;
     }
+    /* Lista de municípios: cada linha ocupa 100% do painel, sem cápsulas
+       de largura variável nem o espaçamento padrão entre widgets. */
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll,
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stVerticalBlock"],
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stElementContainer"],
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"],
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] > div {
+      width:100%!important;max-width:100%!important;min-width:0!important;
+      align-self:stretch!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stVerticalBlock"]{
+      gap:2px!important;row-gap:2px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stElementContainer"]{
+      margin:0!important;padding:0!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label{
+      width:100%!important;min-width:0!important;max-width:100%!important;
+      justify-content:flex-start!important;box-sizing:border-box!important;
+      border-radius:13px!important;padding:5px 8px!important;
+      min-height:32px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label > div {
+      min-width:0!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label p{
+      white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+      font-size:11px!important;
+    }
+    /* Em algumas versões do Streamlit o checkbox nativo é um quadrado
+       interno: arredondar o elemento real, mantendo o check laranja. */
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] [data-baseweb="checkbox"] > div:first-child,
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] [role="checkbox"]{
+      border-radius:50%!important;width:17px!important;height:17px!important;
+      flex:0 0 17px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] [data-baseweb="checkbox"]:has(input:checked) > div:first-child{
+      background:#EE5325!important;border-color:#EE5325!important;
+    }
     /* Municípios: linhas largas, alinhadas e com seleção legível. */
     [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"]{
       display:block!important;width:100%!important;
