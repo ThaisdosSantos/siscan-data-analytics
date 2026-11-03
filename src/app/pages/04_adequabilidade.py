@@ -1,7 +1,9 @@
+import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,ORANGE,SKY
+from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Adequabilidade | SISCAN",layout="wide")
 apply_custom_css()
@@ -35,7 +37,31 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
         fig.update_traces(
             hovertemplate="Ano: %{x}<br>Quantidade: %{y:,.0f} amostras<extra>%{fullData.name}</extra>"
         )
-        display_chart(fig, filename="adequabilidade_quantidade_anual_categorias.png")
+        # Na imagem PNG, mostra explicitamente os valores dos pontos.
+        # Mantém a versão do site sem rótulos, com tooltip interativo.
+        export_fig = copy.deepcopy(fig)
+        for trace in export_fig.data:
+            values = (
+                series.loc[series["categoria"] == trace.name]
+                .sort_values("ano")["quantidade_amostras"]
+            )
+            trace.update(
+                mode="lines+markers+text",
+                text=[f"{int(value):,}" if pd.notna(value) else "—" for value in values],
+                textposition="top center" if trace.name == "Insatisfatória" else "bottom center",
+                textfont=dict(size=16, color="#1A3B5C"),
+            )
+        export_fig.update_layout(
+            paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+            margin=dict(l=100, r=185, t=95, b=85),
+        )
+        export_fig.update_yaxes(rangemode="tozero")
+        chart_with_right_click_download(
+            fig,
+            filename="adequabilidade_quantidade_anual_categorias.png",
+            height=430,
+            export_fig=export_fig,
+        )
     bycity=df.groupby(["municipio","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
     pivot=bycity.pivot(index="municipio",columns="categoria",values="quantidade_amostras").fillna(0)
     for name in ["Satisfatória","Insatisfatória","Rejeitada"]:
