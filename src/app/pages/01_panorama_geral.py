@@ -125,12 +125,12 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         """, unsafe_allow_html=True)
         with st.container(key="panorama_sort_panel"):
             order = st.selectbox(
-                "Ordenar gráficos dos municípios por",
-                ["Ordem alfabética (A–Z)", "Maior para menor número de exames"],
+                "Ordenar por",
+                ["A–Z", "Maior para menor"],
                 key="sort_facetas_panorama",
             )
         municipalities = sorted(annual["municipio"].unique())
-        if order == "Maior para menor número de exames":
+        if order == "Maior para menor":
             totals = annual.groupby("municipio")["quantidade"].sum(min_count=1)
             municipalities.sort(
                 key=lambda city: (
