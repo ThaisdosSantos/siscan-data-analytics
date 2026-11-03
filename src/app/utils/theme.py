@@ -428,22 +428,36 @@ def apply_custom_css():
       min-height:27px!important;font:500 11px Manrope,Arial,sans-serif!important;
       box-shadow:none!important;
     }
+    /* Municípios: linhas largas, alinhadas e com seleção legível. */
     [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"]{
-      margin:1px 0!important;padding:0!important;
+      display:block!important;width:100%!important;
+      margin:2px 0!important;padding:0!important;border:0!important;
     }
     [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label{
-      border:1px solid #315a78!important;background:#1b405f!important;
-      border-radius:999px!important;min-height:30px!important;
-      padding:3px 7px!important;
+      display:flex!important;align-items:center!important;gap:9px!important;
+      width:100%!important;max-width:100%!important;
+      border:1px solid #345c7b!important;background:#1b405f!important;
+      border-radius:13px!important;min-height:35px!important;
+      padding:6px 10px!important;box-sizing:border-box!important;
+      cursor:pointer!important;transition:background .15s,border-color .15s!important;
     }
     [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label:hover{
-      background:#234a69!important;
+      background:#244e70!important;border-color:#4c7b9b!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] label p{
+      font-size:12px!important;line-height:1.35!important;
+      color:#dbe9f4!important;white-space:normal!important;
     }
     [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] [role="checkbox"]{
-      border-radius:50%!important;border-color:#37617c!important;
+      width:17px!important;height:17px!important;flex-shrink:0!important;
+      border-radius:50%!important;border:1px solid #416785!important;
+      background:transparent!important;
     }
     [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] [role="checkbox"][aria-checked="true"]{
       background:#EE5325!important;border-color:#EE5325!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_city_scroll [data-testid="stCheckbox"] [role="checkbox"][aria-checked="true"] svg{
+      color:#fff!important;fill:none!important;
     }
     [data-testid="stSidebar"] .st-key-siscan_filter_panel [data-testid="stButton"] button[kind="primary"]{
       background:#EE5325!important;border-color:#EE5325!important;
