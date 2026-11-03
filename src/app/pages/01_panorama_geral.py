@@ -51,7 +51,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                      "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
         missing_label = ", ".join(f"{months_pt[d.month - 1]}/{d.year}" for d in missing)
         st.warning(f"**Disponibilidade temporal:** {months_count} de {expected} meses com registros. "
-                   f"Sem dados em **{missing_label}**. A ausência não foi substituída por zero.")
+                   f"Sem dados em **{missing_label}**.")
     else:
         st.caption(f"Disponibilidade temporal: **{months_count} de {expected} meses** com registros.")
 
