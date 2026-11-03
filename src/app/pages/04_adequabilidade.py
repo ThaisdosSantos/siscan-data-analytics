@@ -22,15 +22,20 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
     metric_row([("Amostras avaliadas",fmt_num(tot)),("Satisfatórias",fmt_pct(pct(g.get("Satisfatória",0),tot))),
                 ("Insatisfatórias e rejeitadas",fmt_pct(pct(ruim,tot)))])
     series=df.groupby(["ano","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
-    totals=series.groupby("ano").quantidade_amostras.transform("sum")
-    series["taxa"]=series.quantidade_amostras.div(totals).mul(100).where(totals>0)
     series=series[series.categoria.isin(["Insatisfatória","Rejeitada"])]
     if not series.empty:
-        fig=px.line(series,x="ano",y="taxa",color="categoria",markers=True,
-                    color_discrete_map={"Insatisfatória":ORANGE,"Rejeitada":SKY},
-                    title="Taxa anual por categoria",labels={"taxa":"Taxa (%)","ano":"Ano"})
+        fig=px.line(
+            series, x="ano", y="quantidade_amostras", color="categoria", markers=True,
+            color_discrete_map={"Insatisfatória":ORANGE,"Rejeitada":SKY},
+            title="Quantidade anual de amostras por categoria",
+            labels={"quantidade_amostras":"Quantidade de amostras","ano":"Ano","categoria":""},
+        )
         fig.update_xaxes(type="category")
-        display_chart(format_percent_chart(fig), filename="adequabilidade_taxas_anuais.png")
+        fig.update_yaxes(tickformat=",d", rangemode="tozero")
+        fig.update_traces(
+            hovertemplate="Ano: %{x}<br>Quantidade: %{y:,.0f} amostras<extra>%{fullData.name}</extra>"
+        )
+        display_chart(fig, filename="adequabilidade_quantidade_anual_categorias.png")
     bycity=df.groupby(["municipio","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
     pivot=bycity.pivot(index="municipio",columns="categoria",values="quantidade_amostras").fillna(0)
     for name in ["Satisfatória","Insatisfatória","Rejeitada"]:
