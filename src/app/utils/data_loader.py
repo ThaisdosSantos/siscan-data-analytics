@@ -319,15 +319,19 @@ def sidebar_filters():
         )
         st.markdown('<div class="lovable-label">EXPLORAR</div>',
                     unsafe_allow_html=True)
-        for path, label, icon in [
-            ("main.py", "Visão executiva", ":material/speed:"),
-            ("pages/01_panorama_geral.py", "Panorama geral", ":material/bar_chart:"),
-            ("pages/02_outubro_rosa.py", "Outubro Rosa", ":material/workspace_premium:"),
-            ("pages/03_faixa_etaria.py", "Faixa etária", ":material/group:"),
-            ("pages/04_adequabilidade.py", "Adequabilidade", ":material/science:"),
-            ("pages/05_exames_alterados.py", "Exames alterados", ":material/ecg_heart:"),
+        for path, label, icon, nav_key in [
+            ("main.py", "Visão executiva", ":material/speed:", None),
+            ("pages/01_panorama_geral.py", "Panorama geral", None, "nav_panorama_icon"),
+            ("pages/02_outubro_rosa.py", "Outubro Rosa", None, "nav_outubro_icon"),
+            ("pages/03_faixa_etaria.py", "Faixa etária", ":material/group:", None),
+            ("pages/04_adequabilidade.py", "Adequabilidade", ":material/science:", None),
+            ("pages/05_exames_alterados.py", "Exames alterados", None, "nav_exames_icon"),
         ]:
-            st.page_link(path, label=label, icon=icon)
+            if nav_key:
+                with st.container(key=nav_key):
+                    st.page_link(path, label=label)
+            else:
+                st.page_link(path, label=label, icon=icon)
         st.divider()
         _render_filter_controls()
         st.markdown(
