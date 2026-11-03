@@ -92,28 +92,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("""
+st.markdown(
+    """
 <div class="exec-hero">
   <div class="exec-kicker">VISÃO EXECUTIVA · 10ª CRS · RS</div>
   <h1 class="exec-title">Rastreamento do câncer do colo do útero,
   <em>território a território.</em></h1>
   <div class="exec-sub">Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS</div>
-</div>
-""", unsafe_allow_html=True)
-st.markdown(active_scope_html(), unsafe_allow_html=True)
-
-st.markdown("""
-<style>
-/* Recorte integrado ao rodapé do cabeçalho, sem afetar KPIs. */
-[data-testid="stVerticalBlock"] > [data-testid="stElementContainer"]:has(.pet-active-scope){
-  position:relative;z-index:3;
-}
-.pet-active-scope{background:linear-gradient(110deg,#1A3B5C,#006C9A);
-  padding:0 32px 18px;margin-top:-21px;border-radius:0 0 17px 17px;}
-@media(max-width:850px){.pet-active-scope{padding:0 18px 16px;margin-top:-10px;}}
-</style>
-""", unsafe_allow_html=True)
-
+""" + active_scope_html() + "</div>",
+    unsafe_allow_html=True,
+)
 
 df = filtered("temporal")
 if not require(df, ["municipio", "ano", "mes", "quantidade"]):
