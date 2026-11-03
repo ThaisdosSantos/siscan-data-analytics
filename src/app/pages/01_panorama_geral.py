@@ -25,7 +25,6 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     bycity = (df.groupby("municipio", as_index=False).quantidade.sum(min_count=1)
               .sort_values("quantidade", ascending=False))
     top = bycity.iloc[0] if not bycity.empty else None
-    st.caption(f"**Recorte ativo:** {period} · {len(places)} municípios selecionados")
 
     col_total, col_media, col_municipio = st.columns(3)
     with col_total:
