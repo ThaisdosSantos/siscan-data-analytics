@@ -217,9 +217,9 @@ def _render_filter_controls():
         + css_string(f"{len(draft_years)}/6") + "';}"
         ".st-key-siscan_city_panel details>summary::after{content:'"
         + css_string(f"{len(draft_cities)}/11") + "';}"
-        ".st-key-siscan_year_panel details:not([open])>summary::before{content:'"
+        ".st-key-siscan_year_panel details:not([open])>summary [data-testid='stMarkdownContainer']::after{content:'"
         + css_string(period_summary) + "';}"
-        ".st-key-siscan_city_panel details:not([open])>summary::before{content:'"
+        ".st-key-siscan_city_panel details:not([open])>summary [data-testid='stMarkdownContainer']::after{content:'"
         + css_string(city_summary) + "';}"
         "</style>",
         unsafe_allow_html=True,
