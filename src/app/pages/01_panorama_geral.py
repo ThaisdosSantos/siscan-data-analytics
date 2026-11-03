@@ -199,15 +199,15 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             xanchor="center", yanchor="middle",
         )
         fig.add_annotation(
-            x=0.5, y=-0.065, xref="paper", yref="paper",
-            text="Ano", showarrow=False,
+            x=0.5, y=-0.025, xref="paper", yref="paper",
+            text="Anos", showarrow=False,
             font=dict(family="Arial", size=13, color="#1A3B5C"),
             xanchor="center", yanchor="top",
         )
         fig.update_layout(
             height=max(480, 285 * ((len(municipalities) + 2) // 3)),
             showlegend=False,
-            margin=dict(l=95, r=15, t=55, b=75),
+            margin=dict(l=95, r=15, t=55, b=105),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="white",
             font=dict(color="#1A3B5C", size=11),
