@@ -176,4 +176,5 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
         fig.update_traces(hovertemplate="Faixa etária: %{x}<br>Município: %{y}<br>Proporção: %{z:.2f}%<extra></extra>")
         fig.update_coloraxes(colorbar_tickformat=".2f", colorbar_ticksuffix="%")
         display_chart(fig)
-    export_table(matrix,"siscan_exames_alterados.csv")
+    with st.expander("Ver dados detalhados de exames alterados", expanded=False, icon=":material/chevron_right:"):
+        export_table(matrix, "siscan_exames_alterados.csv")
