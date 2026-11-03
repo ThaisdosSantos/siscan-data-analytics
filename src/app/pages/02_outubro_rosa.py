@@ -247,6 +247,64 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
     else:
         st.info("O índice sazonal não está disponível para os filtros selecionados.")
 
+    # Tabela sazonal por município: usa SOMENTE o volume mensal da Gold.
+    # Média-base própria = média das competências disponíveis do município.
+    # Não transformar meses sem registro em zero (ex.: agosto/2022).
+    if (
+        not temporal.empty
+        and {"municipio", "ano", "mes", "quantidade"}.issubset(temporal.columns)
+    ):
+        st.markdown("#### Índice Sazonal por Município e Mês (base: média do próprio município)")
+        st.caption(
+            "Base 100 = média mensal de cada município no período selecionado. "
+            "Valores acima de 100 indicam volume acima da própria média. "
+            "Competências ausentes não são consideradas como zero."
+        )
+        sazonal_muni = (
+            temporal.dropna(subset=["municipio", "ano", "mes", "quantidade"])
+            .loc[lambda d: d["mes"].between(1, 12)]
+            .groupby(["municipio", "ano", "mes"], as_index=False)["quantidade"]
+            .sum(min_count=1)
+        )
+        if not sazonal_muni.empty:
+            # Cada competência (ano/mês) é uma observação da média-base,
+            # independentemente de quantos anos foram selecionados.
+            bases_municipais = sazonal_muni.groupby("municipio")["quantidade"].mean()
+            media_meses = sazonal_muni.groupby(["municipio", "mes"])["quantidade"].mean()
+            indice_municipal = (
+                media_meses.div(
+                    bases_municipais.reindex(media_meses.index.get_level_values("municipio")).to_numpy()
+                ).mul(100)
+            )
+            indice_municipal = indice_municipal.where(
+                bases_municipais.reindex(media_meses.index.get_level_values("municipio")).to_numpy() > 0
+            )
+            tabela_sazonal = indice_municipal.unstack("mes")
+            tabela_sazonal = tabela_sazonal.reindex(columns=range(1, 13))
+            meses_colunas = {
+                1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr",
+                5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago",
+                9: "Set", 10: "Out", 11: "Nov", 12: "Dez",
+            }
+            tabela_sazonal = tabela_sazonal.rename(columns=meses_colunas)
+            tabela_sazonal = (
+                tabela_sazonal.sort_index(key=lambda idx: idx.str.casefold())
+                .rename_axis("Município")
+                .reset_index()
+            )
+            display_table(tabela_sazonal)
+            st.download_button(
+                "⬇️ Exportar índice sazonal por município (CSV)",
+                data=tabela_sazonal.to_csv(
+                    index=False, sep=";", decimal=",", float_format="%.2f"
+                ).encode("utf-8-sig"),
+                file_name="siscan_indice_sazonal_municipio_mes.csv",
+                mime="text/csv",
+                key="exportar_indice_sazonal_municipio",
+            )
+        else:
+            st.info("Não há competências disponíveis para a tabela sazonal neste recorte.")
+
     table = city.rename(columns={
         "municipio":"Município",
         "exames_referencia_setembro":"Exames em setembro",
