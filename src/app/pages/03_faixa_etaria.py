@@ -11,6 +11,7 @@ from utils.theme import (
     apply_custom_css, page_header, display_chart, export_table,
     fmt_num, fmt_pct, pct, style_chart, OCEAN, SKY, ORANGE, NAVY,
 )
+from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import MUNICIPIOS, filtered, sidebar_filters, require, years_label
 
 
@@ -219,7 +220,7 @@ with a:
         )
         st.markdown('<div style="font-size:1.12rem;color:#1A3B5C;font-weight:700">Distribuição dos exames</div>'
                     '<div style="color:#7C8FA0;font-size:.77rem">Por grupo etário</div>', unsafe_allow_html=True)
-        st.plotly_chart(style_chart(fig, height=320), use_container_width=True)
+        chart_with_right_click_download(style_chart(fig, height=320), filename="faixa_etaria_distribuicao.png", height=320)
         legend_rows = []
         for group in donut_order:
             val = pct(sums.get(group, 0), total)
@@ -270,7 +271,7 @@ with b:
                         font=dict(size=12)),
             bargap=0.12,
         )
-        st.plotly_chart(style_chart(fig, height=max(480, 40 * len(cities_order) + 90)), use_container_width=True)
+        chart_with_right_click_download(style_chart(fig, height=max(480, 40 * len(cities_order) + 90)), filename="faixa_etaria_composicao_municipios.png", height=max(480, 40 * len(cities_order) + 90), min_chart_width=650)
 
 st.markdown("""
 <div class="q3-section">
