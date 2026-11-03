@@ -347,7 +347,9 @@ with b:
         fig.update_xaxes(range=[0, 103], tickmode="array", tickvals=[0, 25, 50, 75, 100],
                          ticktext=["0%", "25%", "50%", "75%", "100%"],
                          showgrid=True, gridcolor="#e9edf1", title=None)
-        fig.update_yaxes(title=None, autorange="reversed", automargin=True,
+        # Plotly Express já organiza as categorias horizontais de cima para baixo.
+        # Inverter novamente o eixo fazia A–Z e Maior para menor aparecerem ao contrário.
+        fig.update_yaxes(title=None, automargin=True,
                          tickfont=dict(size=12, color="#405a70"))
         fig.update_layout(
             margin=dict(l=12, r=8, t=8, b=10),
