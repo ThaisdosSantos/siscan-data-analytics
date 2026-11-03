@@ -203,14 +203,14 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             )
             st.caption(
                 f"Base: {base_label}. Considera apenas competências com registros; "
-                "meses sem dados não são tratados como zero."
+                "meses sem dados não são tratados como zero. "
+                "A linha tracejada indica a referência 100."
             )
             fig_sazonal = px.bar(
                 indice, x="Mês", y="indice_sazonal", color="cor",
                 category_orders={"Mês": meses_eixo},
                 color_discrete_map={"Outubro": ORANGE, "Demais meses": OCEAN},
                 labels={"indice_sazonal": "Índice sazonal (base 100)", "cor": ""},
-                title=f"Índice sazonal por mês · {period}",
                 custom_data=["media_mes"],
             )
             fig_sazonal.update_traces(
@@ -223,8 +223,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             fig_sazonal.update_yaxes(rangemode="tozero", tickformat=".0f")
             fig_sazonal.add_hline(
                 y=100, line_dash="dash", line_color=NAVY,
-                annotation_text="Referência: 100",
-                annotation_position="top left",
+                line_width=2,
             )
             export_sazonal = copy.deepcopy(fig_sazonal)
             export_sazonal.update_traces(
@@ -233,6 +232,11 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 cliponaxis=False,
             )
             export_sazonal.update_layout(
+                title=dict(
+                    text=f"Índice Sazonal Regional por Mês · {period}",
+                    x=0.5, xanchor="center",
+                    font=dict(family="Arial", size=22, color=NAVY),
+                ),
                 paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
                 margin=dict(l=110, r=90, t=100, b=95),
             )
