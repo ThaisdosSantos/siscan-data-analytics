@@ -297,6 +297,14 @@ st.markdown("""
   font-family:Fraunces,Georgia,serif!important;font-size:1rem!important;
   font-weight:650!important;line-height:1.3!important;
 }
+.st-key-exec-nav-panorama [data-testid="stButton"] button{
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+}
+.st-key-exec-nav-panorama [data-testid="stButton"] button p,
+.st-key-exec-nav-panorama [data-testid="stButton"] button [data-testid="stMarkdownContainer"]{
+  text-align:left!important;justify-content:flex-start!important;
+  margin:0!important;width:auto!important;flex:0 1 auto!important;
+}
 .st-key-exec-nav-panorama [data-testid="stButton"] button:hover,
 .st-key-exec-nav-panorama [data-testid="stButton"] button:focus{
   background:transparent!important;color:#1A3B5C!important;
