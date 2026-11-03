@@ -145,7 +145,7 @@ def apply_custom_css():
       border:1px solid rgba(194,222,241,.19);color:#f5fbff!important;
       padding:6px 12px;font-size:.74rem;font-weight:600;line-height:1.25;
       max-width:100%;white-space:normal;}
-    .pet-scope-icon{color:#8ac9ee!important;font-size:.9rem;line-height:1;}
+    .pet-scope-icon{color:#8ac9ee!important;display:inline-flex;align-items:center;justify-content:center;flex:0 0 15px;line-height:1;}\n    .pet-scope-icon svg{display:block;width:15px;height:15px;}
     @media(max-width:550px){
       .pet-active-scope{gap:6px;margin-top:14px;}
       .pet-scope-label{flex-basis:100%;margin-bottom:2px;}
@@ -217,9 +217,9 @@ def active_scope_html():
     return (
         '<div class="pet-active-scope" role="status" aria-label="Recorte ativo">'
         '<span class="pet-scope-label">RECORTE ATIVO</span>'
-        '<span class="pet-scope-chip"><span class="pet-scope-icon" aria-hidden="true">▦</span>'
+        '<span class="pet-scope-chip"><span class="pet-scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h2M12 14h2M17 14h0M7 18h2M12 18h2"/></svg></span>'
         + html.escape(period) + '</span>'
-        '<span class="pet-scope-chip"><span class="pet-scope-icon" aria-hidden="true">♧</span>'
+        '<span class="pet-scope-chip"><span class="pet-scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>'
         + html.escape(city_text) + '</span>'
         '</div>'
     )
