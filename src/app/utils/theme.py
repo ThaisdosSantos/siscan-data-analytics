@@ -811,6 +811,103 @@ def apply_custom_css():
       -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012h4l3-7%204.3%2014%203.1-7H22%22%2F%3E%3C%2Fsvg%3E")!important;
       mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M2%2012h4l3-7%204.3%2014%203.1-7H22%22%2F%3E%3C%2Fsvg%3E")!important;
     }
+
+    /* Responsividade real: telefones 320–480px, tablets e desktop.
+       Isola a rolagem horizontal de tabelas, sem alargar a página inteira. */
+    html, body, [data-testid="stApp"], [data-testid="stAppViewContainer"],
+    [data-testid="stMain"], [data-testid="stMainBlockContainer"] {
+      max-width:100%; min-width:0;
+    }
+    [data-testid="stMain"] {overflow-x:clip;}
+    [data-testid="stMainBlockContainer"] {
+      box-sizing:border-box!important;
+      width:100%!important;
+      min-width:0!important;
+      max-width:1480px!important;
+    }
+    [data-testid="stMain"] [data-testid="stVerticalBlock"],
+    [data-testid="stMain"] [data-testid="stElementContainer"],
+    [data-testid="stMain"] [data-testid="stColumn"],
+    [data-testid="stMain"] [data-testid="stHorizontalBlock"] {
+      min-width:0!important;max-width:100%;
+    }
+    [data-testid="stMain"] [data-testid="stPlotlyChart"],
+    [data-testid="stMain"] [data-testid="stPlotlyChart"] > div,
+    [data-testid="stMain"] [data-testid="stIFrame"],
+    [data-testid="stMain"] iframe,
+    [data-testid="stMain"] [data-testid="stDataFrame"] {
+      max-width:100%!important;min-width:0!important;
+    }
+    .pet-table-scroller, .q3-table-scroller {
+      width:100%!important;max-width:100%!important;
+      overflow-x:auto!important;-webkit-overflow-scrolling:touch;
+    }
+    .pet-hero, .exec-hero, .exec-card, .exec-metric,
+    .st-key-exec-nav-panorama, .st-key-exec-nav-outubro,
+    .st-key-exec-nav-alterados {max-width:100%;min-width:0;}
+    .pet-hero-title, .exec-title, .exec-card-title, h1, h2, h3 {
+      overflow-wrap:anywhere;
+    }
+    @media (max-width:768px) {
+      [data-testid="stMainBlockContainer"], .block-container {
+        padding:0.9rem 0.9rem 2.5rem!important;
+      }
+      [data-testid="stSidebar"] {
+        width:min(300px,86vw)!important;
+        min-width:0!important;max-width:86vw!important;
+      }
+      [data-testid="stHorizontalBlock"] {
+        flex-wrap:wrap!important;gap:0.75rem!important;
+      }
+      [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        flex:1 1 calc(50% - 0.75rem)!important;
+        width:auto!important;min-width:0!important;
+      }
+      [data-testid="stMain"] [data-testid="stMetric"] {
+        min-height:105px!important;padding:14px!important;
+      }
+      [data-testid="stMain"] [data-testid="stMetricValue"] {
+        font-size:clamp(1.25rem,4vw,1.7rem)!important;
+      }
+      [data-testid="stMain"] [data-testid="stPlotlyChart"] {overflow:hidden;}
+      [data-testid="stMain"] .pet-active-scope {flex-wrap:wrap!important;}
+    }
+    @media (max-width:480px) {
+      [data-testid="stMainBlockContainer"], .block-container {
+        padding:0.75rem 0.65rem 2rem!important;
+      }
+      [data-testid="stHorizontalBlock"] {gap:0.7rem!important;}
+      [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        flex:1 1 100%!important;width:100%!important;
+        max-width:100%!important;min-width:0!important;
+      }
+      [data-testid="stMain"] [data-testid="stMetric"] {
+        min-height:0!important;padding:13px 14px!important;
+      }
+      .pet-hero {padding:19px 16px 27px!important;margin-bottom:0!important;}
+      .pet-hero-title, .exec-title {
+        font-size:clamp(1.45rem,6.2vw,1.9rem)!important;
+        line-height:1.18!important;
+      }
+      .pet-hero-desc {font-size:0.83rem!important;}
+      .pet-active-scope {gap:6px!important;}
+      .pet-scope-chip {
+        font-size:.7rem!important;padding:6px 9px!important;
+        white-space:normal!important;overflow-wrap:anywhere!important;
+      }
+      .pet-table-scroller th, .pet-table-scroller td {
+        padding:9px 8px!important;font-size:.75rem!important;
+      }
+      [data-testid="stMain"] .stDownloadButton button,
+      [data-testid="stMain"] .stButton button {
+        max-width:100%;white-space:normal;
+      }
+      .st-key-exec-nav-panorama,
+      .st-key-exec-nav-outubro,
+      .st-key-exec-nav-alterados {
+        padding:14px!important;min-height:75px!important;
+      }
+    }
     </style>""", unsafe_allow_html=True)
 
 
