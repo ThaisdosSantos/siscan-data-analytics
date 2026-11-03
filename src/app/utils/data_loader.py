@@ -196,79 +196,108 @@ def _render_filter_controls():
             st.session_state["filter_draft_city_" + city] = bool(choose_all)
         keep_draft()
 
+    # O CSS de cabeçalho acompanha a seleção em rascunho sem recarregar a página.
+    draft_years = current_years()
+    draft_cities = current_cities()
+    period_summary = (
+        "Período completo" if len(draft_years) == 6
+        else "Nenhum ano" if not draft_years
+        else "Período: " + ", ".join(map(str, draft_years))
+    )
+    city_summary = (
+        "Todos os 11 municípios" if len(draft_cities) == 11
+        else f"{len(draft_cities)} de 11 municípios"
+    )
+    def css_string(value):
+        return str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")
+
+    st.markdown(
+        "<style>"
+        ".st-key-siscan_year_panel details>summary::after{content:'"
+        + css_string(f"{len(draft_years)}/6") + "';}"
+        ".st-key-siscan_city_panel details>summary::after{content:'"
+        + css_string(f"{len(draft_cities)}/11") + "';}"
+        ".st-key-siscan_year_panel details:not([open])>summary::before{content:'"
+        + css_string(period_summary) + "';}"
+        ".st-key-siscan_city_panel details:not([open])>summary::before{content:'"
+        + css_string(city_summary) + "';}"
+        "</style>",
+        unsafe_allow_html=True,
+    )
+
     with st.container(key="siscan_filter_panel"):
         st.markdown(
             '<div class="filter-panel-title">☷ &nbsp; FILTROS</div>',
             unsafe_allow_html=True,
         )
-        with st.expander(
-            f"Anos · {len(current_years())}/6", expanded=False,
-            icon=":material/calendar_month:",
-        ):
-            n = len(current_years())
-            st.markdown(
-                '<div class="filter-progress" role="progressbar" '
-                f'aria-label="Anos selecionados" aria-valuenow="{n}" '
-                'aria-valuemin="0" aria-valuemax="6">'
-                f'<span style="width:{100*n/6:.2f}%"></span></div>',
-                unsafe_allow_html=True,
-            )
-            all_col, clear_col = st.columns(2, gap="small")
-            with all_col:
-                st.button("Todos", key="filter_all_years", use_container_width=True,
-                          on_click=set_years, args=(True,))
-            with clear_col:
-                st.button("Limpar", key="filter_clear_years", use_container_width=True,
-                          on_click=set_years, args=(False,))
-            st.pills(
-                "Anos disponíveis", years, selection_mode="multi",
-                key="filter_draft_years", label_visibility="collapsed",
-                on_change=keep_draft,
-            )
-            chosen = current_years()
-            period = years_label(chosen)
-            st.markdown(
-                '<p class="filter-period-label">'
-                + ("Período completo" if len(chosen) == 6 else
-                   "Nenhum ano" if not chosen else "Período: " + period)
-                + '</p>', unsafe_allow_html=True,
-            )
-        with st.expander(
-            f"Municípios · {len(current_cities())}/11", expanded=False,
-            icon=":material/location_on:",
-        ):
-            n = len(current_cities())
-            st.markdown(
-                '<div class="filter-progress" role="progressbar" '
-                f'aria-label="Municípios selecionados" aria-valuenow="{n}" '
-                'aria-valuemin="0" aria-valuemax="11">'
-                f'<span style="width:{100*n/11:.2f}%"></span></div>',
-                unsafe_allow_html=True,
-            )
-            all_col, clear_col = st.columns(2, gap="small")
-            with all_col:
-                st.button("Todos", key="filter_all_cities", use_container_width=True,
-                          on_click=set_cities, args=(True,))
-            with clear_col:
-                st.button("Limpar", key="filter_clear_cities", use_container_width=True,
-                          on_click=set_cities, args=(False,))
-            with st.container(height=255, border=False):
-                for city in cities:
-                    st.checkbox(city, key="filter_draft_city_" + city,
-                                on_change=keep_draft)
+        with st.container(key="siscan_year_panel"):
+            with st.expander(
+                "Anos", expanded=False, icon=":material/calendar_month:",
+            ):
+                n = len(draft_years)
+                st.markdown(
+                    '<div class="filter-progress" role="progressbar" '
+                    f'aria-label="Anos selecionados" aria-valuenow="{n}" '
+                    'aria-valuemin="0" aria-valuemax="6">'
+                    f'<span style="width:{100*n/6:.2f}%"></span></div>',
+                    unsafe_allow_html=True,
+                )
+                all_col, clear_col = st.columns(2, gap="small")
+                with all_col:
+                    st.button("Todos", key="filter_all_years", use_container_width=True,
+                              on_click=set_years, args=(True,))
+                with clear_col:
+                    st.button("Limpar", key="filter_clear_years", use_container_width=True,
+                              on_click=set_years, args=(False,))
+                st.pills(
+                    "Anos disponíveis", years, selection_mode="multi",
+                    key="filter_draft_years", label_visibility="collapsed",
+                    on_change=keep_draft,
+                )
+                chosen = current_years()
+                period = years_label(chosen)
+                st.markdown(
+                    '<p class="filter-period-label">'
+                    + ("Período completo" if len(chosen) == 6 else
+                       "Nenhum ano" if not chosen else "Período: " + period)
+                    + '</p>', unsafe_allow_html=True,
+                )
+        with st.container(key="siscan_city_panel"):
+            with st.expander(
+                "Municípios", expanded=False, icon=":material/location_on:",
+            ):
+                n = len(draft_cities)
+                st.markdown(
+                    '<div class="filter-progress" role="progressbar" '
+                    f'aria-label="Municípios selecionados" aria-valuenow="{n}" '
+                    'aria-valuemin="0" aria-valuemax="11">'
+                    f'<span style="width:{100*n/11:.2f}%"></span></div>',
+                    unsafe_allow_html=True,
+                )
+                all_col, clear_col = st.columns(2, gap="small")
+                with all_col:
+                    st.button("Todos", key="filter_all_cities", use_container_width=True,
+                              on_click=set_cities, args=(True,))
+                with clear_col:
+                    st.button("Limpar", key="filter_clear_cities", use_container_width=True,
+                              on_click=set_cities, args=(False,))
+                with st.container(height=255, border=False, key="siscan_city_scroll"):
+                    for city in cities:
+                        st.checkbox(city, key="filter_draft_city_" + city,
+                                    on_change=keep_draft)
         applied_years = st.session_state["years_preference"]
         applied_cities = st.session_state["city_preference"]
         is_changed = current_years() != applied_years or current_cities() != applied_cities
         if is_changed:
-            st.caption("Seleção alterada · clique em Aplicar filtros")
-        if st.button(
-            "Aplicar filtros", type="primary", key="filter_apply",
-            use_container_width=True, disabled=not is_changed,
-        ):
-            keep_draft()
-            st.session_state["years_preference"] = current_years()
-            st.session_state["city_preference"] = current_cities()
-            st.rerun(scope="app")
+            st.caption("Seleção alterada · confirme para atualizar os gráficos.")
+            if st.button(
+                "Aplicar filtros", type="primary", key="filter_apply",
+                use_container_width=True,
+            ):
+                keep_draft()
+                st.session_state["years_preference"] = current_years()
+                st.session_state["city_preference"] = current_cities()
+                st.rerun(scope="app")
 
 
 def sidebar_filters():
