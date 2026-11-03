@@ -77,14 +77,14 @@ if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_v
                     "Ordenar por",
                     options=[
                         "A–Z",
-                        "Mais exames alterados",
+                        "Maior para menor",
                     ],
                     key="sort_facetas_alterados",
                 )
             # O ranking considera a soma dos exames alterados no recorte filtrado.
             # Empates mantêm os nomes dos municípios em ordem alfabética.
             municipalities = sorted(yearly["municipio"].unique())
-            if sort_mode == "Mais exames alterados":
+            if sort_mode == "Maior para menor":
                 totals_by_city = (
                     yearly.groupby("municipio")["quantidade_alterados"]
                     .sum(min_count=1)
