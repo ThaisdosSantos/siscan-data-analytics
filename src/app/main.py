@@ -312,6 +312,13 @@ st.markdown("""
 .st-key-exec-nav-panorama [data-testid="stButton"] button::after{
   content:"";position:absolute;inset:0;z-index:2;cursor:pointer;
 }
+/* Uniformiza a cor dos títulos dos três cartões, inclusive o texto interno de st.page_link. */
+.st-key-exec-nav-outubro [data-testid="stPageLink"] a,
+.st-key-exec-nav-outubro [data-testid="stPageLink"] a *,
+.st-key-exec-nav-alterados [data-testid="stPageLink"] a,
+.st-key-exec-nav-alterados [data-testid="stPageLink"] a *{
+  color:#1A3B5C!important;
+}
 /* Panorama: título idêntico aos links vizinhos e alvo clicável sobre o cartão. */
 .st-key-exec-nav-panorama .exec-nav-title{
   font-family:Fraunces,Georgia,serif!important;font-size:1rem!important;
