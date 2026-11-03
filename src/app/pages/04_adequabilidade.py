@@ -30,7 +30,7 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
                     color_discrete_map={"Insatisfatória":ORANGE,"Rejeitada":SKY},
                     title="Taxa anual por categoria",labels={"taxa":"Taxa (%)","ano":"Ano"})
         fig.update_xaxes(type="category")
-        display_chart(format_percent_chart(fig))
+        display_chart(format_percent_chart(fig), filename="adequabilidade_taxas_anuais.png")
     bycity=df.groupby(["municipio","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
     pivot=bycity.pivot(index="municipio",columns="categoria",values="quantidade_amostras").fillna(0)
     for name in ["Satisfatória","Insatisfatória","Rejeitada"]:
