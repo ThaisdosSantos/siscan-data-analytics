@@ -233,6 +233,12 @@ with a:
             showlegend=True,
         )
         export_donut.update_layout(
+            title=dict(
+                text="Distribuição dos exames por grupo etário",
+                x=0.5, xanchor="center",
+                y=0.975, yanchor="top",
+                font=dict(family="Arial", size=24, color="#1A3B5C"),
+            ),
             showlegend=True,
             legend=dict(
                 title=dict(text="Faixa etária"),
@@ -252,7 +258,7 @@ with a:
                     showarrow=False, align="center",
                 )
             ],
-            margin=dict(l=80, r=120, t=65, b=65),
+            margin=dict(l=80, r=120, t=110, b=65),
             paper_bgcolor="#FFFFFF",
             plot_bgcolor="#FFFFFF",
         )
