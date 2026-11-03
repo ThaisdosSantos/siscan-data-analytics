@@ -195,8 +195,9 @@ def sidebar_filters():
                 unsafe_allow_html=True,
             )
             with st.expander(
-                f"🗓️  Anos   ·   {len(selected_years())}/6",
+                f"Anos   ·   {len(selected_years())}/6",
                 expanded=False,
+                icon=":material/calendar_month:",
             ):
                 st.caption("Nenhum ano" if not selected_years()
                            else f"Período: {years_label()}")
@@ -218,8 +219,9 @@ def sidebar_filters():
                                       use_container_width=True,
                                       on_click=toggle_year, args=(year,))
             with st.expander(
-                f"📍  Municípios   ·   {len(st.session_state['city_preference'])}/11",
+                f"Municípios   ·   {len(st.session_state['city_preference'])}/11",
                 expanded=False,
+                icon=":material/location_on:",
             ):
                 count = len(st.session_state["city_preference"])
                 st.caption("Todos os municípios" if count == 11 else
