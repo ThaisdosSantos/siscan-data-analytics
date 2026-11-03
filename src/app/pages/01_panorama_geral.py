@@ -93,11 +93,42 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         .sum(min_count=1)
     )
     if not annual.empty:
-        order = st.selectbox(
-            "Ordenar gráficos dos municípios por",
-            ["Ordem alfabética (A–Z)", "Maior para menor número de exames"],
-            key="sort_facetas_panorama",
-        )
+        st.markdown("""
+            <style>
+            /* Somente o seletor de ordenação das facetas do panorama geral. */
+            .st-key-panorama_sort_panel [data-testid="stSelectbox"] label p {
+                color: #1A3B5C !important;
+                font-weight: 700 !important;
+                font-size: 0.88rem !important;
+            }
+            .st-key-panorama_sort_panel [data-baseweb="select"] > div {
+                background-color: #FFFFFF !important;
+                border: 1.5px solid #8FAFC5 !important;
+                border-radius: 9px !important;
+                min-height: 43px !important;
+                box-shadow: 0 2px 7px rgba(26,59,92,0.07) !important;
+            }
+            .st-key-panorama_sort_panel [data-baseweb="select"] > div:hover {
+                border-color: #006C9A !important;
+            }
+            .st-key-panorama_sort_panel [data-baseweb="select"] > div:focus-within {
+                border-color: #006C9A !important;
+                box-shadow: 0 0 0 2px rgba(0,108,154,0.18) !important;
+            }
+            .st-key-panorama_sort_panel [data-baseweb="select"] * {
+                color: #1A3B5C !important;
+            }
+            .st-key-panorama_sort_panel [data-baseweb="select"] svg {
+                fill: #006C9A !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        with st.container(key="panorama_sort_panel"):
+            order = st.selectbox(
+                "Ordenar gráficos dos municípios por",
+                ["Ordem alfabética (A–Z)", "Maior para menor número de exames"],
+                key="sort_facetas_panorama",
+            )
         municipalities = sorted(annual["municipio"].unique())
         if order == "Maior para menor número de exames":
             totals = annual.groupby("municipio")["quantidade"].sum(min_count=1)
