@@ -1,6 +1,5 @@
 """Comparação descritiva Setembro–Outubro, sem inferência causal."""
 import copy
-import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -103,17 +102,22 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         plot_city["direcao"] = plot_city["variacao_pct"].map(
             lambda value: "Redução" if value < 0 else "Aumento ou estabilidade"
         )
+        # Texto já formatado evita variações de precisão entre versões do Plotly.
+        # Quantidades permanecem inteiras, percentuais exibem exatamente 2 casas.
+        plot_city["variacao_formatada"] = plot_city["variacao_pct"].map(
+            lambda value: f"{value:+.2f}%" if pd.notna(value) else "N/D"
+        )
         fig = px.bar(
             plot_city, y="municipio", x="variacao_pct", orientation="h",
             color="direcao",
             color_discrete_map={"Redução":NAVY, "Aumento ou estabilidade":ORANGE},
-            custom_data=["exames_referencia_setembro", "exames_mes", "diferenca_exames"],
+            custom_data=["exames_referencia_setembro", "exames_mes", "diferenca_exames", "variacao_formatada"],
             labels={"municipio":"Município","variacao_pct":"Variação (%)"},
             title=f"Variação outubro × setembro por município · {period}"
         )
         fig.update_traces(
             hovertemplate=(
-                "%{y}<br>Variação: %{x:+.2f}%"
+                "%{y}<br>Variação: %{customdata[3]}"
                 "<br>Setembro: %{customdata[0]:,.0f} exames"
                 "<br>Outubro: %{customdata[1]:,.0f} exames"
                 "<br>Diferença: %{customdata[2]:+.0f} exames<extra></extra>"
