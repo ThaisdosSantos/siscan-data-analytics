@@ -7,7 +7,6 @@ st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
 page_header("Resultados", "Exames citopatológicos alterados")
-st.warning("Limitação metodológica: o denominador Gold é o total de exames por faixa etária, sem exclusão verificável de amostras rejeitadas/insatisfatórias. As proporções abaixo são estimativas operacionais, não taxas clínicas validadas.")
 df=filtered("alterados")
 # Alinhamento metodológico (31/out/2026): 'Ignorado' e 'Até 9 anos' têm bases ínfimas
 # (0 alterados sobre ~1-2 exames) e não compõem grupos da diretriz de rastreio.
