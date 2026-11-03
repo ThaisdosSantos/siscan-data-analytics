@@ -23,7 +23,7 @@ def chart_with_right_click_download(fig, *, filename, height=None, export_fig=No
                     "%" in str(getattr(export_fig.layout, "title", ""))
                     or "%" in str(getattr(trace, "hovertemplate", ""))
                 )
-                label_format = f"%{{{axis}:.2f}}%" if is_percent else f"%{{{axis}:,.0f}}"
+                label_format = f"%{{{axis}:.2f}}%" if is_percent else f"%{{{axis}:,.2f}}"
                 trace.update(
                     texttemplate=label_format, textposition="outside",
                     textfont=dict(size=12, color="#1A3B5C"), cliponaxis=False,
