@@ -124,12 +124,21 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         # Exportação: rótulos numéricos no PNG (o tooltip não existe em imagem).
         # Mantém o gráfico interativo sem rótulos para não poluir a tela.
         export_fig = copy.deepcopy(fig)
-        export_fig.update_traces(
-            texttemplate="%{x:+.2f}%",
-            textposition="outside",
-            textfont=dict(size=14, color=NAVY),
-            cliponaxis=False,
-        )
+        # Strings prontas evitam exibir toda a precisão decimal no PNG.
+        # As reduções são rotuladas dentro da barra para não cobrir a cidade.
+        for trace in export_fig.data:
+            trace.text = [
+                (f"{float(value):.2f}%".replace(".", ",") if pd.notna(value) else "—")
+                for value in trace.x
+            ]
+            is_reduction = trace.name == "Redução"
+            trace.update(
+                texttemplate="%{text}",
+                textposition="inside" if is_reduction else "outside",
+                textfont=dict(size=14, color="#FFFFFF" if is_reduction else NAVY),
+                insidetextanchor="middle",
+                cliponaxis=False,
+            )
         export_fig.update_layout(
             paper_bgcolor="#FFFFFF",
             plot_bgcolor="#FFFFFF",
