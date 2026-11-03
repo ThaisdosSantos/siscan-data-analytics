@@ -981,8 +981,13 @@ def format_percent_chart(fig, axis="y"):
         fig.update_traces(hovertemplate="%{y}<br>%{x:.2f}%<extra>%{fullData.name}</extra>")
     return fig
 
-def display_chart(fig):
-    st.plotly_chart(style_chart(fig), use_container_width=True)
+def display_chart(fig, filename="grafico_siscan.png"):
+    """Exibe gráfico interativo com exportação PNG pelo botão direito."""
+    from utils.chart_download import chart_with_right_click_download
+    styled = style_chart(fig)
+    chart_with_right_click_download(
+        styled, filename=filename, height=styled.layout.height,
+    )
 
 def metric_row(items):
     cols = st.columns(len(items))
