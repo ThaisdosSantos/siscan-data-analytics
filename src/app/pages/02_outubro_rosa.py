@@ -120,7 +120,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         )
         fig.update_xaxes(tickformat=".2f", ticksuffix="%")
         fig.update_layout(showlegend=False)
-        st.plotly_chart(style_chart(fig), use_container_width=True)
+        chart_with_right_click_download(style_chart(fig), filename="outubro_rosa_variacao_municipal.png", height=430)
     st.caption(
         "Percentuais calculados sobre bases pequenas podem ser elevados mesmo "
         "quando a diferença absoluta é pequena. Não representam, por si só, "
