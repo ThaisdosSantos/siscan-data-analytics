@@ -185,27 +185,26 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 .rename(columns={"quantidade": "media_mes"})
             )
             indice["indice_sazonal"] = indice["media_mes"].div(media_base).mul(100)
-            # Faixas descritivas em torno do índice-base 100.
-            # Evita classificar fevereiro como "neutro" apenas pelo calendário.
-            # Limites de 90 e 110 são convencionais para visualização, não
-            # limiares clínicos nem regras do cálculo da camada Gold.
+            # Classificação temporal fixa documentada nas células 7.4 e 7.5
+            # do notebook 03_gold_analytics_siscan. As cores representam
+            # janelas de meses, NÃO intervalos numéricos do índice.
             indice["mes"] = indice["mes"].astype(int)
-            indice["categoria_sazonal"] = indice["indice_sazonal"].map(
-                lambda valor: (
-                    "Abaixo da média (<90)" if valor < 90
-                    else "Acima da média (>110)" if valor > 110
-                    else "Próximo da média (90–110)"
+            indice["janela_sazonal"] = indice["mes"].map(
+                lambda mes: (
+                    "Janela fraca (mai–set)" if 5 <= mes <= 9
+                    else "Pico sazonal (nov–dez)" if mes in (11, 12)
+                    else "Neutro (demais meses)"
                 )
             )
-            categorias = [
-                "Abaixo da média (<90)",
-                "Próximo da média (90–110)",
-                "Acima da média (>110)",
+            janelas = [
+                "Janela fraca (mai–set)",
+                "Neutro (demais meses)",
+                "Pico sazonal (nov–dez)",
             ]
-            cores_categorias = {
-                "Abaixo da média (<90)": OCEAN,
-                "Próximo da média (90–110)": ORANGE,
-                "Acima da média (>110)": NAVY,
+            cores_janelas = {
+                "Janela fraca (mai–set)": OCEAN,
+                "Neutro (demais meses)": ORANGE,
+                "Pico sazonal (nov–dez)": NAVY,
             }
             selected = st.session_state.get("city_preference", list(MUNICIPIOS.values()))
             base_label = (
@@ -217,19 +216,21 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 f"Base: {base_label}. Considera apenas competências com registros; "
                 "meses sem dados não são tratados como zero. "
                 "A linha tracejada indica a referência 100. "
-                "Classificação visual: abaixo de 90, entre 90 e 110, acima de 110."
+                "Janelas fixas da análise 2020–2025: mai–set (fraca), "
+                "jan–abr e out (neutro), nov–dez (pico). "
+                "As cores indicam períodos, não limites do índice."
             )
             fig_sazonal = px.bar(
-                indice, x="mes", y="indice_sazonal", color="categoria_sazonal",
+                indice, x="mes", y="indice_sazonal", color="janela_sazonal",
                 category_orders={
                     "mes": list(range(1, 13)),
-                    "categoria_sazonal": categorias,
+                    "janela_sazonal": janelas,
                 },
-                color_discrete_map=cores_categorias,
+                color_discrete_map=cores_janelas,
                 labels={
                     "mes": "Mês",
                     "indice_sazonal": "Índice sazonal regional",
-                    "categoria_sazonal": "Classificação do índice",
+                    "janela_sazonal": "Janela sazonal",
                 },
                 custom_data=["media_mes"],
             )
@@ -256,7 +257,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             fig_sazonal.update_layout(
                 showlegend=True,
                 legend=dict(
-                    title_text="Classificação do índice",
+                    title_text="Janela sazonal",
                     orientation="v",
                     x=1.02, xanchor="left", y=1, yanchor="top",
                     font=dict(size=12, color=NAVY),
@@ -287,7 +288,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
                 margin=dict(l=95, r=255, t=110, b=80),
                 legend=dict(
-                    title_text="Classificação do índice",
+                    title_text="Janela sazonal",
                     orientation="v",
                     x=1.02, xanchor="left", y=1, yanchor="top",
                     font=dict(size=16, color=NAVY),
