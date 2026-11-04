@@ -87,6 +87,137 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         height=fig.layout.height, export_fig=export_fig,
     )
 
+    # Composição por faixa etária durante a janela de campanha.
+    # Não cruzar totais anuais da Q3 com volumes mensais: isso criaria
+    # proporções estimadas como se fossem registros observados.
+    st.subheader("Proporção de exames por faixa etária · setembro a dezembro")
+    age_month = filtered("outubro_etaria", optional=True)
+    expected = {"ano", "mes", "municipio", "grupo_etario", "quantidade_exames"}
+    if age_month.empty:
+        st.info(
+            "A proporção mensal por faixa etária ainda não está disponível na Gold. "
+            "É necessário carregar a tabela fato_outubro_rosa_faixa_etaria com "
+            "registros observados por município, ano, mês e grupo etário. "
+            "Não são feitas estimativas a partir de percentuais anuais."
+        )
+    elif not expected.issubset(age_month.columns):
+        st.warning(
+            "A tabela de composição etária mensal não possui todas as colunas "
+            "esperadas: " + ", ".join(sorted(expected - set(age_month.columns)))
+        )
+    else:
+        age_month = age_month.loc[age_month["mes"].isin([9, 10, 11, 12])].copy()
+        # A Gold deve ter três grupos etários, separados por competência.
+        grupos = ["<25 anos", "25–64 anos", "≥65 anos"]
+        aliases = {
+            "<25 anos": "<25 anos",
+            "<25 anos (Sobrerrastreamento)": "<25 anos",
+            "25–64 anos": "25–64 anos",
+            "25 a 64 anos": "25–64 anos",
+            "25 a 64 anos (População-Alvo)": "25–64 anos",
+            "≥65 anos": "≥65 anos",
+            "65 anos ou mais": "≥65 anos",
+            "65 anos ou mais (Sub-rastreamento)": "≥65 anos",
+        }
+        age_month["grupo"] = age_month["grupo_etario"].astype(str).str.strip().map(aliases)
+        age_month["quantidade_exames"] = pd.to_numeric(
+            age_month["quantidade_exames"], errors="coerce"
+        )
+        invalid = age_month[
+            age_month["grupo"].isna()
+            | age_month["quantidade_exames"].isna()
+            | (age_month["quantidade_exames"] < 0)
+        ]
+        if not invalid.empty:
+            st.warning(
+                "Há grupos etários desconhecidos ou quantidades inválidas na tabela Gold. "
+                "O gráfico foi ocultado para não apresentar percentuais incompletos."
+            )
+        elif age_month.empty:
+            st.info("Não há registros mensais por faixa etária para os filtros selecionados.")
+        else:
+            # Totais por mês abrangendo os anos e municípios selecionados.
+            # O denominador é exclusivamente o total COM idade conhecida.
+            period_age = (
+                age_month.groupby(["mes", "grupo"], as_index=False)["quantidade_exames"]
+                .sum(min_count=1)
+            )
+            total_age = period_age.groupby("mes")["quantidade_exames"].transform("sum")
+            period_age["proporcao_pct"] = (
+                100 * period_age["quantidade_exames"] / total_age.where(total_age > 0)
+            )
+            period_age = period_age.loc[period_age["proporcao_pct"].notna()].copy()
+            period_age["Mês"] = period_age["mes"].map(month_names)
+            if period_age.empty:
+                st.info("Não há exames com idade conhecida nos meses selecionados.")
+            else:
+                st.caption(
+                    "Distribuição percentual dos exames com idade conhecida em cada mês, "
+                    "somando os anos e municípios selecionados. Cada barra representa 100% "
+                    "dos exames com faixa etária identificada naquele mês."
+                )
+                age_fig = px.bar(
+                    period_age,
+                    x="Mês", y="proporcao_pct", color="grupo",
+                    barmode="stack",
+                    category_orders={"Mês": list(month_names.values()), "grupo": grupos},
+                    color_discrete_map={
+                        "<25 anos": SKY, "25–64 anos": OCEAN, "≥65 anos": ORANGE,
+                    },
+                    custom_data=["quantidade_exames"],
+                    labels={
+                        "Mês": "Mês", "proporcao_pct": "Proporção (%)",
+                        "grupo": "Faixa etária",
+                    },
+                )
+                age_fig.update_traces(
+                    hovertemplate=(
+                        "Mês: %{x}<br>Grupo: %{fullData.name}"
+                        "<br>Proporção: %{y:.2f}%"
+                        "<br>Exames: %{customdata[0]:,.0f}<extra></extra>"
+                    )
+                )
+                age_fig.update_xaxes(
+                    categoryorder="array", categoryarray=list(month_names.values())
+                )
+                age_fig.update_yaxes(range=[0, 100], tickformat=".0f", ticksuffix="%")
+                age_fig.update_layout(
+                    legend=dict(
+                        title_text="Faixa etária", orientation="h",
+                        yanchor="bottom", y=1.02, x=0, xanchor="left",
+                    ),
+                    bargap=0.25,
+                )
+                age_fig = style_chart(age_fig, height=430)
+                export_age_fig = copy.deepcopy(age_fig)
+                # Etiquetas dentro das barras somente na imagem exportada.
+                for trace in export_age_fig.data:
+                    trace.update(
+                        texttemplate="%{y:.2f}%",
+                        textposition="inside",
+                        insidetextanchor="middle",
+                        textfont=dict(
+                            size=15,
+                            color="#1A3B5C" if trace.name == "<25 anos" else "#FFFFFF",
+                        ),
+                    )
+                export_age_fig.update_layout(
+                    title=dict(
+                        text=f"Proporção de exames por faixa etária · setembro–dezembro · {period}",
+                        x=0.5, xanchor="center",
+                        font=dict(size=21, color=NAVY),
+                    ),
+                    paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+                    margin=dict(l=95, r=85, t=130, b=80),
+                    uniformtext=dict(minsize=11, mode="hide"),
+                )
+                chart_with_right_click_download(
+                    age_fig,
+                    filename="outubro_rosa_proporcao_faixa_etaria_mensal.png",
+                    height=430,
+                    export_fig=export_age_fig,
+                )
+
     city = octdf.groupby("municipio", as_index=False)[
         ["exames_mes", "exames_referencia_setembro"]
     ].sum(min_count=1)
