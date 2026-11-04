@@ -14,8 +14,6 @@ TABLES = {
  "etaria":"fato_conformidade_faixa_etaria",
  "adequabilidade":"fato_adequabilidade_amostras",
  "alterados":"fato_exames_alterados",
- # Fonte opcional: só ficará disponível após extração real mês × faixa etária.
- "outubro_etaria":"fato_outubro_rosa_faixa_etaria",
 }
 MUNICIPIOS = {
  "430040":"Alegrete", "430187":"Barra do Quaraí", "431060":"Itaqui",
@@ -61,22 +59,12 @@ def _from_databricks(name):
             return cursor.fetchall_arrow().to_pandas()
 
 @st.cache_data(ttl=900,show_spinner=False)
-def load_table(table_key, source="CSV local", optional=False):
+def load_table(table_key, source="CSV local"):
     if table_key not in TABLES: raise ValueError("Tabela não permitida")
     name=TABLES[table_key]
     try:
         df=_from_databricks(name) if source=="Databricks SQL" else _from_csv(name)
     except Exception as exc:
-        # Uma tabela opcional ainda não criada não deve derrubar a página.
-        # Erros de permissão, autenticação ou execução continuam visíveis.
-        error_text = str(exc).lower()
-        missing_relation = any(marker in error_text for marker in (
-            "table_or_view_not_found", "table not found",
-            "table does not exist", "relation does not exist",
-            "cannot be found", "doesn't exist",
-        ))
-        if optional and missing_relation:
-            return pd.DataFrame()
         st.error(f"Falha ao consultar Gold: {type(exc).__name__}: {exc}")
         return pd.DataFrame()
     if df.empty: return df
@@ -104,8 +92,8 @@ def selected_source():
     """Fonte persistente, independente da vida útil dos widgets multipágina."""
     return "Databricks SQL"
 
-def filtered(table_key, optional=False):
-    df=load_table(table_key, selected_source(), optional=optional)
+def filtered(table_key):
+    df=load_table(table_key, selected_source())
     if df.empty:
         return df
     years=selected_years()
