@@ -482,10 +482,11 @@ st.markdown("### Quantidade anual de exames na população-alvo (25–64 anos)")
 st.markdown(
     '<p style="font-size:18px;line-height:1.55;color:#334E68;'
     'font-weight:400;margin:4px 0 18px 0;">'
-    'O gráfico apresenta a quantidade exata de exames registrados em mulheres '
-    'de 25–64 anos em cada município e ano. A razão anual calculada em relação '
-    'à população feminina (Censo IBGE 2022) está disponível em percentual na '
-    'tabela abaixo.</p>',
+    'Mostra a evolução anual da quantidade de exames citopatológicos '
+    'registrados na faixa etária de 25 a 64 anos em cada município, entre '
+    '2020 e 2025. Cada ponto representa o número de exames no ano; '
+    'a tabela abaixo apresenta a razão entre esse total e a população '
+    'feminina de 25–64 anos (Censo IBGE 2022), em percentual.</p>',
     unsafe_allow_html=True,
 )
 
