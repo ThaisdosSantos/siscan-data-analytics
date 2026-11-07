@@ -1017,6 +1017,12 @@ def display_table(df, *, percent_columns=None, integer_columns=None, large=False
     .pet-table.pet-table-large th:first-child{min-width:165px}
     .pet-table.pet-table-large td{
       font-size:1.02rem;padding:17px 16px;line-height:1.45}
+    .pet-table.pet-table-large th:not(:first-child),
+    .pet-table.pet-table-large td:not(:first-child){
+      text-align:center}
+    .pet-table.pet-table-large th:first-child,
+    .pet-table.pet-table-large td:first-child{
+      text-align:left}
     .pet-table tbody tr:nth-child(even){background:#f6f8fa}
     .pet-table tbody tr:hover{background:#ecf5fa}
     .pet-table td:first-child{font-weight:700}
