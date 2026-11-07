@@ -276,12 +276,27 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 "≥65 anos": "bottom right",
             }
             for trace in export_yearly.data:
-                values = list(trace.y) if trace.y is not None else []
+                # Plotly pode armazenar o eixo Y em array tipado (bdata).
+                # Converter a números antes de formatar evita ValueError
+                # ao tentar int() sobre strings ou dados serializados.
+                raw_values = trace.y
+                if isinstance(raw_values, dict) and "bdata" in raw_values:
+                    import base64
+                    import numpy as np
+                    values = np.frombuffer(
+                        base64.b64decode(raw_values["bdata"]),
+                        dtype=np.dtype(raw_values["dtype"]),
+                    ).tolist()
+                else:
+                    values = list(raw_values) if raw_values is not None else []
+                numeric_values = pd.to_numeric(
+                    pd.Series(values, dtype="object"), errors="coerce"
+                )
                 trace.update(
                     mode="lines+markers+text",
                     text=[
                         f"{int(value):,}" if pd.notna(value) else ""
-                        for value in values
+                        for value in numeric_values
                     ],
                     textposition=positions.get(trace.name, "top center"),
                     textfont=dict(family="Arial", size=13, color="#1A3B5C"),
