@@ -677,10 +677,7 @@ with st.expander("ℹ️ Como interpretar esta tabela (Razão Anual %)", expande
         "**Comparação temporal:** compare as colunas para acompanhar como a razão "
         "varia de um ano para outro. A linha regional usa a soma dos exames "
         "dividida pela soma das populações, não a média simples dos municípios.\n\n"
-        "**Atenção:** as cores são faixas exploratórias, não classificações "
-        "oficiais de cobertura nem evidência de interrupção de registros. "
-        "Como uma mulher pode realizar mais de um exame, a razão não indica "
-        "a proporção de mulheres efetivamente rastreadas."
+
     )
 st.markdown(html_heatmap, unsafe_allow_html=True)
 st.download_button(
