@@ -865,26 +865,16 @@ st.markdown(
     """
     <style>
     .q3-nota-macambara {
-        margin:18px 0 14px; padding:20px 22px;
-        background:#FFF7E8; color:#553A15;
-        border-left:5px solid #EE5325; border-radius:9px;
+        margin:16px 0 12px; padding:15px 19px;
+        background:#FFF8EE; color:#553A15;
+        border-left:4px solid #EE5325; border-radius:8px;
         font-size:16px; line-height:1.65;
     }
     .q3-nota-titulo {
-        color:#803F17; font-size:19px; line-height:1.4;
-        font-weight:800; margin-bottom:10px;
+        color:#803F17; font-size:18px; line-height:1.4;
+        font-weight:750; margin-bottom:7px;
     }
-    .q3-nota-macambara p {margin:0 0 13px;}
-    .q3-nota-macambara .q3-nota-ressalva {margin:12px 0 0;}
-    .q3-nota-resumo {display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;}
-    .q3-nota-resumo span {
-        background:#FFFFFF; border:1px solid #EDD9BD;
-        border-radius:7px; padding:10px 16px; min-width:150px;
-    }
-    .q3-nota-resumo strong {
-        display:block; color:#803F17; font-size:23px; line-height:1.3;
-    }
-    .q3-nota-resumo small {display:block;color:#634F35;font-size:14px;}
+    .q3-nota-macambara p {margin:0;}
     .q3-nota-metodologica {
         background:#F4F8FB; color:#263E54; padding:18px 22px;
         border:1px solid #D8E5EF; border-radius:9px;
@@ -909,40 +899,34 @@ macambara_consolidado = resumo_consolidado.loc[
 ]
 if not macambara_consolidado.empty:
     caso_macambara = macambara_consolidado.iloc[0]
-    media_macambara = float(caso_macambara["media_exames"])
-    referencia_macambara = float(caso_macambara["referencia_anual"])
     atingimento_macambara = float(caso_macambara["atingimento_pct"])
-    menor_atingimento = (
-        resumo_consolidado.loc[
-            ~resumo_consolidado["municipio"].str.startswith("TOTAL"),
-            "atingimento_pct",
-        ].min()
-    )
-    destaque_macambara = (
-        "menor percentual de atingimento entre os municípios selecionados"
-        if pd.notna(menor_atingimento)
+    demais_municipios = resumo_consolidado.loc[
+        ~resumo_consolidado["municipio"].str.startswith("TOTAL")
+    ]
+    menor_atingimento = demais_municipios["atingimento_pct"].min()
+    if (
+        len(demais_municipios) > 1
+        and pd.notna(menor_atingimento)
         and abs(atingimento_macambara - float(menor_atingimento)) < 0.005
-        else "percentual de atingimento da referência"
-    )
-    media_macambara_fmt = f"{media_macambara:,.0f}".replace(",", ".")
-    referencia_macambara_fmt = f"{referencia_macambara:,.0f}".replace(",", ".")
-    atingimento_macambara_fmt = f"{atingimento_macambara:.2f}".replace(".", ",")
+    ):
+        observacao_macambara = (
+            "Maçambará apresenta o menor atingimento da referência "
+            "entre os municípios selecionados."
+        )
+    else:
+        observacao_macambara = (
+            "O resultado de Maçambará deve ser interpretado à luz "
+            "das características locais."
+        )
     st.markdown(
         f"""
         <div class="q3-nota-macambara">
           <div class="q3-nota-titulo">⚠️ Nota analítica — Maçambará</div>
-          <p>No período selecionado, o município apresenta
-          <strong>{destaque_macambara}</strong>:
-          <strong>{atingimento_macambara_fmt}%</strong> de atingimento da referência.</p>
-          <div class="q3-nota-resumo">
-            <span><strong>{media_macambara_fmt}</strong><small>Exames/ano (média)</small></span>
-            <span><strong>{referencia_macambara_fmt}</strong><small>Exames/ano (referência exploratória)</small></span>
-          </div>
-          <p class="q3-nota-ressalva">O número de exames registrados
-          <strong>não permite concluir</strong> que houve baixa adesão,
-          subnotificação ou encaminhamento para outros municípios.
-          Essas hipóteses exigem dados complementares sobre o registro,
-          os fluxos assistenciais e o acesso aos serviços.</p>
+          <p>{observacao_macambara} <strong>Os registros do SISCAN, isoladamente,
+          não permitem identificar a causa desse resultado.</strong>
+          Para investigá-lo, é necessário avaliar a completude dos registros,
+          os fluxos assistenciais e o acesso aos serviços, sem presumir
+          baixa adesão ou subnotificação.</p>
         </div>
         """,
         unsafe_allow_html=True,
