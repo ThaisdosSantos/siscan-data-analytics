@@ -266,151 +266,66 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 plot_bgcolor="#FFFFFF",
                 font=dict(color=NAVY, size=11),
             )
-            # Exportação estática legível: as linhas ficam sem rótulos
-            # sobrepostos e cada município recebe uma tabela compacta com
-            # os valores exatos de seus três grupos em cada ano.
-            from plotly.subplots import make_subplots
-            import plotly.graph_objects as go
-
-            export_titles = []
-            for row_index in range(n_linhas):
-                for col_index in range(3):
-                    position = row_index * 3 + col_index
-                    export_titles.append(
-                        municipios_lines[position]
-                        if position < len(municipios_lines) else ""
-                    )
-                export_titles.extend(["", "", ""])
-
-            export_specs = []
-            export_heights = []
-            for _ in range(n_linhas):
-                export_specs.append([
-                    {"type": "xy"}, {"type": "xy"}, {"type": "xy"}
-                ])
-                export_specs.append([
-                    {"type": "table"}, {"type": "table"}, {"type": "table"}
-                ])
-                export_heights.extend([0.73, 0.27])
-
-            export_lines = make_subplots(
-                rows=n_linhas * 2,
-                cols=3,
-                specs=export_specs,
-                row_heights=export_heights,
-                vertical_spacing=0.045,
-                horizontal_spacing=0.055,
-                subplot_titles=export_titles,
-            )
-            group_colors = {
-                "<25 anos": "#169B62",
-                "25–64 anos": ROYAL_BLUE,
-                "≥65 anos": ORANGE,
+            # PNG sem tabelas: preservar a mesma grade de 11 gráficos.
+            # Rótulos distintos para cada grupo, com espaço extra abaixo
+            # da linha zero para não sobrepor números ao eixo dos anos.
+            export_lines = copy.deepcopy(fig_lines)
+            posicoes_texto = {
+                "<25 anos": "top left",
+                "25–64 anos": "top center",
+                "≥65 anos": "bottom right",
             }
+            for trace in export_lines.data:
+                trace.update(
+                    mode="lines+markers+text",
+                    texttemplate="%{y:,.0f}",
+                    textposition=posicoes_texto.get(trace.name, "top center"),
+                    textfont=dict(size=12, color=trace.line.color or NAVY),
+                    cliponaxis=False,
+                )
+            # Ajustar escalas de cada faceta separadamente para os valores
+            # baixos (verde/laranja) não se confundirem com o eixo X.
             for pos, municipio in enumerate(municipios_lines):
-                chart_row = (pos // 3) * 2 + 1
-                table_row = chart_row + 1
-                col = pos % 3 + 1
-                municipality_data = lines_yearly.loc[
-                    lines_yearly["municipio"].eq(municipio)
+                painel = lines_yearly.loc[
+                    lines_yearly["municipio"].eq(municipio),
+                    "quantidade_alterados",
                 ]
-                city_values = municipality_data.pivot_table(
-                    index="grupo_3",
-                    columns="ano",
-                    values="quantidade_alterados",
-                    aggfunc="sum",
-                ).reindex(index=ordem_grupos, columns=anos_lines)
-
-                for group in ordem_grupos:
-                    values = city_values.loc[group]
-                    export_lines.add_trace(
-                        go.Scatter(
-                            x=[str(year) for year in anos_lines],
-                            y=[
-                                float(v) if pd.notna(v) else None
-                                for v in values
-                            ],
-                            mode="lines+markers",
-                            line=dict(color=group_colors[group], width=2.7),
-                            marker=dict(size=7),
-                            name=group,
-                            legendgroup=group,
-                            showlegend=pos == 0,
-                            connectgaps=False,
-                            hoverinfo="skip",
-                        ),
-                        row=chart_row, col=col,
+                maximo = float(painel.max()) if not painel.empty else 0.0
+                amplitude = max(maximo, 3.0)
+                # plotly express com wrap=3 posiciona a primeira faceta
+                # na última linha, da esquerda para a direita.
+                numero_eixo = (
+                    (n_linhas - 1 - pos // 3) * 3 + pos % 3 + 1
+                )
+                eixo = "yaxis" if numero_eixo == 1 else f"yaxis{numero_eixo}"
+                if eixo in export_lines.layout:
+                    export_lines.layout[eixo].update(
+                        range=[-amplitude * 0.19, amplitude * 1.20],
+                        tickformat=",.0f",
+                        automargin=True,
                     )
-
-                rows_text = [
-                    [
-                        str(int(value)) if pd.notna(value) else "—"
-                        for value in city_values.loc[group]
-                    ]
-                    for group in ordem_grupos
-                ]
-                export_lines.add_trace(
-                    go.Table(
-                        columnwidth=[90] + [52] * len(anos_lines),
-                        header=dict(
-                            values=["Grupo"] + [str(y) for y in anos_lines],
-                            fill_color="#EAF1F7",
-                            font=dict(color=NAVY, size=12),
-                            align=["left"] + ["center"] * len(anos_lines),
-                            height=27,
-                        ),
-                        cells=dict(
-                            values=[
-                                ordem_grupos,
-                                *[
-                                    [rows_text[g][y] for g in range(3)]
-                                    for y in range(len(anos_lines))
-                                ],
-                            ],
-                            fill_color="#FFFFFF",
-                            font=dict(color=NAVY, size=12),
-                            align=["left"] + ["center"] * len(anos_lines),
-                            height=25,
-                        ),
-                    ),
-                    row=table_row, col=col,
-                )
-                export_lines.update_yaxes(
-                    rangemode="tozero", matches=None,
-                    showticklabels=True, gridcolor="#E9EDF1",
-                    title_text=None, row=chart_row, col=col,
-                )
-                export_lines.update_xaxes(
-                    type="category", categoryorder="array",
-                    categoryarray=[str(y) for y in anos_lines],
-                    title_text=None, row=chart_row, col=col,
-                )
-
-            export_lines.update_annotations(
-                font=dict(size=15, color=NAVY)
-            )
             export_lines.update_layout(
                 title=dict(
                     text="Evolução anual de exames alterados por município e grupo etário",
                     x=0.5, xanchor="center",
-                    font=dict(size=24, color=NAVY),
+                    font=dict(size=23, color=NAVY),
                 ),
-                height=max(980, 490 * n_linhas),
+                height=max(950, 440 * n_linhas),
                 width=1800,
                 legend=dict(
                     title_text="Grupo etário", orientation="h",
                     x=0.5, xanchor="center",
-                    y=1.035, yanchor="bottom",
+                    y=-0.065, yanchor="top",
                     font=dict(size=15, color=NAVY),
                 ),
-                margin=dict(l=75, r=55, t=155, b=70),
+                margin=dict(l=115, r=75, t=125, b=145),
                 paper_bgcolor="#FFFFFF",
                 plot_bgcolor="#FFFFFF",
                 font=dict(color=NAVY, size=12),
             )
             st.caption(
                 "No celular, deslize o gráfico para os lados. "
-                "No PNG, consulte os valores de cada grupo na tabela abaixo de cada município."
+                "O PNG mostra valores nas três linhas, sem tabelas."
             )
             chart_with_right_click_download(
                 fig_lines,
