@@ -136,9 +136,52 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             )
             lines_yearly["ano"] = lines_yearly["ano"].astype(int)
             lines_yearly["ano_label"] = lines_yearly["ano"].astype(str)
+            st.markdown("""
+                <style>
+                .st-key-alterados_sort_grupos_panel [data-testid="stSelectbox"] label p {
+                    color: #1A3B5C !important;
+                    font-weight: 700 !important;
+                    font-size: 0.88rem !important;
+                }
+                .st-key-alterados_sort_grupos_panel [data-baseweb="select"] > div {
+                    background: #FFFFFF !important;
+                    border: 1.5px solid #8FAFC5 !important;
+                    border-radius: 9px !important;
+                    min-height: 43px !important;
+                }
+                .st-key-alterados_sort_grupos_panel [data-baseweb="select"] * {
+                    color: #1A3B5C !important;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+            # Ordenação independente das facetas gerais, com os mesmos rótulos
+            # e estilo de seletor já usados na página.
+            with st.container(key="alterados_sort_grupos_panel"):
+                sort_grupos = st.selectbox(
+                    "Ordenar por",
+                    options=["A–Z", "Maior para menor"],
+                    key="sort_facetas_grupos_alterados",
+                    help=(
+                        "Maior para menor considera o total de exames alterados "
+                        "dos três grupos no período e municípios selecionados."
+                    ),
+                )
             municipios_lines = sorted(
                 lines_yearly["municipio"].unique(), key=lambda name: name.casefold()
             )
+            if sort_grupos == "Maior para menor":
+                totals_grupos = (
+                    lines_yearly.groupby("municipio")["quantidade_alterados"]
+                    .sum(min_count=1)
+                )
+                municipios_lines.sort(
+                    key=lambda municipio: (
+                        -float(totals_grupos.loc[municipio])
+                        if pd.notna(totals_grupos.loc[municipio])
+                        else float("inf"),
+                        municipio.casefold(),
+                    )
+                )
             anos_lines = sorted(lines_yearly["ano"].unique().tolist())
             fig_lines = px.line(
                 lines_yearly,
