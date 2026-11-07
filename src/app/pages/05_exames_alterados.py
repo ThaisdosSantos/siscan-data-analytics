@@ -225,6 +225,36 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 marker=dict(size=7),
                 connectgaps=False,
             )
+            # Há anos em que <25 e >=65 possuem ambos zero. Se o laranja
+            # for desenhado por cima, esconderá a linha verde nesses anos.
+            # Ordem de desenho: laranja atrás, azul no meio, verde por cima;
+            # sem alterar valores nem imputar competências ausentes.
+            ordem_desenho = {"≥65 anos": 0, "25–64 anos": 1, "<25 anos": 2}
+            fig_lines.data = tuple(
+                sorted(
+                    fig_lines.data,
+                    key=lambda trace: ordem_desenho.get(trace.name, 3),
+                )
+            )
+            for trace in fig_lines.data:
+                grupo = trace.name
+                trace.update(
+                    legendrank={
+                        "<25 anos": 1, "25–64 anos": 2, "≥65 anos": 3
+                    }.get(grupo, 4),
+                    line=dict(
+                        width=4 if grupo == "≥65 anos" else 2.8,
+                        dash="dot" if grupo == "≥65 anos" else "solid",
+                    ),
+                    marker=dict(
+                        size=8,
+                        symbol={
+                            "<25 anos": "circle",
+                            "25–64 anos": "diamond",
+                            "≥65 anos": "square",
+                        }.get(grupo, "circle"),
+                    ),
+                )
             fig_lines.update_xaxes(
                 type="category",
                 categoryorder="array",
@@ -233,6 +263,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 matches=None,
                 title_text=None,
                 showgrid=False,
+                showline=False,
             )
             fig_lines.update_yaxes(
                 matches=None,
