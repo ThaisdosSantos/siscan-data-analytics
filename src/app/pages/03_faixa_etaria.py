@@ -606,31 +606,27 @@ st.markdown(
     }
     .q3-razao-heatmap tbody tr:hover th {background:#F4F7FA;}
     .q3-indicador-box {
-        margin:14px 0 18px; padding:16px 18px;
-        background:#F8FAFC; border:1px solid #E1E8EF; border-radius:10px;
-        color:#1A3B5C;
+        display:inline-block; max-width:100%; box-sizing:border-box;
+        margin:10px 0 14px; padding:9px 12px;
+        background:#FFFFFF; border:1px solid #D7E1EA;
+        border-radius:6px; color:#1A3B5C;
+        font:500 13px/1.5 Manrope,Arial,sans-serif;
     }
     .q3-indicador-titulo {
-        font-size:16px; font-weight:700; margin:0 0 10px;
-    }
-    .q3-indicador-grade {
-        display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
-        gap:10px;
+        font-size:14px; font-weight:700; margin:0 0 5px;
     }
     .q3-indicador-item {
-        display:flex; gap:10px; align-items:center; padding:10px 12px;
-        background:#FFFFFF; border:1px solid #E1E8EF; border-radius:8px;
-        font-size:14px; line-height:1.35;
+        display:flex; align-items:center; gap:7px;
+        margin:2px 0; white-space:normal;
     }
     .q3-indicador-amostra {
-        width:8px; min-width:8px; height:38px; border-radius:5px;
+        display:inline-block; width:11px; height:11px; min-width:11px;
+        border-radius:2px; border:1px solid rgba(26,59,92,.18);
+        box-sizing:border-box;
     }
-    .q3-indicador-item strong {display:block;font-size:15px;}
-    .q3-indicador-item small {display:block;color:#52667A;margin-top:3px;}
-    .q3-indicador-nota {font-size:13px;color:#52667A;margin:10px 0 0;}
-    @media(max-width:780px) {
-        .q3-indicador-grade {grid-template-columns:1fr;}
-        .q3-indicador-box {padding:13px;}
+    .q3-indicador-formula {
+        font-size:12px; color:#334E68; margin:6px 0 0;
+        padding-top:5px; border-top:1px solid #EDF1F5;
     }
     </style>
     """,
@@ -639,23 +635,24 @@ st.markdown(
 st.markdown(html_heatmap, unsafe_allow_html=True)
 st.markdown(
     """
-    <section class="q3-indicador-box" aria-label="Classificação visual da razão anual">
-      <div class="q3-indicador-titulo">Como interpretar as cores da tabela</div>
-      <div class="q3-indicador-grade">
-        <div class="q3-indicador-item">
-          <i class="q3-indicador-amostra" style="background:#F2A34A"></i>
-          <div><strong>Resultado ≤ 3%</strong><small>Laranja suave</small></div>
-        </div>
-        <div class="q3-indicador-item">
-          <i class="q3-indicador-amostra" style="background:#FFFFFF;border:1px solid #CBD5E1"></i>
-          <div><strong>3% &lt; Resultado &lt; 33%</strong><small>Branco</small></div>
-        </div>
-        <div class="q3-indicador-item">
-          <i class="q3-indicador-amostra" style="background:#169B62"></i>
-          <div><strong>Resultado ≥ 33%</strong><small>Verde suave</small></div>
-        </div>
+    <section class="q3-indicador-box" aria-label="Legenda da razão anual de exames">
+      <div class="q3-indicador-titulo">Classificação visual da razão anual</div>
+      <div class="q3-indicador-item">
+        <i class="q3-indicador-amostra" style="background:#FCE8D4"></i>
+        <span><strong>Faixa inferior:</strong> resultado ≤ 3,00%</span>
       </div>
-      <p class="q3-indicador-nota">Faixas usadas apenas para destacar valores; não representam metas oficiais de rastreamento. Valores ausentes são exibidos como “—”.</p>
+      <div class="q3-indicador-item">
+        <i class="q3-indicador-amostra" style="background:#FFFFFF"></i>
+        <span><strong>Faixa intermediária:</strong> 3,00% &lt; resultado &lt; 33,00%</span>
+      </div>
+      <div class="q3-indicador-item">
+        <i class="q3-indicador-amostra" style="background:#D8F2E4"></i>
+        <span><strong>Faixa superior:</strong> resultado ≥ 33,00%</span>
+      </div>
+      <div class="q3-indicador-formula">
+        Razão (%) = (exames registrados ÷ população feminina de 25–64 anos) × 100<br>
+        Limites exploratórios para visualização; não indicam cobertura efetiva nem metas oficiais.
+      </div>
     </section>
     """,
     unsafe_allow_html=True,
