@@ -664,22 +664,23 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-with st.expander("ℹ️ Nota metodológica — cálculo e interpretação", expanded=False):
+with st.expander("ℹ️ Como interpretar esta tabela (Razão Anual %)", expanded=False):
     st.markdown(
-        "**Cálculo da razão anual (%)**\n\n"
-        "Razão (%) = (exames citopatológicos registrados em mulheres de 25–64 anos "
-        "÷ população feminina de 25–64 anos do município, Censo IBGE 2022) × 100.\n\n"
-        "**Legenda de cores do heatmap**\n\n"
-        "🟠 **Faixa inferior (≤ 3,00%):** destaque laranja suave.\n\n"
-        "🔵 **Faixa intermediária (> 3,00% e < 33,00%):** gradiente azul, "
-        "mais intenso conforme a razão aumenta.\n\n"
-        "🟢 **Faixa superior (≥ 33,00%):** destaque verde suave.\n\n"
-        "**Interpretação:** a linha regional corresponde à soma dos exames "
-        "dividida pela soma das populações dos municípios selecionados em cada "
-        "ano, e não à média simples das razões municipais. Como a mesma mulher "
-        "pode realizar mais de um exame, o indicador não mede cobertura individual. "
-        "As faixas de 3% e 33% são exclusivamente exploratórias, não classificações "
-        "ou metas oficiais do INCA/ANS."
+        "**O que mede:** em cada ano, compara a quantidade de exames "
+        "registrados em mulheres de 25–64 anos com a população feminina "
+        "dessa faixa etária no município (Censo IBGE 2022). "
+        "**Razão (%) = exames registrados ÷ população feminina de 25–64 anos × 100.**\n\n"
+        "**Como ler as cores do heatmap:**\n\n"
+        "- 🟠 **Faixa inferior (≤ 3,00%):** razão anual muito baixa no intervalo exploratório.\n"
+        "- 🔵 **Faixa intermediária (> 3,00% e < 33,00%):** gradiente azul; tons mais fortes indicam razões maiores.\n"
+        "- 🟢 **Faixa superior (≥ 33,00%):** razão igual ou superior ao limite visual de 33%.\n\n"
+        "**Comparação temporal:** compare as colunas para acompanhar como a razão "
+        "varia de um ano para outro. A linha regional usa a soma dos exames "
+        "dividida pela soma das populações, não a média simples dos municípios.\n\n"
+        "**Atenção:** as cores são faixas exploratórias, não classificações "
+        "oficiais de cobertura nem evidência de interrupção de registros. "
+        "Como uma mulher pode realizar mais de um exame, a razão não indica "
+        "a proporção de mulheres efetivamente rastreadas."
     )
 st.markdown(html_heatmap, unsafe_allow_html=True)
 st.download_button(
@@ -822,20 +823,6 @@ st.download_button(
     mime="text/csv",
     key="exportar_tabela_consolidada_25_64",
 )
-st.markdown(
-    """
-    <style>
-    .q3-nota-macambara-compacta {
-        margin:8px 0 12px;padding:10px 14px;
-        border-left:3px solid #EE5325;background:#FFF8EE;
-        border-radius:6px;color:#553A15;
-        font-size:15px;line-height:1.5;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 # Nota analítica contextual, recalculada pelos filtros ativos.
 # Não atribuir a diferença a adesão, sub-registro ou fluxos assistenciais
 # sem evidência externa que confirme essas hipóteses.
@@ -863,33 +850,33 @@ if not macambara_consolidado.empty:
             "O resultado de Maçambará deve ser interpretado à luz "
             "das características locais."
         )
-    st.markdown(
-        f'<div class="q3-nota-macambara-compacta">'
-        f'<strong>⚠️ Maçambará:</strong> {observacao_macambara} '
-        'Os dados disponíveis não permitem determinar a causa dessa diferença.'
-        '</div>',
-        unsafe_allow_html=True,
-    )
 
 anos_selecionados_consolidado = sorted(base_consolidada["ano"].unique().tolist())
-with st.expander("ℹ️ Nota Metodológica e Regras de Cálculo", expanded=False):
+with st.expander("ℹ️ Como interpretar a Capacidade Assistencial (Volume de Exames)", expanded=False):
     st.markdown(
-        "**Média anual de exames executados:** média dos totais anuais "
-        "registrados nos anos com dados, conforme os filtros.\n\n"
-        "**Referência anual:** população feminina de 25–64 anos (Censo IBGE 2022) × 33%.\n\n"
-        "**Diferença anual média:** média executada − referência anual.\n\n"
-        "**Atingimento da referência (%):** média executada ÷ referência anual × 100.\n\n"
-        "**Total regional:** soma das médias municipais e dos valores de referência, "
-        "não média simples dos percentuais.\n\n"
+        "**Referência anual (33%):** população feminina de 25–64 anos "
+        "× 0,33; parâmetro exploratório para comparar o volume anual de exames, "
+        "não meta oficial de cobertura de mulheres.\n\n"
+        "**Média executada:** média de exames registrados por ano com dados no período filtrado.\n\n"
+        "**Diferença anual média:** média executada − referência anual. "
+        "Valores negativos indicam quantos exames por ano, em média, "
+        "ficaram abaixo do volume de referência; valores positivos indicam "
+        "quantos ficaram acima.\n\n"
+        "**Atingimento (%):** média executada ÷ referência anual × 100. "
+        "O total regional soma os volumes municipais e não é a média "
+        "simples dos percentuais.\n\n"
         f"**Anos com dados:** {', '.join(map(str, anos_selecionados_consolidado))}. "
-        "A referência de 33% é exploratória, não uma meta oficial comprovada; "
-        "exames registrados não equivalem a mulheres distintas rastreadas.\n\n"
-        "A diferença observada em Maçambará não comprova baixa adesão, "
-        "subnotificação nem encaminhamento para outros municípios; "
-        "essas hipóteses exigem informações adicionais sobre registros, "
-        "fluxos assistenciais e acesso aos serviços.\n\n"
-        "**Fonte:** SISCAN/DATASUS · Censo IBGE 2022."
+        "Os valores são contagens de exames, não de mulheres distintas rastreadas."
     )
+    if not macambara_consolidado.empty:
+        st.markdown(
+            f"**Nota sobre Maçambará:** {observacao_macambara} "
+            "A diferença observada não comprova falha de registro, "
+            "baixa adesão nem encaminhamento para outro município. "
+            "Investigar essas possibilidades requer dados complementares "
+            "sobre registro, fluxo assistencial e acesso aos serviços."
+        )
+    st.markdown("**Fonte:** SISCAN/DATASUS · Censo IBGE 2022.")
 
 with st.expander("Ver dados detalhados da razão anual (Q3)"):
     detalhe_cob = cob[
