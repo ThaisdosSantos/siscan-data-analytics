@@ -822,6 +822,7 @@ display_table(
         "Diferença anual média de exames",
     ],
     percent_columns=["Atingimento da referência (%)"],
+    large=True,
 )
 st.download_button(
     "⬇️ Exportar tabela consolidada (CSV)",
