@@ -350,8 +350,8 @@ def sidebar_filters():
         for path, label, icon, nav_key in [
             ("main.py", "Visão executiva", ":material/speed:", None),
             ("pages/01_panorama_geral.py", "Panorama geral", None, "nav_panorama_icon"),
-            ("pages/02_outubro_rosa.py", "Outubro Rosa", None, "nav_outubro_icon"),
             ("pages/03_faixa_etaria.py", "Faixa etária", ":material/group:", None),
+            ("pages/02_outubro_rosa.py", "Outubro Rosa", None, "nav_outubro_icon"),
             ("pages/04_adequabilidade.py", "Adequabilidade", ":material/science:", None),
             ("pages/05_exames_alterados.py", "Exames alterados", None, "nav_exames_icon"),
         ]:
