@@ -995,7 +995,7 @@ def metric_row(items):
         col.metric(label,value)
 
 
-def display_table(df, *, percent_columns=None, integer_columns=None):
+def display_table(df, *, percent_columns=None, integer_columns=None, large=False):
     """Tabela PET-Saúde: HTML acessível e responsivo, sem alterar os dados."""
     percent_columns = set(percent_columns or [])
     integer_columns = set(integer_columns or [])
@@ -1008,6 +1008,15 @@ def display_table(df, *, percent_columns=None, integer_columns=None):
     .pet-table th{background:#1A3B5C;color:#fff;padding:13px 12px;text-align:left;
       font-size:.76rem;line-height:1.35;font-weight:750;white-space:normal}
     .pet-table td{padding:13px 12px;border-bottom:1px solid #e7ebef;white-space:nowrap}
+    /* Variante ampliada, ativada somente nas tabelas que precisam de mais leitura. */
+    table.pet-table.pet-table-large{
+      min-width:1130px;font-size:1.03rem;line-height:1.5}
+    .pet-table.pet-table-large th{
+      font-size:.94rem;line-height:1.45;padding:17px 16px;
+      min-width:125px;vertical-align:middle}
+    .pet-table.pet-table-large th:first-child{min-width:165px}
+    .pet-table.pet-table-large td{
+      font-size:1.02rem;padding:17px 16px;line-height:1.45}
     .pet-table tbody tr:nth-child(even){background:#f6f8fa}
     .pet-table tbody tr:hover{background:#ecf5fa}
     .pet-table td:first-child{font-weight:700}
@@ -1047,8 +1056,9 @@ def display_table(df, *, percent_columns=None, integer_columns=None):
                                    for c, v in zip(df.columns, values)) + "</tr>")
     if not rows:
         rows = ['<tr><td colspan="' + str(max(1,len(df.columns))) + '">Nenhum registro.</td></tr>']
+    table_class = "pet-table pet-table-large" if large else "pet-table"
     markup = ('<div class="pet-table-scroller" role="region" aria-label="Tabela de dados" tabindex="0">'
-              '<table class="pet-table"><thead><tr>' + header + '</tr></thead><tbody>'
+              '<table class="' + table_class + '"><thead><tr>' + header + '</tr></thead><tbody>'
               + "".join(rows) + '</tbody></table></div>')
     st.markdown(css + markup, unsafe_allow_html=True)
 
