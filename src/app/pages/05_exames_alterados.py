@@ -35,17 +35,17 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     den=df.total_exames_validos.sum(min_count=1)
     metric_row([("Exames alterados",fmt_num(num)),("Proporção operacional",fmt_pct(pct(num,den))),
                 ("Exames no denominador disponível",fmt_num(den) if pd.notna(den) else "N/D")])
-    st.markdown("### Distribuição dos exames alterados por grupo etário")
+    st.markdown("### Proporção de exames alterados por grupo etário")
     st.caption(
-        "Participação de cada grupo no total de exames alterados com idade conhecida. "
-        "As fatias somam 100% dos exames alterados; a taxa de alteração de cada "
-        "grupo (alterados ÷ exames válidos) permanece disponível ao passar o mouse."
+        "Três grupos definidos pela coluna grupo_etario_3 da Gold. "
+        "Proporção = soma de exames alterados ÷ soma de exames válidos × 100; "
+        "não é a média de percentuais das faixas detalhadas."
     )
     ordem_grupos = ["<25 anos", "25–64 anos", "≥65 anos"]
     macro = df.groupby("grupo_3", as_index=False)[
         ["quantidade_alterados", "total_exames_validos"]
     ].sum(min_count=1)
-    macro["taxa_alteracao_pct"] = (
+    macro["proporcao_pct"] = (
         macro["quantidade_alterados"]
         .div(macro["total_exames_validos"].where(macro["total_exames_validos"] > 0))
         .mul(100)
@@ -53,62 +53,43 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     macro["grupo_3"] = pd.Categorical(
         macro["grupo_3"], categories=ordem_grupos, ordered=True
     )
-    macro = macro.sort_values("grupo_3")
-    macro = macro.loc[macro["quantidade_alterados"].notna()].copy()
-    if not macro.empty and macro["quantidade_alterados"].sum() > 0:
-        total_alterados = int(macro["quantidade_alterados"].sum())
-        macro_fig = px.pie(
-            macro, names="grupo_3", values="quantidade_alterados",
-            color="grupo_3", hole=0.58,
+    macro = macro.sort_values("grupo_3").dropna(subset=["proporcao_pct"])
+    if not macro.empty:
+        macro_fig = px.bar(
+            macro, x="grupo_3", y="proporcao_pct", color="grupo_3",
             category_orders={"grupo_3": ordem_grupos},
             color_discrete_map={
                 "<25 anos": SKY, "25–64 anos": OCEAN, "≥65 anos": ORANGE,
             },
-            custom_data=["taxa_alteracao_pct", "total_exames_validos"],
+            custom_data=["quantidade_alterados", "total_exames_validos"],
+            labels={"grupo_3": "Grupo etário", "proporcao_pct": "Proporção (%)"},
         )
+        macro_fig.update_layout(showlegend=False)
+        macro_fig.update_yaxes(rangemode="tozero", ticksuffix="%", tickformat=".2f")
         macro_fig.update_traces(
-            sort=False, texttemplate="%{percent:.2%}",
-            textposition="inside",
-            insidetextfont=dict(size=14, color="#FFFFFF"),
-            marker=dict(line=dict(color="#FFFFFF", width=2)),
             hovertemplate=(
-                "%{label}<br>Participação dos alterados: %{percent:.2%}"
-                "<br>Exames alterados: %{value:,.0f}"
-                "<br>Taxa de alteração do grupo: %{customdata[0]:.2f}%"
-                "<br>Exames válidos do grupo: %{customdata[1]:,.0f}"
-                "<extra></extra>"
-            ),
-        )
-        macro_fig.update_layout(
-            showlegend=True,
-            legend=dict(
-                title_text="Grupo etário", orientation="v",
-                x=1.02, xanchor="left", y=0.5, yanchor="middle",
-                font=dict(size=13, color=NAVY),
-            ),
-            annotations=[dict(
-                text=f"<b>{total_alterados:,.0f}</b><br><span style='font-size:12px'>alterados</span>",
-                x=0.5, y=0.5, xref="paper", yref="paper",
-                showarrow=False, font=dict(size=18, color=NAVY),
-            )],
-            paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
-            margin=dict(l=20, r=130, t=25, b=25),
+                "Faixa: %{x}<br>Proporção: %{y:.2f}%"
+                "<br>Exames alterados: %{customdata[0]:,.0f}"
+                "<br>Exames válidos: %{customdata[1]:,.0f}<extra></extra>"
+            )
         )
         macro_export = copy.deepcopy(macro_fig)
+        macro_export.update_traces(
+            texttemplate="%{y:.2f}%", textposition="outside",
+            textfont=dict(size=15, color=NAVY), cliponaxis=False,
+        )
         macro_export.update_layout(
             title=dict(
-                text="Distribuição dos exames alterados por grupo etário",
-                x=0.5, xanchor="center", font=dict(size=22, color=NAVY),
+                text="Proporção de exames alterados por grupo etário",
+                x=0.5, xanchor="center", font=dict(size=21, color=NAVY),
             ),
-            margin=dict(l=70, r=200, t=110, b=65),
             paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+            margin=dict(l=85, r=40, t=100, b=80),
         )
         chart_with_right_click_download(
             macro_fig, filename="exames_alterados_grupos_etarios.png",
             height=430, export_fig=macro_export,
         )
-    else:
-        st.info("Não há exames alterados para representar neste recorte.")
 
     st.markdown("### Exames alterados por faixa etária detalhada")
     byage=df.groupby("faixa_etaria",as_index=False)[["quantidade_alterados","total_exames_validos"]].sum(min_count=1)
