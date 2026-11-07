@@ -9,6 +9,16 @@ from utils.data_loader import filtered,require,sidebar_filters
 # Cores com maior contraste entre os grupos etários (PET-Saúde).
 BABY_BLUE = "#A9DDF4"   # <25 anos
 ROYAL_BLUE = "#1757A6"  # 25–64 anos
+def descricao_grafico(texto: str) -> None:
+    """Exibe explicações dos gráficos com legibilidade reforçada."""
+    st.markdown(
+        '<p style="font-size:18px;line-height:1.55;color:#334E68;'
+        'font-weight:400;margin:4px 0 18px 0;overflow-wrap:anywhere;">'
+        + texto + '</p>',
+        unsafe_allow_html=True,
+    )
+
+
 st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
@@ -40,7 +50,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     metric_row([("Exames alterados",fmt_num(num)),("Proporção operacional",fmt_pct(pct(num,den))),
                 ("Exames no denominador disponível",fmt_num(den) if pd.notna(den) else "N/D")])
     st.markdown("### Proporção de exames alterados por grupo etário")
-    st.caption(
+    descricao_grafico(
         "Apresenta o percentual de exames citopatológicos alterados em cada grupo "
         "etário (<25, 25–64 e ≥65 anos), considerando os exames válidos do próprio "
         "grupo. Permite identificar em quais faixas etárias a proporção de alterações é maior."
@@ -109,7 +119,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     # Evolução anual com linhas independentes para os três grupos etários.
     # Dois municípios por linha (até seis linhas), sem acumular grupos.
     st.markdown("### Evolução anual de exames alterados por município e grupo etário")
-    st.caption(
+    descricao_grafico(
         "Mostra a evolução anual da quantidade de exames alterados em cada município, "
         "separada em três grupos etários (<25, 25–64 e ≥65 anos). Permite comparar "
         "o comportamento das faixas etárias entre 2020 e 2025."
@@ -372,7 +382,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     # Série anual por município: utiliza as quantidades já existentes na Gold.
     # Ausências de ano são mantidas como lacunas, nunca convertidas em zero.
     st.markdown("### Evolução anual de exames alterados por município")
-    st.caption(
+    descricao_grafico(
         "Apresenta a quantidade anual de exames citopatológicos alterados em cada "
         "município, considerando todas as faixas etárias. Permite identificar "
         "variações no número de exames alterados entre 2020 e 2025."
@@ -541,7 +551,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     heat = heat.reindex(columns=ordem_grupos)
     if not heat.empty:
         st.markdown("### Matriz territorial de proporção de exames alterados por grupo etário")
-        st.caption(
+        descricao_grafico(
             "Apresenta o percentual de exames alterados por município e grupo etário. "
             "Quanto mais escura a célula, maior a proporção de exames alterados "
             "naquele município e grupo. O símbolo — indica ausência de dados."
