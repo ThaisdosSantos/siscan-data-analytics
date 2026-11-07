@@ -845,8 +845,10 @@ st.markdown(
     'dela (valor positivo). Já o <b>Atingimento da referência (%)</b> mostra '
     'quanto da quantidade esperada foi alcançada: 100% significa que os '
     'volumes são iguais. A linha <b>TOTAL 10ª CRS</b> reúne os municípios '
-    'selecionados. Os 33% são apenas uma referência exploratória, e não uma '
-    'meta oficial nem uma medida da proporção de mulheres rastreadas.</p>',
+    'selecionados. A referência de 33% foi adaptada do indicador 1.5 '
+    'do IDSS/ANS (ano-base 2023), que define esse parâmetro para '
+    'beneficiárias de planos de saúde. Aqui, ela permite comparar volumes '
+    'municipais, sem medir a proporção de mulheres rastreadas.</p>',
     unsafe_allow_html=True,
 )
 
