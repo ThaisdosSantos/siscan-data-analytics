@@ -797,18 +797,30 @@ linha_total_consolidado["atingimento_pct"] = (
 )
 ordenar_tabela_consolidada = st.selectbox(
     "Ordenar por",
-    options=["A–Z", "Maior para menor"],
+    options=[
+        "A–Z (município)",
+        "Maior para menor (média anual de exames)",
+        "Atingimento da referência (%) — crescente",
+    ],
     index=0,
     key="ordenacao_tabela_consolidada_q3",
     help=(
-        "Maior para menor organiza os municípios pela média anual de "
-        "exames executados nos anos selecionados. A linha TOTAL permanece ao final."
+        "A–Z ordena os municípios alfabeticamente; maior para menor considera "
+        "a média anual de exames; atingimento crescente começa pelos menores "
+        "percentuais. A linha TOTAL permanece ao final."
     ),
 )
-if ordenar_tabela_consolidada == "Maior para menor":
+if ordenar_tabela_consolidada == "Maior para menor (média anual de exames)":
     resumo_consolidado = resumo_consolidado.sort_values(
         ["media_exames", "municipio"],
         ascending=[False, True],
+        kind="stable",
+    )
+elif ordenar_tabela_consolidada == "Atingimento da referência (%) — crescente":
+    resumo_consolidado = resumo_consolidado.sort_values(
+        ["atingimento_pct", "municipio"],
+        ascending=[True, True],
+        na_position="last",
         kind="stable",
     )
 else:
