@@ -501,12 +501,11 @@ gold_loader.TABLES.setdefault("cobertura", "fato_evolucao_cobertura_municipios")
 
 try:
     df_cob = gold_loader.filtered("cobertura")
-except ValueError as exc:
+except ValueError:
     st.error(
         "Não foi possível carregar o indicador de cobertura populacional. "
         "Atualize a aplicação para sincronizar o catálogo de tabelas Gold."
     )
-    st.exception(exc)
     st.stop()
 
 if not require(df_cob, ["municipio", "ano", "total_exames_25_64",
