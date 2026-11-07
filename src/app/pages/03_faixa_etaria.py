@@ -660,68 +660,26 @@ st.markdown(
         border-top:2px solid #1A3B5C; white-space:nowrap;
     }
     .q3-razao-heatmap tfoot th {text-align:left;}
-    .q3-indicador-box {
-        display:inline-block; max-width:100%; box-sizing:border-box;
-        margin:10px 0 14px; padding:9px 12px;
-        background:#FFFFFF; border:1px solid #D7E1EA;
-        border-radius:6px; color:#1A3B5C;
-        font:500 13px/1.5 Manrope,Arial,sans-serif;
-    }
-    .q3-indicador-titulo {
-        font-size:14px; font-weight:700; margin:0 0 5px;
-    }
-    .q3-indicador-item {
-        display:flex; align-items:center; gap:7px;
-        margin:2px 0; white-space:normal;
-    }
-    .q3-indicador-amostra {
-        display:inline-block; width:11px; height:11px; min-width:11px;
-        border-radius:2px; border:1px solid rgba(26,59,92,.18);
-        box-sizing:border-box;
-    }
-    .q3-indicador-formula {
-        font-size:12px; color:#334E68; margin:6px 0 0;
-        padding-top:5px; border-top:1px solid #EDF1F5;
-    }
     </style>
     """,
     unsafe_allow_html=True,
 )
-st.markdown(
-    """
-    <section class="q3-indicador-box" aria-label="Legenda da razão anual de exames">
-      <div class="q3-indicador-titulo">Legenda das faixas visuais</div>
-      <div class="q3-indicador-item">
-        <i class="q3-indicador-amostra" style="background:#FDE8E4"></i>
-        <span><strong>Faixa inferior:</strong> resultado ≤ 3,00%</span>
-      </div>
-      <div class="q3-indicador-item">
-        <i class="q3-indicador-amostra" style="background:linear-gradient(90deg,#F0F7FB,#9AC5DC)"></i>
-        <span><strong>Faixa intermediária:</strong> 3,00% &lt; resultado &lt; 33,00%</span>
-      </div>
-      <div class="q3-indicador-item">
-        <i class="q3-indicador-amostra" style="background:#D8F2E4"></i>
-        <span><strong>Faixa superior:</strong> resultado ≥ 33,00%</span>
-      </div>
-      <div class="q3-indicador-formula">
-        Faixas exploratórias de visualização, sem equivalência com metas oficiais de rastreamento.
-      </div>
-    </section>
-    """,
-    unsafe_allow_html=True,
-)
-with st.expander("Nota metodológica — cálculo e interpretação", expanded=False):
+with st.expander("ℹ️ Nota metodológica — cálculo e interpretação", expanded=False):
     st.markdown(
-        "A **razão anual (%)** corresponde ao número de exames citopatológicos "
-        "registrados em mulheres de 25–64 anos no município e ano, dividido "
-        "pela população feminina de 25–64 anos do município (Censo IBGE 2022), "
-        "multiplicado por 100. A linha regional é calculada pela **soma dos "
-        "exames dividida pela soma das populações** dos municípios filtrados "
-        "em cada ano — não pela média simples dos percentuais. "
-        "Como uma mesma mulher pode realizar mais de um exame, a razão não "
-        "representa cobertura individual. Os limites de 3% e 33% são apenas "
-        "faixas exploratórias e não devem ser atribuídos como metas oficiais "
-        "do INCA ou da ANS."
+        "**Cálculo da razão anual (%)**\n\n"
+        "Razão (%) = (exames citopatológicos registrados em mulheres de 25–64 anos "
+        "÷ população feminina de 25–64 anos do município, Censo IBGE 2022) × 100.\n\n"
+        "**Legenda de cores do heatmap**\n\n"
+        "🟠 **Faixa inferior (≤ 3,00%):** destaque laranja suave.\n\n"
+        "🔵 **Faixa intermediária (> 3,00% e < 33,00%):** gradiente azul, "
+        "mais intenso conforme a razão aumenta.\n\n"
+        "🟢 **Faixa superior (≥ 33,00%):** destaque verde suave.\n\n"
+        "**Interpretação:** a linha regional corresponde à soma dos exames "
+        "dividida pela soma das populações dos municípios selecionados em cada "
+        "ano, e não à média simples das razões municipais. Como a mesma mulher "
+        "pode realizar mais de um exame, o indicador não mede cobertura individual. "
+        "As faixas de 3% e 33% são exclusivamente exploratórias, não classificações "
+        "ou metas oficiais do INCA/ANS."
     )
 st.markdown(html_heatmap, unsafe_allow_html=True)
 st.download_button(
@@ -731,12 +689,7 @@ st.download_button(
     mime="text/csv",
     key="exportar_razao_anual_municipio_ano",
 )
-st.caption(
-    "Azul em gradiente: faixa intermediária; laranja e verde: faixas extremas. "
-    "A linha final apresenta a razão agregada ponderada pela população dos "
-    "municípios selecionados em cada ano. Não é cobertura individual de mulheres. "
-    "Fonte: SISCAN/DATASUS · Censo IBGE 2022 · Gold."
-)
+st.caption("Fonte: SISCAN/DATASUS · Censo IBGE 2022.")
 
 # Tabela consolidada: volume anual observado × referência exploratória de 33%.
 # Usar a mesma Gold carregada para a razão anual, respeitando os filtros.
