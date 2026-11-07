@@ -744,11 +744,16 @@ st.markdown("#### Tabela consolidada de exames na população-alvo (25–64 anos
 st.markdown(
     '<p style="font-size:18px;line-height:1.55;color:#334E68;'
     'font-weight:400;margin:4px 0 18px 0;">'
-    'Compara a média anual de exames registrados no período selecionado '
-    'com um volume de referência equivalente a 33% da população feminina '
-    'de 25–64 anos de cada município (Censo IBGE 2022). A diferença mostra '
-    'quantos exames, em média, ficaram acima ou abaixo dessa referência, '
-    'sem representar cobertura individual de rastreamento.</p>',
+    'Esta tabela mostra, para cada município, a população feminina de 25 a 64 '
+    'anos (Censo IBGE 2022), a quantidade anual de exames equivalente a 33% '
+    'dessa população e a média de exames efetivamente registrados no SISCAN '
+    'nos anos selecionados. A coluna <b>Diferença anual média</b> indica '
+    'quantos exames ficaram abaixo da referência (valor negativo) ou acima '
+    'dela (valor positivo). Já o <b>Atingimento da referência (%)</b> mostra '
+    'quanto da quantidade esperada foi alcançada: 100% significa que os '
+    'volumes são iguais. A linha <b>TOTAL 10ª CRS</b> reúne os municípios '
+    'selecionados. Os 33% são apenas uma referência exploratória, e não uma '
+    'meta oficial nem uma medida da proporção de mulheres rastreadas.</p>',
     unsafe_allow_html=True,
 )
 
