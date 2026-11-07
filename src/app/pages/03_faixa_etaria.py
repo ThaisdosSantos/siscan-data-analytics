@@ -937,7 +937,7 @@ with st.expander("ℹ️ Nota Metodológica e Regras de Cálculo", expanded=Fals
         "subnotificação nem encaminhamento para outros municípios; "
         "essas hipóteses exigem informações adicionais sobre registros, "
         "fluxos assistenciais e acesso aos serviços.\n\n"
-        "**Fonte:** SISCAN/DATASUS · Censo IBGE 2022 · camada Gold."
+        "**Fonte:** SISCAN/DATASUS · Censo IBGE 2022."
     )
 
 with st.expander("Ver dados detalhados da razão anual (Q3)"):
