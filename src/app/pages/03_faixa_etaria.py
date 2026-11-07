@@ -549,18 +549,18 @@ def cor_heatmap_razao(valor):
     if pd.isna(valor):
         return "#F1F5F9", "#64748B"
     if valor <= 3:
-        return "#F7D9D4", "#762D27"
+        return "#F2A34A", "#40250B"
     if valor >= 33:
-        return "#1A3B5C", "#FFFFFF"
+        return "#169B62", "#FFFFFF"
     v = (float(valor) - 3.0) / 30.0
-    azul_claro = (226, 242, 251)
-    azul_forte = (60, 126, 174)
+    azul_claro = (42, 91, 137)
+    azul_forte = (13, 38, 69)
     rgb = tuple(
         round(inicio + (fim - inicio) * v)
         for inicio, fim in zip(azul_claro, azul_forte)
     )
     fundo = "#{:02X}{:02X}{:02X}".format(*rgb)
-    return fundo, "#FFFFFF" if v >= 0.75 else "#173A56"
+    return fundo, "#FFFFFF"
 
 cabecalho_heatmap = "<th scope='col'>Município</th>" + "".join(
     f"<th scope='col'>{escape(str(ano))}</th>" for ano in pivo_cob.columns
@@ -623,9 +623,9 @@ st.markdown(
     }
     </style>
     <div class="q3-razao-legenda" aria-label="Legenda do heatmap">
-      <span><i style="background:#F7D9D4"></i>Até 3%</span>
-      <span><i style="background:linear-gradient(90deg,#E2F2FB,#3C7EAE)"></i>Acima de 3% e abaixo de 33%</span>
-      <span><i style="background:#1A3B5C"></i>33% ou mais</span>
+      <span><i style="background:#F2A34A"></i>Até 3% — laranja</span>
+      <span><i style="background:linear-gradient(90deg,#2A5B89,#0D2645)"></i>Acima de 3% e abaixo de 33% — azul-marinho</span>
+      <span><i style="background:#169B62"></i>33% ou mais — verde</span>
       <span><i style="background:#F1F5F9"></i>Sem dados</span>
     </div>
     """,
@@ -640,9 +640,9 @@ st.download_button(
     key="exportar_razao_anual_municipio_ano",
 )
 st.caption(
-    "As cores representam faixas exploratórias da razão: até 3% (laranja), "
-    "de mais de 3% a menos de 33% (gradiente azul) e 33% ou mais "
-    "(azul-marinho). No gradiente, V = (razão − 3) / 30. "
+     "As cores representam faixas exploratórias da razão: até 3% (laranja), "
+    "de mais de 3% a menos de 33% (gradiente azul-marinho) e 33% ou mais "
+    "(verde). No gradiente, V = (razão − 3) / 30. "
     "Não são categorias oficiais de cobertura e não identificam mulheres únicas. "
     "Fonte: SISCAN/DATASUS · Censo IBGE 2022 · Gold."
 )
