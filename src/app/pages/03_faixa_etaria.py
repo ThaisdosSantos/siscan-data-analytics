@@ -497,6 +497,17 @@ chart_with_right_click_download(
 
 # Tabela município × ano da razão calculada diretamente pela fórmula.
 st.markdown("#### Razão anual de exames por município e ano (%)")
+st.markdown(
+    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
+    'font-weight:400;margin:4px 0 18px 0;">'
+    'Apresenta, para cada município e ano, a razão entre a quantidade de '
+    'exames citopatológicos registrados em mulheres de 25 a 64 anos e a '
+    'população feminina dessa faixa etária (Censo IBGE 2022), multiplicada '
+    'por 100. Permite comparar a produção de exames em relação à população '
+    'entre municípios e ao longo do tempo; não representa a porcentagem '
+    'de mulheres distintas rastreadas.</p>',
+    unsafe_allow_html=True,
+)
 ordenar_tabela_razao = st.selectbox(
     "Ordenar por",
     options=["A–Z", "Maior para menor"],
