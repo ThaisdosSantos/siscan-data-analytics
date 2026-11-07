@@ -414,6 +414,20 @@ with b:
             export_fig=export_fig,
         )
 
+st.markdown(
+    """
+    <div style="margin:14px 0 18px;padding:14px 18px;background:#F0F6FA;
+                border-left:4px solid #006C9A;border-radius:8px;
+                font:500 16px/1.65 Manrope,Arial,sans-serif;color:#1A3B5C;">
+      <strong>Como interpretar os gráficos:</strong>
+      o gráfico de rosca apresenta a participação de cada faixa etária no total de exames
+      selecionados. As barras mostram essa mesma distribuição em cada município,
+      permitindo comparar a proporção de exames entre as faixas etárias.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 with st.expander("Ver tabela detalhada de exames por município e faixa etária"):
     export_table(agg, "siscan_faixa_etaria.csv")
 
