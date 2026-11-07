@@ -847,6 +847,18 @@ colunas_consolidadas = {
 tabela_consolidada = resumo_consolidado[list(colunas_consolidadas)].rename(
     columns=colunas_consolidadas
 )
+# Ação de exportação junto ao topo da tabela, sem botão isolado no rodapé.
+_, coluna_exportar_consolidado = st.columns([3, 1])
+with coluna_exportar_consolidado:
+    st.download_button(
+    "⬇️ Exportar tabela consolidada (CSV)",
+        data=tabela_consolidada.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
+        file_name="siscan_tabela_consolidada_exames_25_64.csv",
+        mime="text/csv",
+        key="exportar_tabela_consolidada_25_64",
+        use_container_width=True,
+    )
+
 display_table(
     tabela_consolidada,
     integer_columns=[
@@ -859,37 +871,14 @@ display_table(
     large=True,
     consolidated_style=True,
 )
-st.download_button(
-    "⬇️ Exportar tabela consolidada (CSV)",
-    data=tabela_consolidada.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
-    file_name="siscan_tabela_consolidada_exames_25_64.csv",
-    mime="text/csv",
-    key="exportar_tabela_consolidada_25_64",
-)
 st.markdown(
     """
     <style>
-    .q3-nota-macambara {
-        margin:16px 0 12px; padding:15px 19px;
-        background:#FFF8EE; color:#553A15;
-        border-left:4px solid #EE5325; border-radius:8px;
-        font-size:16px; line-height:1.65;
-    }
-    .q3-nota-titulo {
-        color:#803F17; font-size:18px; line-height:1.4;
-        font-weight:750; margin-bottom:7px;
-    }
-    .q3-nota-macambara p {margin:0;}
-    .q3-nota-metodologica {
-        background:#F4F8FB; color:#263E54; padding:18px 22px;
-        border:1px solid #D8E5EF; border-radius:9px;
-        font-size:16px; line-height:1.65; margin:12px 0 20px;
-    }
-    .q3-nota-metodologica > strong {font-size:18px;color:#1A3B5C;}
-    .q3-nota-metodologica p {margin:10px 0;}
-    .q3-nota-fonte {font-size:14px;color:#42596D;margin-top:10px;}
-    @media(max-width:600px) {
-        .q3-nota-macambara,.q3-nota-metodologica {padding:15px;}
+    .q3-nota-macambara-compacta {
+        margin:8px 0 12px;padding:10px 14px;
+        border-left:3px solid #EE5325;background:#FFF8EE;
+        border-radius:6px;color:#553A15;
+        font-size:15px;line-height:1.5;
     }
     </style>
     """,
@@ -924,36 +913,32 @@ if not macambara_consolidado.empty:
             "das características locais."
         )
     st.markdown(
-        f"""
-        <div class="q3-nota-macambara">
-          <div class="q3-nota-titulo">⚠️ Nota analítica — Maçambará</div>
-          <p>{observacao_macambara} <strong>Os registros do SISCAN, isoladamente,
-          não permitem identificar a causa desse resultado.</strong>
-          Para investigá-lo, é necessário avaliar a completude dos registros,
-          os fluxos assistenciais e o acesso aos serviços, sem presumir
-          baixa adesão ou subnotificação.</p>
-        </div>
-        """,
+        f'<div class="q3-nota-macambara-compacta">'
+        f'<strong>⚠️ Maçambará:</strong> {observacao_macambara} '
+        'Os dados disponíveis não permitem determinar a causa dessa diferença.'
+        '</div>',
         unsafe_allow_html=True,
     )
 
 anos_selecionados_consolidado = sorted(base_consolidada["ano"].unique().tolist())
-st.markdown(
-    f"""
-    <div class="q3-nota-metodologica">
-      <strong>Como os indicadores foram calculados</strong>
-      <p><b>Média executada:</b> exames anuais registrados ÷ anos com registros no filtro.
-      <b>Referência anual:</b> população feminina de 25–64 anos × 33%.
-      <b>Diferença:</b> média executada − referência anual.
-      <b>Atingimento:</b> média executada ÷ referência anual × 100.</p>
-      <p>O total regional é a soma das médias municipais, não a média simples dos percentuais.
-      <b>Anos com dados:</b> {', '.join(map(str, anos_selecionados_consolidado))}.
-      O parâmetro de 33% é exploratório, não uma meta oficial comprovada.</p>
-      <div class="q3-nota-fonte">Fonte: SISCAN/DATASUS · Censo IBGE 2022 · camada Gold.</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+with st.expander("ℹ️ Nota Metodológica e Regras de Cálculo", expanded=False):
+    st.markdown(
+        "**Média anual de exames executados:** média dos totais anuais "
+        "registrados nos anos com dados, conforme os filtros.\n\n"
+        "**Referência anual:** população feminina de 25–64 anos (Censo IBGE 2022) × 33%.\n\n"
+        "**Diferença anual média:** média executada − referência anual.\n\n"
+        "**Atingimento da referência (%):** média executada ÷ referência anual × 100.\n\n"
+        "**Total regional:** soma das médias municipais e dos valores de referência, "
+        "não média simples dos percentuais.\n\n"
+        f"**Anos com dados:** {', '.join(map(str, anos_selecionados_consolidado))}. "
+        "A referência de 33% é exploratória, não uma meta oficial comprovada; "
+        "exames registrados não equivalem a mulheres distintas rastreadas.\n\n"
+        "A diferença observada em Maçambará não comprova baixa adesão, "
+        "subnotificação nem encaminhamento para outros municípios; "
+        "essas hipóteses exigem informações adicionais sobre registros, "
+        "fluxos assistenciais e acesso aos serviços.\n\n"
+        "**Fonte:** SISCAN/DATASUS · Censo IBGE 2022 · camada Gold."
+    )
 
 with st.expander("Ver dados detalhados da razão anual (Q3)"):
     detalhe_cob = cob[
