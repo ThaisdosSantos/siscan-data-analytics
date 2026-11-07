@@ -1,7 +1,8 @@
+import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN
+from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,SKY,ORANGE,NAVY
 from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
@@ -9,16 +10,88 @@ apply_custom_css()
 sidebar_filters()
 page_header("Resultados", "Exames citopatológicos alterados")
 df=filtered("alterados")
-# Alinhamento metodológico (31/out/2026): 'Ignorado' e 'Até 9 anos' têm bases ínfimas
-# (0 alterados sobre ~1-2 exames) e não compõem grupos da diretriz de rastreio.
-# Excluídas das proporções (barra e matriz territorial); os dados permanecem íntegros
-# na Gold e nos contadores globais. Mesma regra aplicada no dashboard AI/BI.
-df=df[~df["faixa_etaria"].isin(["Ignorado","Até 9 anos"])]
-if require(df,["municipio","faixa_etaria","quantidade_alterados","total_exames_validos"]):
+if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados","total_exames_validos"]):
+    # A Gold classifica as idades sem perder o detalhamento quinquenal.
+    # 'Até 9 anos' pertence a <=24, enquanto 'Ignorado' não tem idade conhecida.
+    grupo_para_rotulo = {
+        "<= 24 anos": "<25 anos",
+        "25 a 64 anos": "25–64 anos",
+        ">= 65 anos": "≥65 anos",
+    }
+    df = df.copy()
+    df["grupo_3"] = df["grupo_etario_3"].astype("string").str.strip().map(grupo_para_rotulo)
+    desconhecidos = df.loc[
+        df["grupo_3"].isna() & df["grupo_etario_3"].ne("Ignorado"),
+        "grupo_etario_3",
+    ].dropna().unique().tolist()
+    if desconhecidos:
+        st.error("Categorias etárias inesperadas na Gold: " + ", ".join(map(str, desconhecidos)))
+        st.stop()
+    df = df.loc[df["grupo_3"].notna()].copy()
+    if df.empty:
+        st.info("Não há exames com faixa etária conhecida no recorte selecionado.")
+        st.stop()
     num=df.quantidade_alterados.sum(min_count=1)
     den=df.total_exames_validos.sum(min_count=1)
     metric_row([("Exames alterados",fmt_num(num)),("Proporção operacional",fmt_pct(pct(num,den))),
                 ("Exames no denominador disponível",fmt_num(den) if pd.notna(den) else "N/D")])
+    st.markdown("### Proporção de exames alterados por grupo etário")
+    st.caption(
+        "Três grupos definidos pela coluna grupo_etario_3 da Gold. "
+        "Proporção = soma de exames alterados ÷ soma de exames válidos × 100; "
+        "não é a média de percentuais das faixas detalhadas."
+    )
+    ordem_grupos = ["<25 anos", "25–64 anos", "≥65 anos"]
+    macro = df.groupby("grupo_3", as_index=False)[
+        ["quantidade_alterados", "total_exames_validos"]
+    ].sum(min_count=1)
+    macro["proporcao_pct"] = (
+        macro["quantidade_alterados"]
+        .div(macro["total_exames_validos"].where(macro["total_exames_validos"] > 0))
+        .mul(100)
+    )
+    macro["grupo_3"] = pd.Categorical(
+        macro["grupo_3"], categories=ordem_grupos, ordered=True
+    )
+    macro = macro.sort_values("grupo_3").dropna(subset=["proporcao_pct"])
+    if not macro.empty:
+        macro_fig = px.bar(
+            macro, x="grupo_3", y="proporcao_pct", color="grupo_3",
+            category_orders={"grupo_3": ordem_grupos},
+            color_discrete_map={
+                "<25 anos": SKY, "25–64 anos": OCEAN, "≥65 anos": ORANGE,
+            },
+            custom_data=["quantidade_alterados", "total_exames_validos"],
+            labels={"grupo_3": "Grupo etário", "proporcao_pct": "Proporção (%)"},
+        )
+        macro_fig.update_layout(showlegend=False)
+        macro_fig.update_yaxes(rangemode="tozero", ticksuffix="%", tickformat=".2f")
+        macro_fig.update_traces(
+            hovertemplate=(
+                "Faixa: %{x}<br>Proporção: %{y:.2f}%"
+                "<br>Exames alterados: %{customdata[0]:,.0f}"
+                "<br>Exames válidos: %{customdata[1]:,.0f}<extra></extra>"
+            )
+        )
+        macro_export = copy.deepcopy(macro_fig)
+        macro_export.update_traces(
+            texttemplate="%{y:.2f}%", textposition="outside",
+            textfont=dict(size=15, color=NAVY), cliponaxis=False,
+        )
+        macro_export.update_layout(
+            title=dict(
+                text="Proporção de exames alterados por grupo etário",
+                x=0.5, xanchor="center", font=dict(size=21, color=NAVY),
+            ),
+            paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+            margin=dict(l=85, r=40, t=100, b=80),
+        )
+        chart_with_right_click_download(
+            macro_fig, filename="exames_alterados_grupos_etarios.png",
+            height=430, export_fig=macro_export,
+        )
+
+    st.markdown("### Exames alterados por faixa etária detalhada")
     byage=df.groupby("faixa_etaria",as_index=False)[["quantidade_alterados","total_exames_validos"]].sum(min_count=1)
     byage["taxa"]=byage.quantidade_alterados.div(byage.total_exames_validos.where(byage.total_exames_validos>0)).mul(100)
     fig=px.bar(byage,x="faixa_etaria",y="taxa",color_discrete_sequence=[OCEAN],
