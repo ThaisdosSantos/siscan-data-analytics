@@ -223,51 +223,73 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 plot_bgcolor="#FFFFFF",
                 font=dict(color=NAVY, size=11),
             )
-            # Exportação em resolução maior, com totais anuais nos painéis.
-            # Posicionamento row/col segue a organização de facet_col_wrap=3.
+            # Na área empilhada, a borda superior é a SOMA dos grupos;
+            # portanto nunca rotular essa borda como valor de uma faixa.
+            # O PNG mostra a contagem de CADA grupo dentro da sua própria faixa.
             export_area = copy.deepcopy(fig_area)
-            totais = (
-                area_yearly.groupby(
-                    ["municipio", "ano"], as_index=False
-                )["quantidade_alterados"].sum(min_count=1)
-            )
             import plotly.graph_objects as go
             for pos, municipio in enumerate(municipios_area):
-                serie = totais.loc[totais["municipio"].eq(municipio)]
+                serie = area_yearly.loc[
+                    area_yearly["municipio"].eq(municipio)
+                ]
                 if serie.empty:
                     continue
                 row = n_linhas - (pos // 3)
                 col = (pos % 3) + 1
-                export_area.add_trace(
-                    go.Scatter(
-                        x=serie["ano"].astype(str).tolist(),
-                        y=serie["quantidade_alterados"].tolist(),
-                        text=[
-                            f"{int(valor):,}"
-                            for valor in serie["quantidade_alterados"]
-                        ],
-                        mode="text",
-                        textposition="top center",
-                        textfont=dict(size=12, color=NAVY),
-                        showlegend=False,
-                        hoverinfo="skip",
-                        cliponaxis=False,
-                    ),
-                    row=row, col=col,
+                por_grupo = (
+                    serie.pivot_table(
+                        index="ano", columns="grupo_3",
+                        values="quantidade_alterados", aggfunc="sum"
+                    )
+                    .reindex(columns=ordem_grupos)
                 )
+                # A posição vertical central de cada área é:
+                # soma dos grupos anteriores + metade do próprio grupo.
+                base = pd.Series(0.0, index=por_grupo.index)
+                for grupo in ordem_grupos:
+                    valores = por_grupo[grupo]
+                    meio = base + valores.fillna(0) / 2
+                    validos = valores.notna() & (valores > 0)
+                    if validos.any():
+                        export_area.add_trace(
+                            go.Scatter(
+                                x=por_grupo.index[validos].astype(str).tolist(),
+                                y=meio[validos].tolist(),
+                                text=[
+                                    f"{int(v):,}" for v in valores[validos]
+                                ],
+                                mode="text",
+                                textposition="middle center",
+                                textfont=dict(
+                                    size=11,
+                                    color="#FFFFFF" if grupo == "25–64 anos" else NAVY,
+                                    family="Arial",
+                                ),
+                                showlegend=False,
+                                hoverinfo="skip",
+                                cliponaxis=False,
+                            ),
+                            row=row, col=col,
+                        )
+                    base = base + valores.fillna(0)
             export_area.update_layout(
                 title=dict(
                     text="Evolução anual de exames alterados por município e grupo etário",
-                    x=0.5, xanchor="center",
+                    x=0.5, xanchor="center", y=0.995,
                     font=dict(size=21, color=NAVY),
                 ),
-                height=max(850, 370 * n_linhas),
+                height=max(850, 390 * n_linhas),
                 width=1500,
-                margin=dict(l=115, r=65, t=155, b=100),
+                legend=dict(
+                    title_text="Grupo etário", orientation="h",
+                    x=0.5, xanchor="center", y=1.035, yanchor="bottom",
+                    font=dict(size=14, color=NAVY),
+                ),
+                margin=dict(l=115, r=65, t=190, b=110),
             )
             st.caption(
                 "No celular, deslize o gráfico para os lados. "
-                "Para baixar a versão com totais anuais, use o botão direito (PNG)."
+                "No PNG, os números indicam os exames de cada faixa dentro da sua área."
             )
             chart_with_right_click_download(
                 fig_area,
