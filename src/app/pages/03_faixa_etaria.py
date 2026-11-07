@@ -319,6 +319,155 @@ with b:
             export_fig=export_fig,
         )
 
+# Evolução anual da população-alvo, aproveitando a granularidade
+# município × ano × faixa etária da Gold Q3. Somar contagens, não percentuais.
+st.markdown("### Evolução anual de exames na faixa etária de 25–64 anos por município")
+st.markdown(
+    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
+    'font-weight:400;margin:4px 0 18px 0;">'
+    'Mostra a quantidade anual de exames registrados entre pessoas de 25 a 64 anos '
+    'em cada município da 10ª CRS, de 2020 a 2025. Permite identificar '
+    'aumentos ou reduções no volume de exames da faixa etária prioritária. '
+    'Quantidade de exames não equivale à cobertura populacional.</p>',
+    unsafe_allow_html=True,
+)
+if "ano" not in groups.columns:
+    st.info("A tabela Gold de faixa etária não contém o ano necessário à evolução temporal.")
+else:
+    alvo_anual = groups.loc[groups["grupo"].eq("25–64 anos")].copy()
+    alvo_anual["ano"] = pd.to_numeric(alvo_anual["ano"], errors="coerce")
+    alvo_anual["quantidade_exames"] = pd.to_numeric(
+        alvo_anual["quantidade_exames"], errors="coerce"
+    )
+    alvo_anual = alvo_anual.dropna(
+        subset=["municipio", "ano", "quantidade_exames"]
+    )
+    if alvo_anual.empty:
+        st.info("Não há exames da faixa 25–64 anos para os filtros selecionados.")
+    else:
+        alvo_anual = (
+            alvo_anual.groupby(["municipio", "ano"], as_index=False)[
+                "quantidade_exames"
+            ].sum(min_count=1)
+        )
+        alvo_anual["ano"] = alvo_anual["ano"].astype(int)
+        alvo_anual["ano_label"] = alvo_anual["ano"].astype(str)
+        anos_grafico = sorted(alvo_anual["ano"].unique().tolist())
+        municipios_grafico = sorted(
+            alvo_anual["municipio"].unique(), key=normalize
+        )
+
+        ordenar_faixa = st.selectbox(
+            "Ordenar por",
+            ["A–Z", "Maior para menor"],
+            key="ordenacao_evolucao_anual_25_64",
+            help="Maior para menor considera a soma de exames na faixa 25–64 anos durante os anos selecionados.",
+        )
+        if ordenar_faixa == "Maior para menor":
+            volumes = alvo_anual.groupby("municipio")[
+                "quantidade_exames"
+            ].sum(min_count=1)
+            municipios_grafico.sort(
+                key=lambda municipio: (
+                    -float(volumes.loc[municipio])
+                    if pd.notna(volumes.loc[municipio]) else float("inf"),
+                    normalize(municipio),
+                )
+            )
+        grafico_anual = px.line(
+            alvo_anual,
+            x="ano_label",
+            y="quantidade_exames",
+            facet_col="municipio",
+            facet_col_wrap=3,
+            facet_col_spacing=0.055,
+            facet_row_spacing=0.09,
+            category_orders={
+                "municipio": municipios_grafico,
+                "ano_label": [str(ano) for ano in anos_grafico],
+            },
+            markers=True,
+            color_discrete_sequence=[OCEAN],
+            labels={
+                "ano_label": "Anos",
+                "quantidade_exames": "Exames registrados (25–64 anos)",
+                "municipio": "Município",
+            },
+        )
+        grafico_anual.for_each_annotation(
+            lambda annotation: annotation.update(
+                text=annotation.text.split("=", 1)[-1],
+                font=dict(size=13, color=NAVY),
+            )
+        )
+        grafico_anual.update_traces(
+            line=dict(width=2.7),
+            marker=dict(size=7),
+            connectgaps=False,
+            hovertemplate=(
+                "Ano: %{x}<br>Exames registrados (25–64 anos): "
+                "%{y:,.0f}<extra></extra>"
+            ),
+        )
+        grafico_anual.update_xaxes(
+            matches=None,
+            type="category",
+            categoryorder="array",
+            categoryarray=[str(ano) for ano in anos_grafico],
+            showticklabels=True,
+            title_text=None,
+        )
+        grafico_anual.update_yaxes(
+            matches=None, showticklabels=True, title_text=None,
+            rangemode="tozero", tickformat=",.0f",
+            gridcolor="#E9EDF1", zeroline=False,
+        )
+        grafico_anual.add_annotation(
+            x=-0.065, y=0.5, xref="paper", yref="paper",
+            text="Exames registrados", textangle=-90, showarrow=False,
+            font=dict(size=13, color=NAVY),
+        )
+        grafico_anual.add_annotation(
+            x=0.5, y=-0.025, xref="paper", yref="paper",
+            text="Anos", showarrow=False,
+            font=dict(size=13, color=NAVY),
+        )
+        quantidade_linhas = (len(municipios_grafico) + 2) // 3
+        grafico_anual.update_layout(
+            height=max(520, 330 * quantidade_linhas),
+            showlegend=False,
+            margin=dict(l=100, r=25, t=65, b=110),
+            paper_bgcolor="#FFFFFF",
+            plot_bgcolor="#FFFFFF",
+            font=dict(color=NAVY, size=11),
+        )
+        export_anual = copy.deepcopy(grafico_anual)
+        export_anual.update_traces(
+            mode="lines+markers+text",
+            texttemplate="%{y:,.0f}",
+            textposition="top center",
+            textfont=dict(size=13, color=NAVY),
+            cliponaxis=False,
+        )
+        export_anual.update_yaxes(automargin=True)
+        export_anual.update_layout(
+            title=dict(
+                text="Evolução anual de exames de 25–64 anos por município",
+                x=0.5, xanchor="center",
+                font=dict(size=24, color=NAVY),
+            ),
+            width=1650,
+            height=max(850, 430 * quantidade_linhas),
+            margin=dict(l=115, r=65, t=135, b=130),
+        )
+        chart_with_right_click_download(
+            grafico_anual,
+            filename="faixa_etaria_evolucao_anual_25_64_municipios.png",
+            height=grafico_anual.layout.height,
+            min_chart_width=820,
+            export_fig=export_anual,
+        )
+
 with st.expander("Ver dados detalhados da distribuição etária (Q3)"):
     export_table(agg, "siscan_faixa_etaria.csv")
 st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3).")
