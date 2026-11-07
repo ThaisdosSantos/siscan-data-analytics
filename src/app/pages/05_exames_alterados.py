@@ -99,21 +99,20 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 height=380, export_fig=macro_export,
             )
 
-    # Evolução anual por município e grupo etário da Gold. Mantemos as
-    # competências ausentes como lacunas: não imputar zeros.
-    st.markdown("### Evolução anual de exames alterados por município e grupo etário")
+    # Série anual por município: utiliza as quantidades já existentes na Gold.
+    # Ausências de ano são mantidas como lacunas, nunca convertidas em zero.
+    st.markdown("### Evolução anual de exames alterados por município")
     st.caption(
-        "Cada município apresenta três séries de quantidades anuais de exames alterados: "
-        "<25, 25–64 e ≥65 anos. Os valores vêm de grupo_etario_3 na Gold. "
-        "Cada painel tem escala vertical própria; utilize a legenda e o cursor "
-        "para comparar os grupos."
+        "Quantidade de exames citopatológicos alterados por município e ano. "
+        "Cada painel usa sua própria escala vertical para facilitar a leitura; "
+        "compare os valores absolutos pelos eixos e pelo cursor."
     )
     if "ano" not in df.columns:
         st.info("O gráfico anual requer a coluna 'ano' na tabela Gold de exames alterados.")
     else:
         yearly = (
             df.dropna(subset=["ano"])
-            .groupby(["municipio", "ano", "grupo_3"], as_index=False)["quantidade_alterados"]
+            .groupby(["municipio", "ano"], as_index=False)["quantidade_alterados"]
             .sum(min_count=1)
         )
         if not yearly.empty:
@@ -176,14 +175,11 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             from utils.data_loader import selected_years
             years = selected_years()
             axis_years = years if years else available_years
-            # Três linhas para cada município, mesmo quando um grupo não
-            # tiver dados em determinado ano (o ponto permanece ausente).
             idx = pd.MultiIndex.from_product(
-                [municipalities, axis_years, ordem_grupos],
-                names=["municipio", "ano", "grupo_3"]
+                [municipalities, axis_years], names=["municipio", "ano"]
             )
             yearly = (
-                yearly.set_index(["municipio", "ano", "grupo_3"])
+                yearly.set_index(["municipio", "ano"])
                 .reindex(idx)
                 .reset_index()
             )
@@ -192,7 +188,6 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 yearly,
                 x="ano_label",
                 y="quantidade_alterados",
-                color="grupo_3",
                 facet_col="municipio",
                 facet_col_wrap=3,
                 facet_col_spacing=0.045,
@@ -200,19 +195,13 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 category_orders={
                     "municipio": municipalities,
                     "ano_label": [str(y) for y in axis_years],
-                    "grupo_3": ordem_grupos,
                 },
                 markers=True,
-                color_discrete_map={
-                    "<25 anos": SKY,
-                    "25–64 anos": OCEAN,
-                    "≥65 anos": ORANGE,
-                },
+                color_discrete_sequence=[OCEAN],
                 labels={
                     "ano_label": "Ano",
                     "quantidade_alterados": "Exames alterados",
                     "municipio": "Município",
-                    "grupo_3": "Grupo etário",
                 },
             )
             fig_yearly.for_each_annotation(
@@ -225,10 +214,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 line=dict(width=2.5),
                 marker=dict(size=7),
                 connectgaps=False,
-                hovertemplate=(
-                    "Ano: %{x}<br>Exames alterados: %{y:,.0f}"
-                    "<extra>%{fullData.name}</extra>"
-                ),
+                hovertemplate="Ano: %{x}<br>Exames alterados: %{y:,.0f}<extra></extra>",
             )
             # Preserva a identificação da medida sem repetir o título em cada
             # subplot, evitando sobreposição com as escalas dos municípios.
@@ -256,71 +242,16 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             )
             fig_yearly.update_layout(
                 height=max(480, 285 * ((len(municipalities) + 2) // 3)),
-                showlegend=True,
-                legend=dict(
-                    title_text="Grupo etário", orientation="h",
-                    x=0.5, xanchor="center", y=1.06, yanchor="bottom",
-                    font=dict(size=12, color="#1A3B5C"),
-                ),
-                margin=dict(l=95, r=15, t=110, b=105),
+                showlegend=False,
+                margin=dict(l=95, r=15, t=55, b=105),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="white",
                 font=dict(color="#1A3B5C", size=11),
             )
-            # A imagem PNG não possui tooltip. Exibir os valores em cada
-            # ponto APENAS na exportação; a versão interativa permanece limpa.
-            export_yearly = copy.deepcopy(fig_yearly)
-            positions = {
-                "25–64 anos": "top center",
-                "<25 anos": "middle left",
-                "≥65 anos": "bottom right",
-            }
-            for trace in export_yearly.data:
-                # Plotly pode armazenar o eixo Y em array tipado (bdata).
-                # Converter a números antes de formatar evita ValueError
-                # ao tentar int() sobre strings ou dados serializados.
-                raw_values = trace.y
-                if isinstance(raw_values, dict) and "bdata" in raw_values:
-                    import base64
-                    import numpy as np
-                    values = np.frombuffer(
-                        base64.b64decode(raw_values["bdata"]),
-                        dtype=np.dtype(raw_values["dtype"]),
-                    ).tolist()
-                else:
-                    values = list(raw_values) if raw_values is not None else []
-                numeric_values = pd.to_numeric(
-                    pd.Series(values, dtype="object"), errors="coerce"
-                )
-                trace.update(
-                    mode="lines+markers+text",
-                    text=[
-                        f"{int(value):,}" if pd.notna(value) else ""
-                        for value in numeric_values
-                    ],
-                    textposition=positions.get(trace.name, "top center"),
-                    textfont=dict(family="Arial", size=13, color="#1A3B5C"),
-                    cliponaxis=False,
-                )
-            export_yearly.update_layout(
-                width=1500,
-                height=max(750, 350 * ((len(municipalities) + 2) // 3)),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
-                font=dict(family="Arial", size=13, color="#1A3B5C"),
-                legend=dict(
-                    title_text="Grupo etário", orientation="h",
-                    x=0.5, xanchor="center", y=1.07, yanchor="bottom",
-                    font=dict(size=14, color="#1A3B5C"),
-                ),
-                margin=dict(l=105, r=55, t=130, b=115),
-            )
-            export_yearly.update_yaxes(automargin=True)
             st.caption("No celular, deslize o gráfico para os lados. No computador, clique com o botão direito para baixar em PNG.")
             chart_with_right_click_download(
-                fig_yearly, filename="exames_alterados_anuais_municipios_3_grupos.png",
-                height=fig_yearly.layout.height, min_chart_width=820,
-                export_fig=export_yearly,
+                fig_yearly, filename="exames_alterados_anuais_municipios.png",
+                height=fig_yearly.layout.height, min_chart_width=820
             )
         else:
             st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
