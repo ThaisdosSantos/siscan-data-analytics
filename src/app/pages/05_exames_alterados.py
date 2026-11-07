@@ -64,7 +64,11 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             custom_data=["quantidade_alterados", "total_exames_validos"],
             labels={"grupo_3": "Grupo etário", "proporcao_pct": "Proporção (%)"},
         )
-        macro_fig.update_layout(showlegend=False)
+        macro_fig.update_layout(
+            showlegend=False,
+            bargap=0.48,  # barras mais estreitas e com espaçamento confortável
+            margin=dict(l=65, r=25, t=20, b=65),
+        )
         macro_fig.update_yaxes(rangemode="tozero", ticksuffix="%", tickformat=".2f")
         macro_fig.update_traces(
             hovertemplate=(
@@ -86,10 +90,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
             margin=dict(l=85, r=40, t=100, b=80),
         )
-        chart_with_right_click_download(
-            macro_fig, filename="exames_alterados_grupos_etarios.png",
-            height=430, export_fig=macro_export,
-        )
+        # Ocupa cerca de 2/3 do conteúdo no desktop e a largura
+        # disponível no celular; não afeta os demais gráficos.
+        _, chart_col, _ = st.columns([1, 4, 1], gap="small")
+        with chart_col:
+            chart_with_right_click_download(
+                macro_fig, filename="exames_alterados_grupos_etarios.png",
+                height=380, export_fig=macro_export,
+            )
 
     st.markdown("### Exames alterados por faixa etária detalhada")
     byage=df.groupby("faixa_etaria",as_index=False)[["quantidade_alterados","total_exames_validos"]].sum(min_count=1)
