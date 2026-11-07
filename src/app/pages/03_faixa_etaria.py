@@ -511,13 +511,10 @@ st.markdown(
 )
 ordenar_tabela_razao = st.selectbox(
     "Ordenar por",
-    options=["A–Z", "Maior para menor"],
+    options=["A–Z", "Maior média", "Menor média"],
     index=0,
     key="ordenacao_tabela_razao_anual_q3",
-    help=(
-        "Maior para menor considera a média das razões anuais (%) "
-        "de cada município nos anos selecionados. Percentuais não são somados."
-    ),
+    help="A média dos percentuais anuais considera apenas os anos selecionados.",
 )
 pivo_cob = cob.pivot_table(
     index="municipio",
@@ -525,9 +522,8 @@ pivo_cob = cob.pivot_table(
     values="razao_anual_exames_pct",
     aggfunc="mean",
 )
-if ordenar_tabela_razao == "Maior para menor":
-    # Média calculada apenas sobre os anos disponíveis no filtro atual.
-    medias_razao = pivo_cob.mean(axis=1, skipna=True)
+medias_razao = pivo_cob.mean(axis=1, skipna=True)
+if ordenar_tabela_razao == "Maior média":
     ordem_tabela_razao = sorted(
         pivo_cob.index,
         key=lambda municipio: (
@@ -536,22 +532,64 @@ if ordenar_tabela_razao == "Maior para menor":
             normalize(municipio),
         ),
     )
+elif ordenar_tabela_razao == "Menor média":
+    ordem_tabela_razao = sorted(
+        pivo_cob.index,
+        key=lambda municipio: (
+            float(medias_razao.loc[municipio])
+            if pd.notna(medias_razao.loc[municipio]) else float("inf"),
+            normalize(municipio),
+        ),
+    )
 else:
     ordem_tabela_razao = sorted(pivo_cob.index, key=normalize)
 pivo_cob = pivo_cob.reindex(ordem_tabela_razao)
 pivo_cob.columns = [str(coluna) for coluna in pivo_cob.columns]
-# Tabela com realce discreto apenas para faixas extremas; valores intermediários
-# permanecem brancos para manter a leitura limpa. Limiares exploratórios.
+
+# Razão agregada por ano: Σ exames / Σ população (não média dos percentuais).
+# Deduplicar primeiro o denominador em município × ano.
+base_regional = (
+    cob.groupby(["municipio", "ano"], as_index=False)
+    .agg(
+        exames=("total_exames_25_64", "sum"),
+        populacao=("mulheres_25_64_anos", "max"),
+    )
+)
+totais_anuais = base_regional.groupby("ano").agg(
+    exames=("exames", "sum"),
+    populacao=("populacao", "sum"),
+)
+razao_regional = (
+    totais_anuais["exames"] / totais_anuais["populacao"] * 100
+).round(2)
+nome_linha_regional = (
+    "Razão regional — 10ª CRS"
+    if cob["municipio"].nunique() == 11
+    else "Razão agregada — municípios selecionados"
+)
 tabela_cob = pivo_cob.reset_index().rename(columns={"municipio": "Município"})
+linha_regional_csv = {"Município": nome_linha_regional}
+linha_regional_csv.update({
+    coluna: razao_regional.get(int(coluna), float("nan"))
+    for coluna in pivo_cob.columns
+})
+tabela_cob_exportacao = pd.concat(
+    [tabela_cob, pd.DataFrame([linha_regional_csv])],
+    ignore_index=True,
+)
 
 def cor_heatmap_razao(valor):
     if pd.isna(valor):
         return "#F1F5F9", "#64748B"
     if valor <= 3:
-        return "#FCE8D4", "#8E450F"
+        return "#FDE8E4", "#A83A20"
     if valor >= 33:
         return "#D8F2E4", "#126B46"
-    return "#FFFFFF", "#1A3B5C"
+    # Gradiente azul discreto: de #F0F7FB a #9AC5DC.
+    v = (float(valor) - 3.0) / 30.0
+    inicio, fim = (240, 247, 251), (154, 197, 220)
+    rgb = tuple(round(i + (j - i) * v) for i, j in zip(inicio, fim))
+    return "#{:02X}{:02X}{:02X}".format(*rgb), "#173A56"
 
 cabecalho_heatmap = "<th scope='col'>Município</th>" + "".join(
     f"<th scope='col'>{escape(str(ano))}</th>" for ano in pivo_cob.columns
@@ -570,12 +608,23 @@ for municipio, valores in pivo_cob.iterrows():
         "<tr><th scope='row'>" + escape(str(municipio)) + "</th>"
         + "".join(celulas) + "</tr>"
     )
+# Rodapé da tabela: valor regional ponderado por população em cada ano.
+celulas_regionais = []
+for coluna in pivo_cob.columns:
+    valor_regional = linha_regional_csv[coluna]
+    rotulo = f"{valor_regional:.2f}%" if pd.notna(valor_regional) else "—"
+    celulas_regionais.append(f"<td>{escape(rotulo)}</td>")
+rodape_heatmap = (
+    "<tr class='q3-razao-total'><th scope='row'>"
+    + escape(nome_linha_regional) + "</th>"
+    + "".join(celulas_regionais) + "</tr>"
+)
 html_heatmap = (
     '<div class="q3-razao-scroll" role="region" tabindex="0" '
     'aria-label="Razão anual de exames por município e ano">'
     '<table class="q3-razao-heatmap"><thead><tr>' + cabecalho_heatmap
     + '</tr></thead><tbody>' + "".join(linhas_heatmap)
-    + '</tbody></table></div>'
+    + '</tbody><tfoot>' + rodape_heatmap + '</tfoot></table></div>'
 )
 st.markdown(
     """
@@ -605,6 +654,12 @@ st.markdown(
         border-bottom:1px solid #E6EBF0;
     }
     .q3-razao-heatmap tbody tr:hover th {background:#F4F7FA;}
+    .q3-razao-heatmap tfoot th, .q3-razao-heatmap tfoot td {
+        background:#E8F0F6; color:#1A3B5C; font-weight:750;
+        padding:13px 12px; text-align:center;
+        border-top:2px solid #1A3B5C; white-space:nowrap;
+    }
+    .q3-razao-heatmap tfoot th {text-align:left;}
     .q3-indicador-box {
         display:inline-block; max-width:100%; box-sizing:border-box;
         margin:10px 0 14px; padding:9px 12px;
@@ -632,17 +687,16 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-st.markdown(html_heatmap, unsafe_allow_html=True)
 st.markdown(
     """
     <section class="q3-indicador-box" aria-label="Legenda da razão anual de exames">
-      <div class="q3-indicador-titulo">Classificação visual da razão anual</div>
+      <div class="q3-indicador-titulo">Legenda das faixas visuais</div>
       <div class="q3-indicador-item">
-        <i class="q3-indicador-amostra" style="background:#FCE8D4"></i>
+        <i class="q3-indicador-amostra" style="background:#FDE8E4"></i>
         <span><strong>Faixa inferior:</strong> resultado ≤ 3,00%</span>
       </div>
       <div class="q3-indicador-item">
-        <i class="q3-indicador-amostra" style="background:#FFFFFF"></i>
+        <i class="q3-indicador-amostra" style="background:linear-gradient(90deg,#F0F7FB,#9AC5DC)"></i>
         <span><strong>Faixa intermediária:</strong> 3,00% &lt; resultado &lt; 33,00%</span>
       </div>
       <div class="q3-indicador-item">
@@ -650,25 +704,37 @@ st.markdown(
         <span><strong>Faixa superior:</strong> resultado ≥ 33,00%</span>
       </div>
       <div class="q3-indicador-formula">
-        Razão (%) = (exames registrados ÷ população feminina de 25–64 anos) × 100<br>
-        Limites exploratórios para visualização; não indicam cobertura efetiva nem metas oficiais.
+        Faixas exploratórias de visualização, sem equivalência com metas oficiais de rastreamento.
       </div>
     </section>
     """,
     unsafe_allow_html=True,
 )
+with st.expander("Nota metodológica — cálculo e interpretação", expanded=False):
+    st.markdown(
+        "A **razão anual (%)** corresponde ao número de exames citopatológicos "
+        "registrados em mulheres de 25–64 anos no município e ano, dividido "
+        "pela população feminina de 25–64 anos do município (Censo IBGE 2022), "
+        "multiplicado por 100. A linha regional é calculada pela **soma dos "
+        "exames dividida pela soma das populações** dos municípios filtrados "
+        "em cada ano — não pela média simples dos percentuais. "
+        "Como uma mesma mulher pode realizar mais de um exame, a razão não "
+        "representa cobertura individual. Os limites de 3% e 33% são apenas "
+        "faixas exploratórias e não devem ser atribuídos como metas oficiais "
+        "do INCA ou da ANS."
+    )
+st.markdown(html_heatmap, unsafe_allow_html=True)
 st.download_button(
     "⬇️ Exportar razão anual de exames (CSV)",
-    tabela_cob.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
+    tabela_cob_exportacao.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
     file_name="siscan_razao_anual_exames_municipio_ano.csv",
     mime="text/csv",
     key="exportar_razao_anual_municipio_ano",
 )
 st.caption(
-     "Os valores intermediários (mais de 3% e menos de 33%) aparecem em branco; "
-    "valores até 3% recebem realce laranja suave e valores de 33% ou mais, "
-    "verde suave. "
-    "Não são categorias oficiais de cobertura e não identificam mulheres únicas. "
+    "Azul em gradiente: faixa intermediária; laranja e verde: faixas extremas. "
+    "A linha final apresenta a razão agregada ponderada pela população dos "
+    "municípios selecionados em cada ano. Não é cobertura individual de mulheres. "
     "Fonte: SISCAN/DATASUS · Censo IBGE 2022 · Gold."
 )
 
