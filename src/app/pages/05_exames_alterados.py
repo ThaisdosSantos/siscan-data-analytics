@@ -5,6 +5,10 @@ import plotly.express as px
 from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,SKY,ORANGE,NAVY
 from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered,require,sidebar_filters
+
+# Cores com maior contraste entre os grupos etários (PET-Saúde).
+BABY_BLUE = "#A9DDF4"   # <25 anos
+ROYAL_BLUE = "#1757A6"  # 25–64 anos
 st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
@@ -59,7 +63,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             macro, x="grupo_3", y="proporcao_pct", color="grupo_3",
             category_orders={"grupo_3": ordem_grupos},
             color_discrete_map={
-                "<25 anos": SKY, "25–64 anos": OCEAN, "≥65 anos": ORANGE,
+                "<25 anos": BABY_BLUE, "25–64 anos": ROYAL_BLUE, "≥65 anos": ORANGE,
             },
             custom_data=["quantidade_alterados", "total_exames_validos"],
             labels={"grupo_3": "Grupo etário", "proporcao_pct": "Proporção (%)"},
@@ -151,8 +155,8 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     "grupo_3": ordem_grupos,
                 },
                 color_discrete_map={
-                    "<25 anos": SKY,
-                    "25–64 anos": OCEAN,
+                    "<25 anos": BABY_BLUE,
+                    "25–64 anos": ROYAL_BLUE,
                     "≥65 anos": ORANGE,
                 },
                 labels={
