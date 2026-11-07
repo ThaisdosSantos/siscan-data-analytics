@@ -59,15 +59,28 @@ def _from_databricks(name):
             cursor.execute(f"SELECT * FROM `{catalog}`.gold.`{name}`")
             return cursor.fetchall_arrow().to_pandas()
 
-@st.cache_data(ttl=900,show_spinner=False)
+class GoldConsultaIndisponivel(RuntimeError):
+    """Falha operacional na origem Gold, distinta de resultado sem registros."""
+
+
+@st.cache_data(ttl=3600,show_spinner=False)
 def load_table(table_key, source="CSV local"):
     if table_key not in TABLES: raise ValueError("Tabela não permitida")
     name=TABLES[table_key]
     try:
         df=_from_databricks(name) if source=="Databricks SQL" else _from_csv(name)
     except Exception as exc:
-        st.error(f"Falha ao consultar Gold: {type(exc).__name__}: {exc}")
-        return pd.DataFrame()
+        mensagem = str(exc).lower()
+        if "free daily limit" in mensagem or "hit your free daily limit" in mensagem:
+            raise GoldConsultaIndisponivel(
+                "O Databricks atingiu o limite diário gratuito de consultas. "
+                "Os dados da camada Gold estão temporariamente indisponíveis. "
+                "Tente novamente após a renovação da cota do Databricks."
+            ) from exc
+        raise GoldConsultaIndisponivel(
+            "Não foi possível consultar a camada Gold no Databricks. "
+            "Verifique a conexão, o SQL Warehouse e as permissões de acesso."
+        ) from exc
     if df.empty: return df
     df.columns=[str(x).strip().lower() for x in df.columns]
     if "codigo_municipio" in df.columns:
@@ -95,7 +108,11 @@ def selected_source():
     return "Databricks SQL"
 
 def filtered(table_key):
-    df=load_table(table_key, selected_source())
+    try:
+        df = load_table(table_key, selected_source())
+    except GoldConsultaIndisponivel as exc:
+        st.error(str(exc), icon="🚫")
+        st.stop()
     if df.empty:
         return df
     years=selected_years()
