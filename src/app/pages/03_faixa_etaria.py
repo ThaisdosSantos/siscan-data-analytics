@@ -43,6 +43,51 @@ page_header(
     "Distribuição dos exames por grupos etários e comparação entre municípios.",
 )
 
+# Apresentação geral antes dos indicadores Q3.
+st.markdown(
+    """
+    Esta página apresenta a análise dos exames citopatológicos do colo do útero
+    registrados nos **11 municípios da 10ª Coordenadoria Regional de Saúde (10ª CRS)**,
+    no período de **2020 a 2025**.
+
+    O painel está organizado em três dimensões:
+
+    1. **Conformidade etária:** distribuição dos exames entre a faixa-alvo
+       de 25 a 64 anos e as faixas fora desse intervalo.
+    2. **Evolução temporal e produção:** quantidade anual de exames e razão anual
+       entre exames registrados e população feminina de 25 a 64 anos, por município.
+    3. **Volume assistencial e diferença frente à referência:** comparação da
+       média anual de exames com um parâmetro exploratório equivalente a
+       **33% da população feminina elegível ao ano**.
+    """
+)
+
+with st.expander("📌 Origem dos dados e notas metodológicas gerais", expanded=False):
+    col_f1, col_f2, col_f3 = st.columns(3, gap="medium")
+    with col_f1:
+        st.markdown(
+            "**Produção de exames**\n\n"
+            "SISCAN/DATASUS · registros de 2020–2025."
+        )
+    with col_f2:
+        st.markdown(
+            "**Base populacional**\n\n"
+            "Censo Demográfico IBGE 2022 · mulheres de 25 a 64 anos."
+        )
+    with col_f3:
+        st.markdown(
+            "**Referência de comparação**\n\n"
+            "33% ao ano, adotados neste painel como parâmetro exploratório; "
+            "não representam meta oficial validada do INCA ou da ANS."
+        )
+    st.caption(
+        "Nota geral: os dados de produção representam exames registrados, "
+        "sem identificação ou desduplicação das mulheres examinadas. "
+        "Portanto, os indicadores não medem cobertura individual de rastreamento."
+    )
+
+st.divider()
+
 st.markdown("""
 <style>
 div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff;}
