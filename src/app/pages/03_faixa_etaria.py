@@ -578,11 +578,7 @@ fig_cob.for_each_annotation(
 fig_cob.update_traces(
     line=dict(width=2.7),
     marker=dict(size=7),
-    mode="lines+markers+text",
-    texttemplate="%{y:,.0f}",
-    textposition="top center",
-    textfont=dict(size=11, color=NAVY),
-    cliponaxis=False,
+    mode="lines+markers",
     connectgaps=False,
     hovertemplate=(
         "Ano: %{x}<br>Exames registrados: %{y:,.0f}<extra></extra>"
