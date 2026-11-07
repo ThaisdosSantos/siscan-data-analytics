@@ -267,10 +267,45 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 plot_bgcolor="white",
                 font=dict(color="#1A3B5C", size=11),
             )
+            # A imagem PNG não possui tooltip. Exibir os valores em cada
+            # ponto APENAS na exportação; a versão interativa permanece limpa.
+            export_yearly = copy.deepcopy(fig_yearly)
+            positions = {
+                "25–64 anos": "top center",
+                "<25 anos": "middle left",
+                "≥65 anos": "bottom right",
+            }
+            for trace in export_yearly.data:
+                values = list(trace.y) if trace.y is not None else []
+                trace.update(
+                    mode="lines+markers+text",
+                    text=[
+                        f"{int(value):,}" if pd.notna(value) else ""
+                        for value in values
+                    ],
+                    textposition=positions.get(trace.name, "top center"),
+                    textfont=dict(family="Arial", size=13, color="#1A3B5C"),
+                    cliponaxis=False,
+                )
+            export_yearly.update_layout(
+                width=1500,
+                height=max(750, 350 * ((len(municipalities) + 2) // 3)),
+                paper_bgcolor="#FFFFFF",
+                plot_bgcolor="#FFFFFF",
+                font=dict(family="Arial", size=13, color="#1A3B5C"),
+                legend=dict(
+                    title_text="Grupo etário", orientation="h",
+                    x=0.5, xanchor="center", y=1.07, yanchor="bottom",
+                    font=dict(size=14, color="#1A3B5C"),
+                ),
+                margin=dict(l=105, r=55, t=130, b=115),
+            )
+            export_yearly.update_yaxes(automargin=True)
             st.caption("No celular, deslize o gráfico para os lados. No computador, clique com o botão direito para baixar em PNG.")
             chart_with_right_click_download(
                 fig_yearly, filename="exames_alterados_anuais_municipios_3_grupos.png",
-                height=fig_yearly.layout.height, min_chart_width=820
+                height=fig_yearly.layout.height, min_chart_width=820,
+                export_fig=export_yearly,
             )
         else:
             st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
