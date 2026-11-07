@@ -552,6 +552,10 @@ for col, titulo, valor, ajuda in zip(st.columns(3), kpi_titles, kpi_values, kpi_
         st.metric(titulo, valor, help=ajuda)
 
 # Evolução da razão de produção por município, com referência visual de 33%.
+# Plotly conecta pontos na ordem das linhas do DataFrame, não os ordena
+# automaticamente pelo category_orders. Ordenar antes do px.line elimina
+# os segmentos que voltavam de 2023 para 2021, por exemplo.
+cob = cob.sort_values(["municipio", "ano"], kind="stable").reset_index(drop=True)
 cob["ano_label"] = cob["ano"].astype(str)
 municipios_cob = sorted(cob["municipio"].dropna().unique(), key=normalize)
 anos_cob = sorted(cob["ano"].unique().tolist())
