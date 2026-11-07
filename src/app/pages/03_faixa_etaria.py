@@ -1,6 +1,4 @@
-"""Conformidade etária (Q3) e matriz exploratória de alterações (Q3 × Q5)."""
-import re
-from html import escape
+"""Conformidade etária (Q3): distribuição e composição por município."""
 import unicodedata
 
 import pandas as pd
@@ -12,7 +10,7 @@ from utils.theme import (
     fmt_num, fmt_pct, pct, style_chart, OCEAN, SKY, ORANGE, NAVY,
 )
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import MUNICIPIOS, filtered, sidebar_filters, require, years_label
+from utils.data_loader import filtered, sidebar_filters, require
 
 
 def normalize(value):
@@ -31,109 +29,21 @@ def q3_group(label):
     return None
 
 
-def q5_group(label):
-    """Compatibilidade com rótulos de faixas detalhadas; usar grupo_etario_3 na Gold."""
-    text = normalize(label).replace("–", "-").replace("—", "-")
-    if not text or "ignorado" in text or "sem informacao" in text:
-        return None
-    if "ate 9" in text:
-        return None  # Em consonância com a página de exames alterados.
-    if "menor" in text and "25" in text:
-        return "<25 anos"
-    if "25 a 64" in text or "25-64" in text:
-        return "25–64 anos"
-    if "65 anos ou mais" in text or "65 ou mais" in text or ">=65" in text or "acima de 79" in text:
-        return "≥65 anos"
-    nums = [int(n) for n in re.findall(r"\d+", text)]
-    if len(nums) >= 2:
-        low, high = nums[:2]
-        if high < 25:
-            return "<25 anos"
-        if 25 <= low and high <= 64:
-            return "25–64 anos"
-        if low >= 65:
-            return "≥65 anos"
-    if len(nums) == 1 and ("mais" in text or "+" in text) and nums[0] >= 65:
-        return "≥65 anos"
-    return None
-
-
 def safe_percent(numerator, denominator):
     return numerator.div(denominator.where(denominator.gt(0))).mul(100)
-
-
-def build_matrix(q3, q5, municipalities):
-    """Cruza agregações municipais: nunca junta linhas brutas (evita multiplicação)."""
-    volume = q3.loc[q3["grupo"].eq("<25 anos")].groupby("municipio")["quantidade_exames"].sum()
-    total_q3 = q3.groupby("municipio")["quantidade_exames"].sum()
-    result = pd.DataFrame(index=pd.Index(municipalities, name="municipio"))
-    result["Volume <25"] = volume
-    result["Participação <25 (%)"] = safe_percent(volume, total_q3)
-
-    result["Taxa <25 (%)"] = float("nan")
-    result["Taxa 25–64 (%)"] = float("nan")
-    result["Taxa ≥65 (%)"] = float("nan")
-    if not q5.empty:
-        needed = {"municipio", "quantidade_alterados", "total_exames_validos", "grupo_etario_3"}
-        if needed.issubset(q5.columns):
-            work = q5.copy()
-            # A agregação Q5 segue os três grupos oficiais da tabela Gold.
-            # Nunca aplicar média simples das taxas por faixa quinquenal.
-            q5_group_labels = {
-                "<= 24 anos": "<25 anos",
-                "25 a 64 anos": "25–64 anos",
-                ">= 65 anos": "≥65 anos",
-            }
-            work["grupo"] = (
-                work["grupo_etario_3"].astype("string").str.strip()
-                .map(q5_group_labels)
-            )
-            work = work.loc[work["grupo"].notna()].copy()
-            grouped = work.groupby(["municipio", "grupo"])[
-                ["quantidade_alterados", "total_exames_validos"]
-            ].sum(min_count=1)
-            rates = safe_percent(grouped["quantidade_alterados"], grouped["total_exames_validos"])
-            for group, column in [
-                ("<25 anos", "Taxa <25 (%)"),
-                ("25–64 anos", "Taxa 25–64 (%)"),
-                ("≥65 anos", "Taxa ≥65 (%)"),
-            ]:
-                if group in rates.index.get_level_values("grupo"):
-                    result[column] = rates.xs(group, level="grupo").reindex(result.index)
-    result["Razão (<25 / Alvo)"] = result["Taxa <25 (%)"].div(
-        result["Taxa 25–64 (%)"].where(result["Taxa 25–64 (%)"].gt(0))
-    )
-    return result.reset_index().rename(columns={"municipio": "Município"})
-
-
-def impact(row, threshold):
-    """Regra visual exploratória: baseada na participação Q3 e na razão Q5."""
-    share, ratio = row["Participação <25 (%)"], row["Razão (<25 / Alvo)"]
-    if pd.isna(share):
-        return "⚪ Dados insuficientes"
-    if share <= threshold:
-        return "🟢 Boa Adesão Local"
-    if pd.isna(ratio):
-        return "⚪ Dados insuficientes"
-    if ratio < 0.25:
-        return "🔴 Alto Desperdício"
-    return "🟡 Baixo Retorno"
 
 
 st.set_page_config(page_title="Faixa etária | SISCAN", layout="wide")
 apply_custom_css()
 sidebar_filters()
 page_header(
-    "Faixa etária · Q3 × Q5",
+    "Faixa etária · Q3",
     "Conformidade etária",
-    "Distribuição dos exames por grupos etários e comparação exploratória de alterações citológicas.",
+    "Distribuição dos exames por grupos etários e comparação entre municípios.",
 )
 
 st.markdown("""
 <style>
-.q3-section {margin:2.1rem 0 1rem;padding-bottom:12px;border-bottom:2px solid #006C9A;}
-.q3-section strong {font-size:1.12rem;color:#1A3B5C;}
-.q3-section p {font-size:.86rem;color:#516476;margin:8px 0 0;line-height:1.65;}
 div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff;}
 </style>
 """, unsafe_allow_html=True)
@@ -409,120 +319,6 @@ with b:
             export_fig=export_fig,
         )
 
-st.markdown("""
-<div class="q3-section">
-<strong>🔬 Matriz Cruzada de Efetividade: Sobrerrastreamento vs. Alterações Citológicas (Q3 × Q5)</strong>
-<p>Avaliação epidemiológica do retorno diagnóstico dos exames realizados fora do público-alvo prioritário do Ministério da Saúde.<br>
-Comparação municipal agregada (não individual); as proporções Q5 são estimativas operacionais e não medem efetividade clínica ou desperdício comprovado.</p>
-</div>
-""", unsafe_allow_html=True)
-
-q5 = filtered("alterados")
-selected_cities = [c for c in MUNICIPIOS.values()
-                   if c in st.session_state.get("city_preference", list(MUNICIPIOS.values()))]
-matrix = build_matrix(groups, q5, selected_cities)
-threshold = st.slider(
-    "Limiar exploratório de participação de exames em menores de 25 anos (%)",
-    min_value=5.0, max_value=20.0, value=10.0, step=0.5,
-    help="Critério visual configurável pelo usuário, não é uma referência oficial.",
-)
-matrix["Classificação de impacto"] = matrix.apply(impact, axis=1, threshold=threshold)
-if q5.empty:
-    st.warning("A tabela Gold de exames alterados (Q5) não retornou registros. Taxas e razão serão exibidas como N/D.")
-elif "grupo_etario_3" not in q5.columns:
-    st.warning("A coluna grupo_etario_3 ainda não está disponível no recorte da Gold; as taxas Q5 serão exibidas como N/D.")
-
-def format_br(value, digits=2):
-    """Formata número no padrão brasileiro, sem transformar ausências em zero."""
-    if pd.isna(value):
-        return "N/D"
-    return f"{value:,.{digits}f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-
-def impact_badge(label):
-    """Badges acessíveis, com rótulos explícitos além da cor."""
-    classes = {
-        "🟢 Boa Adesão Local": "ok",
-        "🟡 Baixo Retorno": "low",
-        "🔴 Alto Desperdício": "waste",
-        "⚪ Dados insuficientes": "unknown",
-    }
-    color = classes.get(label, "unknown")
-    return f'<span class="q3-badge q3-{color}">{escape(label)}</span>'
-
-
-def matrix_html(table):
-    """Tabela responsiva fiel à referência; somente valores escapados."""
-    headers = [
-        "Município",
-        "Volume &lt;25 anos",
-        "Taxa de alteração &lt;25 (%)",
-        "Taxa de alteração 25–64 (%)",
-        "Taxa de alteração ≥65 (%)",
-        "Razão de efetividade",
-        "Classificação de impacto",
-    ]
-    rows = []
-    for _, row in table.iterrows():
-        volume = format_br(row["Volume <25"], 0)
-        cells = [
-            f'<strong>{escape(str(row["Município"]))}</strong>',
-            escape(volume),
-            escape(format_br(row["Taxa <25 (%)"]) + "%") if pd.notna(row["Taxa <25 (%)"]) else "N/D",
-            escape(format_br(row["Taxa 25–64 (%)"]) + "%") if pd.notna(row["Taxa 25–64 (%)"]) else "N/D",
-            escape(format_br(row["Taxa ≥65 (%)"]) + "%") if pd.notna(row["Taxa ≥65 (%)"]) else "N/D",
-            escape(format_br(row["Razão (<25 / Alvo)"])),
-            impact_badge(str(row["Classificação de impacto"])),
-        ]
-        rows.append("<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>")
-    if not rows:
-        rows = ['<tr><td colspan="7">Nenhum município selecionado.</td></tr>']
-    header = "".join(f"<th scope='col'>{value}</th>" for value in headers)
-    return (
-        '<div class="q3-matrix-scroll" role="region" aria-label="Matriz Q3 e Q5" tabindex="0">'
-        '<table class="q3-matrix"><thead><tr>' + header + '</tr></thead><tbody>'
-        + "".join(rows) + '</tbody></table></div>'
-    )
-
-
-st.markdown("""
-<style>
-.q3-matrix-scroll {width:100%;overflow-x:auto;border-radius:8px;
-  box-shadow:0 2px 7px rgba(26,59,92,.09);margin:12px 0 17px;}
-.q3-matrix {border-collapse:collapse;width:100%;min-width:1040px;background:white;
-  color:#1A3B5C;font-family:Manrope,Arial,sans-serif;font-size:.83rem;}
-.q3-matrix th {background:#1A3B5C;color:#fff;text-align:left;
-  padding:13px 12px;font-size:.76rem;line-height:1.35;font-weight:750;}
-.q3-matrix td {padding:13px 12px;border-bottom:1px solid #e7ebef;vertical-align:middle;}
-.q3-matrix tbody tr:nth-child(even) {background:#f6f8fa;}
-.q3-matrix tbody tr:hover {background:#ecf5fa;}
-.q3-matrix td:first-child {font-weight:700;min-width:125px;}
-.q3-matrix td:last-child {min-width:165px;}
-.q3-badge {display:inline-block;border-radius:5px;padding:5px 9px;
-  line-height:1.4;font-size:.76rem;font-weight:750;white-space:normal;}
-.q3-ok {background:#e2f0d9;color:#385723;}
-.q3-low {background:#fff3cd;color:#856404;}
-.q3-waste {background:#ffe6e6;color:#b72323;}
-.q3-unknown {background:#e9edf1;color:#4a5968;}
-@media(max-width:800px) {
-  .q3-matrix th,.q3-matrix td {padding:11px 9px;}
-}
-</style>
-""", unsafe_allow_html=True)
-st.markdown(matrix_html(matrix), unsafe_allow_html=True)
-st.caption(
-    "Rótulos heurísticos exploratórios: verde se a participação <25 é ≤ ao limiar; "
-    "vermelho se excede o limiar e a razão é <0,25; amarelo nos demais casos com razão válida. "
-    "Não representam critérios oficiais, julgamento de conduta clínica ou desperdício comprovado. "
-    "Taxas Q5: estimativas operacionais, sem exclusão verificável de amostras rejeitadas/insatisfatórias "
-    "do denominador. Uma razão de 0,25 significa taxa <25 igual a um quarto da taxa 25–64. "
-    f"Período selecionado: {years_label()}."
-)
-st.download_button(
-    "⬇️ Exportar matriz Q3 × Q5 (CSV)",
-    matrix.to_csv(index=False, sep=";", decimal=",").encode("utf-8-sig"),
-    file_name="siscan_matriz_q3_q5.csv", mime="text/csv",
-)
 with st.expander("Ver dados detalhados da distribuição etária (Q3)"):
     export_table(agg, "siscan_faixa_etaria.csv")
-st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3 e Q5). Sem vinculação individual entre exames.")
+st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3).")
