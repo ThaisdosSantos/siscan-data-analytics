@@ -301,7 +301,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 height=max(520, 360 * n_linhas),
                 showlegend=True,
                 legend=dict(
-                    title_text="Grupo etário", orientation="h",
+                    title_text="", orientation="h",
                     x=0.5, xanchor="center", y=1.06, yanchor="bottom",
                     font=dict(size=12, color=NAVY),
                 ),
@@ -357,7 +357,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 height=max(950, 465 * n_linhas),
                 width=1800,
                 legend=dict(
-                    title_text="Grupo etário", orientation="h",
+                    title_text="", orientation="h",
                     x=0.5, xanchor="center",
                     y=-0.065, yanchor="top",
                     font=dict(size=15, color=NAVY),
