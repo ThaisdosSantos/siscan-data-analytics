@@ -606,15 +606,16 @@ fig_cob.add_annotation(
     font=dict(size=13, color=NAVY),
 )
 fig_cob.add_annotation(
-    x=0.5, y=-0.025, xref="paper", yref="paper",
+    x=0.5, y=-0.075, xref="paper", yref="paper",
     text="Anos", showarrow=False,
+    xanchor="center", yanchor="top",
     font=dict(size=13, color=NAVY),
 )
 qtd_linhas_cob = (len(municipios_cob) + 2) // 3
 fig_cob.update_layout(
     height=max(520, 330 * qtd_linhas_cob),
     showlegend=False,
-    margin=dict(l=100, r=25, t=65, b=110),
+    margin=dict(l=100, r=25, t=65, b=140),
     paper_bgcolor="#FFFFFF",
     plot_bgcolor="#FFFFFF",
     font=dict(color=NAVY, size=11),
@@ -636,7 +637,7 @@ export_cob.update_layout(
     ),
     width=1650,
     height=max(850, 430 * qtd_linhas_cob),
-    margin=dict(l=115, r=65, t=135, b=130),
+    margin=dict(l=115, r=65, t=135, b=170),
 )
 chart_with_right_click_download(
     fig_cob,
