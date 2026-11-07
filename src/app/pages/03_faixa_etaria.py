@@ -62,6 +62,20 @@ page_header(
     "Apresenta a distribuição dos exames por faixa etária, as diferenças entre municípios e a evolução da produção, incluindo indicadores que relacionam o volume de exames à população feminina de 25 a 64 anos.",
 )
 
+# Fontes globais em destaque, sem repetição nos rodapés de cada gráfico/tabela.
+st.markdown(
+    '<div style="margin:14px 0 20px;padding:12px 16px;'
+    'background:#EEF5FA;border-left:4px solid #006C9A;'
+    'border-radius:8px;color:#1A3B5C;font-family:Manrope,Arial,sans-serif;'
+    'font-size:16px;line-height:1.55;">'
+    '<strong>Fontes dos dados:</strong> '
+    '<strong>Exames citopatológicos:</strong> SISCAN/DATASUS '
+    '&nbsp;·&nbsp; <strong>População feminina de 25 a 64 anos:</strong> '
+    'Censo Demográfico IBGE 2022.'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
 st.markdown("""
 <style>
 div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff;}
@@ -341,7 +355,6 @@ with b:
 
 with st.expander("Ver dados detalhados da distribuição etária (Q3)"):
     export_table(agg, "siscan_faixa_etaria.csv")
-st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3).")
 
 # ---------------------------------------------------------------------------
 # Razão anual de exames (Q3): exames registrados 25–64 / população feminina IBGE 2022 × 100.
@@ -706,7 +719,6 @@ st.download_button(
     mime="text/csv",
     key="exportar_razao_anual_municipio_ano",
 )
-st.caption("Fonte: SISCAN/DATASUS · Censo IBGE 2022.")
 
 # Tabela consolidada: volume anual observado × referência exploratória de 33%.
 # Usar a mesma Gold carregada para a razão anual, respeitando os filtros.
@@ -892,7 +904,6 @@ with st.expander("ℹ️ Como interpretar a Capacidade Assistencial (Volume de E
             "Investigar essas possibilidades requer dados complementares "
             "sobre registro, fluxo assistencial e acesso aos serviços."
         )
-    st.markdown("**Fonte:** SISCAN/DATASUS · Censo IBGE 2022.")
 
 with st.expander("Ver dados detalhados da razão anual (Q3)"):
     detalhe_cob = cob[
@@ -900,4 +911,3 @@ with st.expander("Ver dados detalhados da razão anual (Q3)"):
          "mulheres_25_64_anos", "razao_anual_exames_pct"]
     ].sort_values(["municipio", "ano"])
     export_table(detalhe_cob, "siscan_razao_anual_exames_populacao.csv")
-st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3).")
