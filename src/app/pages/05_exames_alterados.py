@@ -99,19 +99,23 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 height=380, export_fig=macro_export,
             )
 
-    # Série anual por município: utiliza as quantidades já existentes na Gold.
-    # Ausências de ano são mantidas como lacunas, nunca convertidas em zero.
-    st.markdown("### Evolução anual de exames alterados por município")
+    # Facetas exclusivamente para a população-alvo (25–64 anos).
+    # A coluna grupo_etario_3 vem da Gold e preserva a granularidade
+    # município × ano × faixa detalhada. Nunca somar o total de outros grupos.
+    # Ausências continuam NaN, não são substituídas por zero.
+    st.markdown("### Evolução anual de exames alterados por município · 25–64 anos")
     st.caption(
-        "Quantidade de exames citopatológicos alterados por município e ano. "
-        "Cada painel usa sua própria escala vertical para facilitar a leitura; "
-        "compare os valores absolutos pelos eixos e pelo cursor."
+        "Quantidade anual de exames citopatológicos alterados somente na "
+        "faixa-alvo de 25 a 64 anos, conforme grupo_etario_3 da Gold. "
+        "Cada município utiliza escala vertical própria; compare os valores "
+        "absolutos nos eixos ou ao passar o mouse."
     )
     if "ano" not in df.columns:
         st.info("O gráfico anual requer a coluna 'ano' na tabela Gold de exames alterados.")
     else:
         yearly = (
-            df.dropna(subset=["ano"])
+            df.loc[df["grupo_3"].eq("25–64 anos")]
+            .dropna(subset=["ano"])
             .groupby(["municipio", "ano"], as_index=False)["quantidade_alterados"]
             .sum(min_count=1)
         )
@@ -155,9 +159,13 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     ],
                     key="sort_facetas_alterados",
                 )
-            # O ranking considera a soma dos exames alterados no recorte filtrado.
-            # Empates mantêm os nomes dos municípios em ordem alfabética.
-            municipalities = sorted(yearly["municipio"].unique())
+            # Ordena somente os exames alterados de 25–64 anos.
+            # Conserva municípios sem registros como facetas vazias, sem imputar zero.
+            from utils.data_loader import MUNICIPIOS
+            selected = st.session_state.get(
+                "city_preference", list(MUNICIPIOS.values())
+            )
+            municipalities = sorted(city for city in selected if city in MUNICIPIOS.values())
             if sort_mode == "Maior para menor":
                 totals_by_city = (
                     yearly.groupby("municipio")["quantidade_alterados"]
@@ -165,7 +173,8 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 )
                 municipalities.sort(
                     key=lambda city: (
-                        -totals_by_city.loc[city] if pd.notna(totals_by_city.loc[city])
+                        -totals_by_city.loc[city]
+                        if city in totals_by_city.index and pd.notna(totals_by_city.loc[city])
                         else float("inf"),
                         city.casefold(),
                     )
@@ -214,7 +223,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 line=dict(width=2.5),
                 marker=dict(size=7),
                 connectgaps=False,
-                hovertemplate="Ano: %{x}<br>Exames alterados: %{y:,.0f}<extra></extra>",
+                hovertemplate="Ano: %{x}<br>Exames alterados (25–64 anos): %{y:,.0f}<extra></extra>",
             )
             # Preserva a identificação da medida sem repetir o título em cada
             # subplot, evitando sobreposição com as escalas dos municípios.
@@ -224,7 +233,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             )
             fig_yearly.add_annotation(
                 x=-0.065, y=0.5, xref="paper", yref="paper",
-                text="Exames alterados", textangle=-90, showarrow=False,
+                text="Exames alterados (25–64 anos)", textangle=-90, showarrow=False,
                 font=dict(family="Arial", size=13, color="#1A3B5C"),
                 xanchor="center", yanchor="middle",
             )
@@ -250,7 +259,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             )
             st.caption("No celular, deslize o gráfico para os lados. No computador, clique com o botão direito para baixar em PNG.")
             chart_with_right_click_download(
-                fig_yearly, filename="exames_alterados_anuais_municipios.png",
+                fig_yearly, filename="exames_alterados_anuais_municipios_25_64_anos.png",
                 height=fig_yearly.layout.height, min_chart_width=820
             )
         else:
