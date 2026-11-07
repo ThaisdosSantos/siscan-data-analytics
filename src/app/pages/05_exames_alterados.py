@@ -99,14 +99,6 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 height=380, export_fig=macro_export,
             )
 
-    st.markdown("### Exames alterados por faixa etária detalhada")
-    byage=df.groupby("faixa_etaria",as_index=False)[["quantidade_alterados","total_exames_validos"]].sum(min_count=1)
-    byage["taxa"]=byage.quantidade_alterados.div(byage.total_exames_validos.where(byage.total_exames_validos>0)).mul(100)
-    fig=px.bar(byage,x="faixa_etaria",y="taxa",color_discrete_sequence=[OCEAN],
-               labels={"faixa_etaria":"Faixa etária","taxa":"Proporção (%)"},
-               title="Exames alterados por faixa etária")
-    fig.update_xaxes(tickangle=-45)
-    display_chart(format_percent_chart(fig), filename="exames_alterados_faixa_etaria.png")
     # Série anual por município: utiliza as quantidades já existentes na Gold.
     # Ausências de ano são mantidas como lacunas, nunca convertidas em zero.
     st.markdown("### Evolução anual de exames alterados por município")
