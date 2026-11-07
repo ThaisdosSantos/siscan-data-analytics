@@ -532,6 +532,22 @@ cob["ano_label"] = cob["ano"].astype(str)
 municipios_cob = sorted(cob["municipio"].dropna().unique(), key=normalize)
 anos_cob = sorted(cob["ano"].unique().tolist())
 
+ordenar_quantidade_25_64 = st.selectbox(
+    "Ordenar por",
+    options=["A–Z", "Maior para menor"],
+    index=0,
+    key="ordenacao_quantidade_anual_25_64",
+    help=(
+        "Maior para menor ordena os municípios pelo total de exames "
+        "registrados entre 25 e 64 anos nos anos selecionados."
+    ),
+)
+if ordenar_quantidade_25_64 == "Maior para menor":
+    totais_cob = cob.groupby("municipio")["total_exames_25_64"].sum()
+    municipios_cob.sort(
+        key=lambda municipio: (-float(totais_cob.loc[municipio]), normalize(municipio))
+    )
+
 fig_cob = px.line(
     cob,
     x="ano_label",
