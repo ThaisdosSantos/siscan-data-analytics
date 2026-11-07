@@ -493,7 +493,22 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-df_cob = filtered("cobertura")
+# Compatibilidade com instâncias do Streamlit que mantenham em memória
+# uma versão anterior do data_loader.TABLES, sem a chave "cobertura".
+# A tabela já existe na Gold (11 municípios × 6 anos).
+from utils import data_loader as gold_loader
+gold_loader.TABLES.setdefault("cobertura", "fato_evolucao_cobertura_municipios")
+
+try:
+    df_cob = gold_loader.filtered("cobertura")
+except ValueError as exc:
+    st.error(
+        "Não foi possível carregar o indicador de cobertura populacional. "
+        "Atualize a aplicação para sincronizar o catálogo de tabelas Gold."
+    )
+    st.exception(exc)
+    st.stop()
+
 if not require(df_cob, ["municipio", "ano", "total_exames_25_64",
                         "mulheres_25_64_anos", "taxa_cobertura_pct",
                         "st_meta_ans"]):
