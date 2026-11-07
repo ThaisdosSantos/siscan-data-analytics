@@ -36,6 +36,25 @@ def safe_percent(numerator, denominator):
 
 st.set_page_config(page_title="Faixa etária | SISCAN", layout="wide")
 apply_custom_css()
+# Sobrescreve apenas a descrição do cabeçalho da página Q3.
+st.markdown("""
+<style>
+.pet-hero .pet-hero-desc {
+    font-family: Manrope, Arial, sans-serif !important;
+    font-size: 1.15rem !important;
+    line-height: 1.65 !important;
+    font-weight: 500 !important;
+    color: #FFFFFF !important;
+    max-width: 920px !important;
+}
+@media (max-width: 768px) {
+    .pet-hero .pet-hero-desc {
+        font-size: 1rem !important;
+        line-height: 1.55 !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
 sidebar_filters()
 page_header(
     "Faixa etária · Q3",
