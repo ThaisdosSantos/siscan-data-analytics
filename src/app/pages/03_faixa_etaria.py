@@ -823,6 +823,7 @@ display_table(
     ],
     percent_columns=["Atingimento da referência (%)"],
     large=True,
+    consolidated_style=True,
 )
 st.download_button(
     "⬇️ Exportar tabela consolidada (CSV)",
