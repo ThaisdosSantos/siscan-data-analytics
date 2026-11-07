@@ -418,7 +418,7 @@ st.markdown(
     """
     <div style="margin:14px 0 18px;padding:14px 18px;background:#F0F6FA;
                 border-left:4px solid #006C9A;border-radius:8px;
-                font:500 16px/1.65 Manrope,Arial,sans-serif;color:#1A3B5C;">
+                font:400 18px/1.55 Manrope,Arial,sans-serif;color:#334E68;">
       <strong>Como interpretar os gráficos:</strong>
       o gráfico de rosca apresenta a participação de cada faixa etária no total de exames
       selecionados. As barras mostram essa mesma distribuição em cada município,
@@ -439,10 +439,8 @@ import copy
 
 st.markdown("### Quantidade anual de exames na população-alvo (25–64 anos)")
 st.markdown(
-    '<p style="font-family:Manrope,Arial,sans-serif!important;'
-    'font-size:19px!important;line-height:1.7!important;'
-    'color:#1A3B5C!important;font-weight:500!important;'
-    'max-width:1100px;margin:10px 0 22px 0;">'
+    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
+    'font-weight:400;margin:4px 0 18px 0;">'
     'Mostra a evolução anual da quantidade de exames citopatológicos '
     'registrados na faixa etária de 25 a 64 anos em cada município, entre '
     '2020 e 2025. Cada ponto representa o número de exames no ano; '
@@ -608,10 +606,8 @@ chart_with_right_click_download(
 # Tabela município × ano da razão calculada diretamente pela fórmula.
 st.markdown("#### Razão anual de exames por município e ano (%)")
 st.markdown(
-    '<p style="font-family:Manrope,Arial,sans-serif!important;'
-    'font-size:19px!important;line-height:1.7!important;'
-    'color:#1A3B5C!important;font-weight:500!important;'
-    'max-width:1100px;margin:10px 0 22px 0;">'
+    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
+    'font-weight:400;margin:4px 0 18px 0;">'
     'Apresenta, para cada município e ano, a razão entre a quantidade de '
     'exames citopatológicos registrados em mulheres de 25 a 64 anos e a '
     'população feminina dessa faixa etária (Censo IBGE 2022), multiplicada '
