@@ -850,18 +850,6 @@ colunas_consolidadas = {
 tabela_consolidada = resumo_consolidado[list(colunas_consolidadas)].rename(
     columns=colunas_consolidadas
 )
-# Ação de exportação junto ao topo da tabela, sem botão isolado no rodapé.
-_, coluna_exportar_consolidado = st.columns([3, 1])
-with coluna_exportar_consolidado:
-    st.download_button(
-    "⬇️ Exportar tabela consolidada (CSV)",
-        data=tabela_consolidada.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
-        file_name="siscan_tabela_consolidada_exames_25_64.csv",
-        mime="text/csv",
-        key="exportar_tabela_consolidada_25_64",
-        use_container_width=True,
-    )
-
 display_table(
     tabela_consolidada,
     integer_columns=[
@@ -873,6 +861,13 @@ display_table(
     percent_columns=["Atingimento da referência (%)"],
     large=True,
     consolidated_style=True,
+)
+st.download_button(
+    "⬇️ Exportar tabela consolidada (CSV)",
+    data=tabela_consolidada.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
+    file_name="siscan_tabela_consolidada_exames_25_64.csv",
+    mime="text/csv",
+    key="exportar_tabela_consolidada_25_64",
 )
 st.markdown(
     """
