@@ -47,6 +47,41 @@ st.markdown("""
     color: #FFFFFF !important;
     max-width: 920px !important;
 }
+/* Destaque legível do período e municípios no recorte ativo. */
+.pet-hero .pet-active-scope {
+    gap: 12px !important;
+    margin-top: 22px !important;
+    align-items: center !important;
+}
+.pet-hero .pet-active-scope .pet-scope-label {
+    color: #FFFFFF !important;
+    font-size: 0.85rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.11em !important;
+}
+.pet-hero .pet-active-scope .pet-scope-chip {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.19) !important;
+    border: 1px solid rgba(255, 255, 255, 0.48) !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    line-height: 1.4 !important;
+    padding: 9px 14px !important;
+    gap: 8px !important;
+}
+.pet-hero .pet-active-scope .pet-scope-icon {
+    color: #FFFFFF !important;
+}
+@media (max-width: 768px) {
+    .pet-hero .pet-active-scope {gap: 8px !important;}
+    .pet-hero .pet-active-scope .pet-scope-label {
+        font-size: 0.78rem !important;
+    }
+    .pet-hero .pet-active-scope .pet-scope-chip {
+        font-size: 0.86rem !important;
+        padding: 8px 11px !important;
+    }
+}
 @media (max-width: 768px) {
     .pet-hero .pet-hero-desc {
         font-size: 1rem !important;
