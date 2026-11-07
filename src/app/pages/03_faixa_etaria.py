@@ -795,9 +795,26 @@ linha_total_consolidado["atingimento_pct"] = (
     / linha_total_consolidado["referencia_anual"] * 100
     if linha_total_consolidado["referencia_anual"] > 0 else float("nan")
 )
-resumo_consolidado = resumo_consolidado.sort_values(
-    "municipio", key=lambda nomes: nomes.map(normalize), kind="stable"
+ordenar_tabela_consolidada = st.selectbox(
+    "Ordenar por",
+    options=["A–Z", "Maior para menor"],
+    index=0,
+    key="ordenacao_tabela_consolidada_q3",
+    help=(
+        "Maior para menor organiza os municípios pela média anual de "
+        "exames executados nos anos selecionados. A linha TOTAL permanece ao final."
+    ),
 )
+if ordenar_tabela_consolidada == "Maior para menor":
+    resumo_consolidado = resumo_consolidado.sort_values(
+        ["media_exames", "municipio"],
+        ascending=[False, True],
+        kind="stable",
+    )
+else:
+    resumo_consolidado = resumo_consolidado.sort_values(
+        "municipio", key=lambda nomes: nomes.map(normalize), kind="stable"
+    )
 resumo_consolidado = pd.concat(
     [resumo_consolidado, pd.DataFrame([linha_total_consolidado])],
     ignore_index=True,
