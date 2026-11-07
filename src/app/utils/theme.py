@@ -995,7 +995,7 @@ def metric_row(items):
         col.metric(label,value)
 
 
-def display_table(df, *, percent_columns=None, integer_columns=None, large=False):
+def display_table(df, *, percent_columns=None, integer_columns=None, large=False, consolidated_style=False):
     """Tabela PET-Saúde: HTML acessível e responsivo, sem alterar os dados."""
     percent_columns = set(percent_columns or [])
     integer_columns = set(integer_columns or [])
@@ -1023,6 +1023,23 @@ def display_table(df, *, percent_columns=None, integer_columns=None, large=False
     .pet-table.pet-table-large th:first-child,
     .pet-table.pet-table-large td:first-child{
       text-align:left}
+    /* Destaques exclusivos da tabela consolidada Q3. */
+    .pet-table.pet-table-consolidated .pet-deficit{
+      color:#C24A20;font-weight:750}
+    .pet-table.pet-table-consolidated .pet-attainment{
+      display:inline-block;padding:5px 10px;border-radius:6px;
+      font-weight:700;white-space:nowrap}
+    .pet-table.pet-table-consolidated .pet-attainment-critical{
+      color:#A33B15;background:#FDE9DD}
+    .pet-table.pet-table-consolidated .pet-attainment-low{
+      color:#245577;background:#E9F2FA}
+    .pet-table.pet-table-consolidated tr.pet-region-total,
+    .pet-table.pet-table-consolidated tr.pet-region-total:hover{
+      background:#DDEAF3}
+    .pet-table.pet-table-consolidated tr.pet-region-total td{
+      border-top:2px solid #1A3B5C;
+      border-bottom:2px solid #AFC7D8;
+      font-weight:800}
     .pet-table tbody tr:nth-child(even){background:#f6f8fa}
     .pet-table tbody tr:hover{background:#ecf5fa}
     .pet-table td:first-child{font-weight:700}
@@ -1041,6 +1058,13 @@ def display_table(df, *, percent_columns=None, integer_columns=None, large=False
             return "N/D"
         if isinstance(value, (bool,)):
             return "Sim" if value else "Não"
+        if consolidated_style and column == "Atingimento da referência (%)" and isinstance(value, (int, float)):
+            classe = ("pet-attainment-critical" if value < 15
+                      else "pet-attainment-low" if value < 40 else "")
+            return '<span class="pet-attainment ' + classe + '">' + br_number(value, 2) + '%</span>'
+        if consolidated_style and column == "Diferença anual média de exames" and isinstance(value, (int, float)):
+            valor = br_number(value, 0)
+            return '<span class="pet-deficit">' + valor + '</span>' if value < 0 else valor
         if column in percent_columns and isinstance(value, (int, float)):
             return br_number(value, 2) + "%"
         if column in integer_columns and isinstance(value, (int, float)):
@@ -1058,11 +1082,16 @@ def display_table(df, *, percent_columns=None, integer_columns=None, large=False
     header = "".join("<th scope='col'>" + html.escape(str(c)) + "</th>" for c in df.columns)
     rows = []
     for values in df.itertuples(index=False, name=None):
-        rows.append("<tr>" + "".join("<td>" + cell(v, c) + "</td>"
-                                   for c, v in zip(df.columns, values)) + "</tr>")
+        is_total = consolidated_style and str(values[0]).startswith("TOTAL")
+        classe_linha = ' class="pet-region-total"' if is_total else ""
+        rows.append("<tr" + classe_linha + ">" + "".join(
+            "<td>" + cell(v, c) + "</td>" for c, v in zip(df.columns, values)
+        ) + "</tr>")
     if not rows:
         rows = ['<tr><td colspan="' + str(max(1,len(df.columns))) + '">Nenhum registro.</td></tr>']
     table_class = "pet-table pet-table-large" if large else "pet-table"
+    if consolidated_style:
+        table_class += " pet-table-consolidated"
     markup = ('<div class="pet-table-scroller" role="region" aria-label="Tabela de dados" tabindex="0">'
               '<table class="' + table_class + '"><thead><tr>' + header + '</tr></thead><tbody>'
               + "".join(rows) + '</tbody></table></div>')
