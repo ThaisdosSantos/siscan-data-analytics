@@ -861,6 +861,44 @@ st.download_button(
     mime="text/csv",
     key="exportar_tabela_consolidada_25_64",
 )
+# Nota analítica contextual, recalculada pelos filtros ativos.
+# Não atribuir a diferença a adesão, sub-registro ou fluxos assistenciais
+# sem evidência externa que confirme essas hipóteses.
+macambara_consolidado = resumo_consolidado.loc[
+    resumo_consolidado["municipio"].map(normalize).eq("macambara")
+]
+if not macambara_consolidado.empty:
+    caso_macambara = macambara_consolidado.iloc[0]
+    media_macambara = float(caso_macambara["media_exames"])
+    referencia_macambara = float(caso_macambara["referencia_anual"])
+    atingimento_macambara = float(caso_macambara["atingimento_pct"])
+    menor_atingimento = (
+        resumo_consolidado.loc[
+            ~resumo_consolidado["municipio"].str.startswith("TOTAL"),
+            "atingimento_pct",
+        ].min()
+    )
+    destaque_macambara = (
+        "menor percentual de atingimento entre os municípios selecionados"
+        if pd.notna(menor_atingimento)
+        and abs(atingimento_macambara - float(menor_atingimento)) < 0.005
+        else "percentual de atingimento da referência"
+    )
+    st.warning(
+        "**Nota analítica — Maçambará:** "
+        f"no período selecionado, o município apresenta {destaque_macambara} "
+        f"de **{atingimento_macambara:.2f}%** "
+        f"(média de **{media_macambara:,.0f} exames/ano** frente a "
+        f"**{referencia_macambara:,.0f} exames/ano** correspondentes "
+        "à referência exploratória de 33% da população feminina de 25–64 anos). "
+        "Essa diferença descreve o volume de exames registrado no SISCAN, "
+        "mas **não permite concluir que houve baixa adesão, subnotificação "
+        "ou encaminhamento para outros municípios**. Essas possibilidades "
+        "exigiriam informações adicionais sobre fluxos assistenciais, "
+        "registro e acesso aos serviços."
+        .replace(",", ".")
+    )
+
 anos_selecionados_consolidado = sorted(base_consolidada["ano"].unique().tolist())
 st.caption(
     "Média executada = exames anuais registrados ÷ anos com registros do município "
