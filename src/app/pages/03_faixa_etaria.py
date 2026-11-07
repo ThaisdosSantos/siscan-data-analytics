@@ -478,13 +478,14 @@ st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3).")
 # ---------------------------------------------------------------------------
 import copy
 
-st.markdown("### Razão Anual de Exames na População-Alvo (25–64 anos)")
+st.markdown("### Quantidade anual de exames na população-alvo (25–64 anos)")
 st.markdown(
     '<p style="font-size:18px;line-height:1.55;color:#334E68;'
     'font-weight:400;margin:4px 0 18px 0;">'
-    'Razão anual (%) = exames registrados em mulheres de 25–64 anos '
-    'no município e ano ÷ população feminina de 25–64 anos do município '
-    '(Censo IBGE 2022) × 100.</p>',
+    'O gráfico apresenta a quantidade exata de exames registrados em mulheres '
+    'de 25–64 anos em cada município e ano. A razão anual calculada em relação '
+    'à população feminina (Censo IBGE 2022) está disponível em percentual na '
+    'tabela abaixo.</p>',
     unsafe_allow_html=True,
 )
 
@@ -534,7 +535,7 @@ anos_cob = sorted(cob["ano"].unique().tolist())
 fig_cob = px.line(
     cob,
     x="ano_label",
-    y="razao_anual_exames_pct",
+    y="total_exames_25_64",
     facet_col="municipio",
     facet_col_wrap=3,
     facet_col_spacing=0.055,
@@ -547,7 +548,7 @@ fig_cob = px.line(
     color_discrete_sequence=[OCEAN],
     labels={
         "ano_label": "Anos",
-        "razao_anual_exames_pct": "Razão anual de exames (%)",
+        "total_exames_25_64": "Exames registrados (quantidade)",
         "municipio": "Município",
     },
 )
@@ -560,9 +561,14 @@ fig_cob.for_each_annotation(
 fig_cob.update_traces(
     line=dict(width=2.7),
     marker=dict(size=7),
+    mode="lines+markers+text",
+    texttemplate="%{y:,.0f}",
+    textposition="top center",
+    textfont=dict(size=11, color=NAVY),
+    cliponaxis=False,
     connectgaps=False,
     hovertemplate=(
-        "Ano: %{x}<br>Razão anual de exames: %{y:.2f}%<extra></extra>"
+        "Ano: %{x}<br>Exames registrados: %{y:,.0f}<extra></extra>"
     ),
 )
 fig_cob.update_xaxes(
@@ -575,12 +581,12 @@ fig_cob.update_xaxes(
 )
 fig_cob.update_yaxes(
     matches=None, showticklabels=True, title_text=None,
-    rangemode="tozero", ticksuffix="%", tickformat=",.0f",
+    rangemode="tozero", ticksuffix="", tickformat=",.0f",
     gridcolor="#E9EDF1", zeroline=False,
 )
 fig_cob.add_annotation(
     x=-0.065, y=0.5, xref="paper", yref="paper",
-    text="Razão anual (%)", textangle=-90, showarrow=False,
+    text="Exames registrados", textangle=-90, showarrow=False,
     font=dict(size=13, color=NAVY),
 )
 fig_cob.add_annotation(
@@ -600,7 +606,7 @@ fig_cob.update_layout(
 export_cob = copy.deepcopy(fig_cob)
 export_cob.update_traces(
     mode="lines+markers+text",
-    texttemplate="%{y:.2f}%",
+    texttemplate="%{y:,.0f}",
     textposition="top center",
     textfont=dict(size=13, color=NAVY),
     cliponaxis=False,
@@ -608,7 +614,7 @@ export_cob.update_traces(
 export_cob.update_yaxes(automargin=True)
 export_cob.update_layout(
     title=dict(
-        text="Razão Anual de Exames na População-Alvo (25–64 anos)",
+        text="Quantidade anual de exames na população-alvo (25–64 anos)",
         x=0.5, xanchor="center",
         font=dict(size=24, color=NAVY),
     ),
@@ -618,7 +624,7 @@ export_cob.update_layout(
 )
 chart_with_right_click_download(
     fig_cob,
-    filename="faixa_etaria_razao_anual_exames_populacao_municipios.png",
+    filename="faixa_etaria_quantidade_anual_exames_25_64_municipios.png",
     height=fig_cob.layout.height,
     min_chart_width=820,
     export_fig=export_cob,
