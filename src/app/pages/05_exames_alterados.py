@@ -104,7 +104,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             )
 
     # Evolução anual com linhas independentes para os três grupos etários.
-    # Cada painel mostra um município, sem acumular as quantidades entre grupos.
+    # Dois municípios por linha (até seis linhas), sem acumular grupos.
     st.markdown("### Evolução anual de exames alterados por município e grupo etário")
     st.caption(
         "Linhas independentes por município para <25, 25–64 e ≥65 anos. "
@@ -189,9 +189,9 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 y="quantidade_alterados",
                 color="grupo_3",
                 facet_col="municipio",
-                facet_col_wrap=3,
-                facet_col_spacing=0.045,
-                facet_row_spacing=0.10,
+                facet_col_wrap=2,
+                facet_col_spacing=0.075,
+                facet_row_spacing=0.075,
                 category_orders={
                     "municipio": municipios_lines,
                     "ano_label": [str(ano) for ano in anos_lines],
@@ -252,9 +252,9 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 text="Anos", showarrow=False,
                 font=dict(size=13, color=NAVY),
             )
-            n_linhas = (len(municipios_lines) + 2) // 3
+            n_linhas = (len(municipios_lines) + 1) // 2
             fig_lines.update_layout(
-                height=max(480, 300 * n_linhas),
+                height=max(520, 360 * n_linhas),
                 showlegend=True,
                 legend=dict(
                     title_text="Grupo etário", orientation="h",
@@ -292,10 +292,10 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 ]
                 maximo = float(painel.max()) if not painel.empty else 0.0
                 amplitude = max(maximo, 3.0)
-                # plotly express com wrap=3 posiciona a primeira faceta
+                # plotly express com wrap=2 posiciona a primeira faceta
                 # na última linha, da esquerda para a direita.
                 numero_eixo = (
-                    (n_linhas - 1 - pos // 3) * 3 + pos % 3 + 1
+                    (n_linhas - 1 - pos // 2) * 2 + pos % 2 + 1
                 )
                 eixo = "yaxis" if numero_eixo == 1 else f"yaxis{numero_eixo}"
                 if eixo in export_lines.layout:
@@ -310,7 +310,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     x=0.5, xanchor="center",
                     font=dict(size=23, color=NAVY),
                 ),
-                height=max(950, 440 * n_linhas),
+                height=max(950, 465 * n_linhas),
                 width=1800,
                 legend=dict(
                     title_text="Grupo etário", orientation="h",
@@ -331,7 +331,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 fig_lines,
                 filename="exames_alterados_linhas_grupos_etarios_por_municipio.png",
                 height=fig_lines.layout.height,
-                min_chart_width=850,
+                min_chart_width=760,
                 export_fig=export_lines,
             )
 
