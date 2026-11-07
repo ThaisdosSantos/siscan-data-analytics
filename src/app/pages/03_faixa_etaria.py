@@ -473,26 +473,18 @@ with st.expander("Ver dados detalhados da distribuição etária (Q3)"):
 st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3).")
 
 # ---------------------------------------------------------------------------
-# Cobertura Populacional Anual (Q3) — consome gold.fato_evolucao_cobertura_municipios.
-# Fórmula: TC(%) = (exames 25–64 no ano t ÷ população feminina 25–64 IBGE 2022) × 100.
-# Denominador fixo (Censo 2022); 33% usado apenas como referência visual.
-# Produção de exames não permite identificar mulheres únicas / primeiro exame.
+# Razão anual de exames (Q3): exames registrados 25–64 / população feminina IBGE 2022 × 100.
+# Indicador de produção relativa à população, sem meta ou classificação.
 # ---------------------------------------------------------------------------
 import copy
 
-st.markdown("### Razão anual de exames por população feminina (25–64 anos)")
+st.markdown("### Razão Anual de Exames na População-Alvo (25–64 anos)")
 st.markdown(
     '<p style="font-size:18px;line-height:1.55;color:#334E68;'
     'font-weight:400;margin:4px 0 18px 0;">'
-    'Compara o total anual de exames citopatológicos registrados em mulheres '
-    'de 25 a 64 anos com a população feminina da mesma faixa etária (IBGE 2022). '
-    '<b>Razão anual (%) = exames registrados no município e ano ÷ população '
-    'feminina de 25–64 anos do município (IBGE 2022) × 100.</b> '
-    'A linha laranja em 33% é uma referência visual, não uma meta de cobertura '
-    'individual comprovada. Como os registros são agregados por exames, '
-    'não é possível identificar o primeiro procedimento nem mulheres únicas: '
-    'este indicador mede produção relativa à população, e não cobertura '
-    'efetiva de rastreamento.</p>',
+    'Razão anual (%) = exames registrados em mulheres de 25–64 anos '
+    'no município e ano ÷ população feminina de 25–64 anos do município '
+    '(Censo IBGE 2022) × 100.</p>',
     unsafe_allow_html=True,
 )
 
@@ -506,52 +498,31 @@ try:
     df_cob = gold_loader.filtered("cobertura")
 except ValueError:
     st.error(
-        "Não foi possível carregar o indicador de cobertura populacional. "
+        "Não foi possível carregar o indicador de razão anual de exames. "
         "Atualize a aplicação para sincronizar o catálogo de tabelas Gold."
     )
     st.stop()
 
 if not require(df_cob, ["municipio", "ano", "total_exames_25_64",
-                        "mulheres_25_64_anos", "taxa_cobertura_pct",
-                        "st_meta_ans"]):
+                        "mulheres_25_64_anos"]):
     st.stop()
 
 cob = df_cob.copy()
-cob["ano"] = pd.to_numeric(cob["ano"], errors="coerce")
-cob["taxa_cobertura_pct"] = pd.to_numeric(cob["taxa_cobertura_pct"], errors="coerce")
-cob = cob.dropna(subset=["municipio", "ano", "taxa_cobertura_pct"])
+for coluna in ("ano", "total_exames_25_64", "mulheres_25_64_anos"):
+    cob[coluna] = pd.to_numeric(cob[coluna], errors="coerce")
+cob = cob.dropna(
+    subset=["municipio", "ano", "total_exames_25_64", "mulheres_25_64_anos"]
+)
+cob = cob.loc[cob["mulheres_25_64_anos"] > 0].copy()
+# A razão é obtida diretamente da fórmula solicitada (não da classificação Gold).
+cob["razao_anual_exames_pct"] = (
+    cob["total_exames_25_64"] / cob["mulheres_25_64_anos"] * 100
+).round(2)
 cob["ano"] = cob["ano"].astype(int)
 if cob.empty:
-    st.info("Não há registros de cobertura populacional para os filtros selecionados.")
+    st.info("Não há registros para calcular a razão anual nos filtros selecionados.")
     st.stop()
 
-# KPIs respeitam os filtros globais de município e ano.
-exames_periodo = int(cob["total_exames_25_64"].sum(min_count=1))
-cobertura_media = float(cob["taxa_cobertura_pct"].mean())
-ano_recente = int(cob["ano"].max())
-na_meta_ano_recente = int(
-    cob.loc[cob["ano"].eq(ano_recente) & cob["taxa_cobertura_pct"].ge(33),
-            "municipio"].nunique()
-)
-municipios_filtrados = int(cob["municipio"].nunique())
-
-kpi_titles = [
-    "Exames 25–64 anos (período)",
-    "Razão média anual",
-    f"Municípios ≥33% em {ano_recente}",
-]
-kpi_values = [fmt_num(exames_periodo), fmt_pct(cobertura_media),
-              f"{na_meta_ano_recente} de {municipios_filtrados}"]
-kpi_helps = [
-    "Somatório de exames da população-alvo nos anos selecionados.",
-    "Média aritmética das razões município–ano selecionadas; não é a razão regional ponderada.",
-    "Municípios cuja razão anual de exames atingiu 33% ou mais; referência visual, não cobertura individual.",
-]
-for col, titulo, valor, ajuda in zip(st.columns(3), kpi_titles, kpi_values, kpi_helps):
-    with col:
-        st.metric(titulo, valor, help=ajuda)
-
-# Evolução da razão de produção por município, com referência visual de 33%.
 # Plotly conecta pontos na ordem das linhas do DataFrame, não os ordena
 # automaticamente pelo category_orders. Ordenar antes do px.line elimina
 # os segmentos que voltavam de 2023 para 2021, por exemplo.
@@ -563,7 +534,7 @@ anos_cob = sorted(cob["ano"].unique().tolist())
 fig_cob = px.line(
     cob,
     x="ano_label",
-    y="taxa_cobertura_pct",
+    y="razao_anual_exames_pct",
     facet_col="municipio",
     facet_col_wrap=3,
     facet_col_spacing=0.055,
@@ -576,7 +547,7 @@ fig_cob = px.line(
     color_discrete_sequence=[OCEAN],
     labels={
         "ano_label": "Anos",
-        "taxa_cobertura_pct": "Exames por 100 mulheres (%)",
+        "razao_anual_exames_pct": "Razão anual de exames (%)",
         "municipio": "Município",
     },
 )
@@ -586,14 +557,12 @@ fig_cob.for_each_annotation(
         font=dict(size=13, color=NAVY),
     )
 )
-# Referência visual de 33% em todos os subgráficos (não comprova cobertura).
-fig_cob.add_hline(y=33, line_dash="dash", line_color=ORANGE, line_width=1.6)
 fig_cob.update_traces(
     line=dict(width=2.7),
     marker=dict(size=7),
     connectgaps=False,
     hovertemplate=(
-        "Ano: %{x}<br>Exames por 100 mulheres: %{y:.2f}%<extra></extra>"
+        "Ano: %{x}<br>Razão anual de exames: %{y:.2f}%<extra></extra>"
     ),
 )
 fig_cob.update_xaxes(
@@ -611,7 +580,7 @@ fig_cob.update_yaxes(
 )
 fig_cob.add_annotation(
     x=-0.065, y=0.5, xref="paper", yref="paper",
-    text="Exames / população (%)", textangle=-90, showarrow=False,
+    text="Razão anual (%)", textangle=-90, showarrow=False,
     font=dict(size=13, color=NAVY),
 )
 fig_cob.add_annotation(
@@ -639,7 +608,7 @@ export_cob.update_traces(
 export_cob.update_yaxes(automargin=True)
 export_cob.update_layout(
     title=dict(
-        text="Razão anual de exames por população feminina (25–64 anos)",
+        text="Razão Anual de Exames na População-Alvo (25–64 anos)",
         x=0.5, xanchor="center",
         font=dict(size=24, color=NAVY),
     ),
@@ -655,11 +624,11 @@ chart_with_right_click_download(
     export_fig=export_cob,
 )
 
-# Matriz município × ano da razão, com gradiente e referência de 33%.
+# Tabela município × ano da razão calculada diretamente pela fórmula.
 st.markdown("#### Razão anual de exames por município e ano (%)")
 pivo_cob = (
     cob.pivot_table(index="municipio", columns="ano",
-                    values="taxa_cobertura_pct", aggfunc="mean")
+                    values="razao_anual_exames_pct", aggfunc="mean")
     .reindex(municipios_cob)
 )
 pivo_cob.columns = [str(coluna) for coluna in pivo_cob.columns]
@@ -689,8 +658,7 @@ st.caption(
 with st.expander("Ver dados detalhados da razão anual (Q3)"):
     detalhe_cob = cob[
         ["codigo_municipio", "municipio", "ano", "total_exames_25_64",
-         "mulheres_25_64_anos", "taxa_cobertura_pct", "meta_ans_pct",
-         "st_meta_ans"]
+         "mulheres_25_64_anos", "razao_anual_exames_pct"]
     ].sort_values(["municipio", "ano"])
     export_table(detalhe_cob, "siscan_razao_anual_exames_populacao.csv")
 st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3).")
