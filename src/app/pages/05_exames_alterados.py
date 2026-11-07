@@ -99,55 +99,55 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 height=380, export_fig=macro_export,
             )
 
-    # Evolução regional de quantidades por grupo etário; utiliza a mesma
-    # tabela Gold filtrada por anos e municípios. Não calcular percentuais
-    # nem transformar ausência de competência em registro zero.
-    st.markdown("### Evolução anual de exames alterados por grupo etário")
+    # Evolução anual com áreas empilhadas por município. Cada painel mostra
+    # apenas os exames do próprio município, subdivididos em três grupos da Gold.
+    st.markdown("### Evolução anual de exames alterados por município e grupo etário")
     st.caption(
-        "Áreas empilhadas com a quantidade anual de exames alterados nos grupos "
-        "<25, 25–64 e ≥65 anos. A altura total representa a soma dos três grupos; "
-        "passe o mouse para consultar o valor de cada faixa."
+        "Áreas empilhadas por município: <25, 25–64 e ≥65 anos. "
+        "A altura total em cada ano corresponde aos exames alterados daquele "
+        "município. Cada painel possui escala própria; os filtros globais são respeitados."
     )
     if "ano" not in df.columns:
         st.info("A evolução anual requer a coluna 'ano' na tabela Gold.")
     else:
-        area_source = df.dropna(
-            subset=["ano", "grupo_3", "quantidade_alterados"]
-        ).copy()
-        area_source["ano"] = pd.to_numeric(
-            area_source["ano"], errors="coerce"
-        )
+        area_source = df.copy()
+        area_source["ano"] = pd.to_numeric(area_source["ano"], errors="coerce")
         area_source["quantidade_alterados"] = pd.to_numeric(
             area_source["quantidade_alterados"], errors="coerce"
         )
         area_source = area_source.dropna(
-            subset=["ano", "quantidade_alterados"]
+            subset=["municipio", "ano", "grupo_3", "quantidade_alterados"]
         )
         area_source = area_source.loc[
             area_source["grupo_3"].isin(ordem_grupos)
             & (area_source["quantidade_alterados"] >= 0)
-        ]
+        ].copy()
         if area_source.empty:
-            st.info("Não há exames alterados por grupo etário no período selecionado.")
+            st.info("Não há exames alterados por município e grupo etário no período selecionado.")
         else:
             area_yearly = (
                 area_source.groupby(
-                    ["ano", "grupo_3"], as_index=False
+                    ["municipio", "ano", "grupo_3"], as_index=False
                 )["quantidade_alterados"].sum(min_count=1)
             )
             area_yearly["ano"] = area_yearly["ano"].astype(int)
-            years_area = sorted(area_yearly["ano"].unique().tolist())
-            # As três categorias estão presentes mesmo se uma faixa não tiver
-            # exame alterado em um ano existente. Ausências não são convertidas
-            # em zeros; falta de competência não produz linha artificial.
             area_yearly["ano_label"] = area_yearly["ano"].astype(str)
-            area_fig = px.area(
+            municipios_area = sorted(
+                area_yearly["municipio"].unique(), key=lambda name: name.casefold()
+            )
+            anos_area = sorted(area_yearly["ano"].unique().tolist())
+            fig_area = px.area(
                 area_yearly,
                 x="ano_label",
                 y="quantidade_alterados",
                 color="grupo_3",
+                facet_col="municipio",
+                facet_col_wrap=3,
+                facet_col_spacing=0.045,
+                facet_row_spacing=0.10,
                 category_orders={
-                    "ano_label": [str(y) for y in years_area],
+                    "municipio": municipios_area,
+                    "ano_label": [str(ano) for ano in anos_area],
                     "grupo_3": ordem_grupos,
                 },
                 color_discrete_map={
@@ -159,74 +159,118 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     "ano_label": "Anos",
                     "quantidade_alterados": "Exames alterados",
                     "grupo_3": "Grupo etário",
+                    "municipio": "Município",
                 },
                 markers=True,
             )
-            area_fig.update_traces(
-                hovertemplate=(
-                    "Ano: %{x}<br>Quantidade de exames alterados: "
-                    "%{y:,.0f}<extra>%{fullData.name}</extra>"
-                ),
-                line=dict(width=1.5),
-                marker=dict(size=7),
+            fig_area.for_each_annotation(
+                lambda annotation: annotation.update(
+                    text=annotation.text.split("=", 1)[-1],
+                    font=dict(size=12, color=NAVY),
+                )
             )
-            area_fig.update_xaxes(
+            fig_area.update_traces(
+                hovertemplate=(
+                    "Ano: %{x}<br>Exames alterados: %{y:,.0f}"
+                    "<extra>%{fullData.name}</extra>"
+                ),
+                line=dict(width=1.6),
+                marker=dict(size=5),
+                connectgaps=False,
+            )
+            fig_area.update_xaxes(
                 type="category",
                 categoryorder="array",
-                categoryarray=[str(y) for y in years_area],
-                title_text="Anos",
+                categoryarray=[str(ano) for ano in anos_area],
+                showticklabels=True,
+                matches=None,
+                title_text=None,
                 showgrid=False,
             )
-            area_fig.update_yaxes(
-                title_text="Quantidade de exames alterados",
-                rangemode="tozero", tickformat=",.0f",
+            fig_area.update_yaxes(
+                matches=None,
+                showticklabels=True,
+                title_text=None,
+                rangemode="tozero",
+                tickformat=",.0f",
                 gridcolor="#E9EDF1",
             )
-            area_fig.update_layout(
-                height=440,
-                hovermode="x unified",
+            fig_area.add_annotation(
+                x=-0.065, y=0.5, xref="paper", yref="paper",
+                text="Exames alterados", textangle=-90,
+                showarrow=False, font=dict(size=13, color=NAVY),
+            )
+            fig_area.add_annotation(
+                x=0.5, y=-0.025, xref="paper", yref="paper",
+                text="Anos", showarrow=False,
+                font=dict(size=13, color=NAVY),
+            )
+            n_linhas = (len(municipios_area) + 2) // 3
+            fig_area.update_layout(
+                height=max(480, 300 * n_linhas),
+                showlegend=True,
                 legend=dict(
                     title_text="Grupo etário", orientation="h",
-                    x=0.5, xanchor="center",
-                    y=1.05, yanchor="bottom",
+                    x=0.5, xanchor="center", y=1.06, yanchor="bottom",
+                    font=dict(size=12, color=NAVY),
                 ),
-                margin=dict(l=75, r=30, t=95, b=65),
+                margin=dict(l=95, r=25, t=115, b=95),
                 paper_bgcolor="#FFFFFF",
                 plot_bgcolor="#FFFFFF",
-                font=dict(color=NAVY),
+                font=dict(color=NAVY, size=11),
             )
-            # Exportação estática inclui totais por ano sem depender do hover.
-            area_export = copy.deepcopy(area_fig)
-            totals_area = (
-                area_yearly.groupby("ano", as_index=False)[
-                    "quantidade_alterados"
-                ].sum(min_count=1)
+            # Exportação em resolução maior, com totais anuais nos painéis.
+            # Posicionamento row/col segue a organização de facet_col_wrap=3.
+            export_area = copy.deepcopy(fig_area)
+            totais = (
+                area_yearly.groupby(
+                    ["municipio", "ano"], as_index=False
+                )["quantidade_alterados"].sum(min_count=1)
             )
-            max_total = float(totals_area["quantidade_alterados"].max())
-            if max_total > 0:
-                area_export.update_yaxes(range=[0, max_total * 1.18])
-            for _, item in totals_area.iterrows():
-                area_export.add_annotation(
-                    x=str(int(item["ano"])),
-                    y=float(item["quantidade_alterados"]),
-                    text=f"{int(item['quantidade_alterados']):,}",
-                    showarrow=False, yshift=16,
-                    font=dict(size=15, color=NAVY),
+            import plotly.graph_objects as go
+            for pos, municipio in enumerate(municipios_area):
+                serie = totais.loc[totais["municipio"].eq(municipio)]
+                if serie.empty:
+                    continue
+                row = n_linhas - (pos // 3)
+                col = (pos % 3) + 1
+                export_area.add_trace(
+                    go.Scatter(
+                        x=serie["ano"].astype(str).tolist(),
+                        y=serie["quantidade_alterados"].tolist(),
+                        text=[
+                            f"{int(valor):,}"
+                            for valor in serie["quantidade_alterados"]
+                        ],
+                        mode="text",
+                        textposition="top center",
+                        textfont=dict(size=12, color=NAVY),
+                        showlegend=False,
+                        hoverinfo="skip",
+                        cliponaxis=False,
+                    ),
+                    row=row, col=col,
                 )
-            area_export.update_layout(
+            export_area.update_layout(
                 title=dict(
-                    text="Evolução anual de exames alterados por grupo etário",
+                    text="Evolução anual de exames alterados por município e grupo etário",
                     x=0.5, xanchor="center",
-                    font=dict(size=22, color=NAVY),
+                    font=dict(size=21, color=NAVY),
                 ),
-                margin=dict(l=90, r=55, t=145, b=90),
-                height=550,
+                height=max(850, 370 * n_linhas),
+                width=1500,
+                margin=dict(l=115, r=65, t=155, b=100),
+            )
+            st.caption(
+                "No celular, deslize o gráfico para os lados. "
+                "Para baixar a versão com totais anuais, use o botão direito (PNG)."
             )
             chart_with_right_click_download(
-                area_fig,
-                filename="exames_alterados_evolucao_anual_areas_empilhadas.png",
-                height=440,
-                export_fig=area_export,
+                fig_area,
+                filename="exames_alterados_areas_empilhadas_por_municipio.png",
+                height=fig_area.layout.height,
+                min_chart_width=850,
+                export_fig=export_area,
             )
 
     # Série anual por município: utiliza as quantidades já existentes na Gold.
