@@ -59,7 +59,7 @@ sidebar_filters()
 page_header(
     "Faixa etária · Q3",
     "Faixa etária e produção de exames",
-    "Analisa a distribuição dos exames por faixa etária nos municípios da 10ª CRS, a evolução anual da produção entre 2020 e 2025 e a comparação dos volumes registrados com uma referência populacional exploratória.",
+    "Apresenta a distribuição dos exames por faixa etária, as diferenças entre municípios e a evolução da produção, incluindo indicadores que relacionam o volume de exames à população feminina de 25 a 64 anos.",
 )
 
 st.markdown("""
