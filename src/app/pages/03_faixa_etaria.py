@@ -133,14 +133,40 @@ if unknown:
 
 sums = groups.groupby("grupo")["quantidade_exames"].sum()
 total = sums.sum()
-labels = ["25–64 anos", "<25 anos", "≥65 anos"]
-titles = ["População-alvo (25–64 anos)", "Menores de 25 anos", "65 anos ou mais"]
-descriptions = ["Dentro do grupo etário analisado", "Fora da faixa-alvo: <25 anos", "Fora da faixa-alvo: ≥65 anos"]
+# Indicadores em ordem crescente de idade e com quantidades legíveis.
+labels = ["<25 anos", "25–64 anos", "≥65 anos"]
+titles = ["Menores de 25 anos", "População-alvo (25–64 anos)", "65 anos ou mais"]
+descriptions = [
+    "Abaixo da faixa-alvo",
+    "Na faixa-alvo",
+    "Acima da faixa-alvo",
+]
+st.markdown(
+    """
+    <style>
+    .q3-kpi-detail {
+        color:#1A3B5C; font:500 16px/1.5 Manrope,Arial,sans-serif;
+        margin:8px 0 16px; overflow-wrap:anywhere;
+    }
+    .q3-kpi-detail strong {
+        font-weight:800; color:#143650;
+    }
+    @media(max-width:768px) {
+        .q3-kpi-detail {font-size:15px;line-height:1.45;}
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 for col, label, title, desc in zip(st.columns(3), labels, titles, descriptions):
     with col:
         value = sums.get(label, 0)
         st.metric(title, fmt_pct(pct(value, total)), help=f"{fmt_num(value)} exames. {desc}")
-        st.caption(f"{fmt_num(value)} exames · {desc}")
+        st.markdown(
+            f'<p class="q3-kpi-detail"><strong>{fmt_num(value)} exames</strong>'
+            f' · {desc}</p>',
+            unsafe_allow_html=True,
+        )
 
 agg = groups.groupby(["municipio", "grupo"], as_index=False)["quantidade_exames"].sum()
 total_city = agg.groupby("municipio")["quantidade_exames"].transform("sum")
