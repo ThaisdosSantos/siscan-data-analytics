@@ -201,7 +201,7 @@ st.markdown("""
 with a:
     with st.container(border=True, key="age_donut_card"):
         # Rosca e legenda conforme referência visual; valores são calculados da Gold.
-        donut_order = ["25–64 anos", "≥65 anos", "<25 anos"]
+        donut_order = ["<25 anos", "25–64 anos", "≥65 anos"]
         donut_colors = {"25–64 anos": "#0076A5", "≥65 anos": "#4A9FD8", "<25 anos": "#EE5325"}
         donut_values = [float(sums.get(group, 0)) for group in donut_order]
         target_percent = pct(sums.get("25–64 anos", 0), total)
