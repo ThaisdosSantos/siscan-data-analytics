@@ -103,45 +103,45 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 height=380, export_fig=macro_export,
             )
 
-    # Evolução anual com áreas empilhadas por município. Cada painel mostra
-    # apenas os exames do próprio município, subdivididos em três grupos da Gold.
+    # Evolução anual com linhas independentes para os três grupos etários.
+    # Cada painel mostra um município, sem acumular as quantidades entre grupos.
     st.markdown("### Evolução anual de exames alterados por município e grupo etário")
     st.caption(
-        "Áreas empilhadas por município: <25, 25–64 e ≥65 anos. "
-        "A altura total em cada ano corresponde aos exames alterados daquele "
-        "município. Cada painel possui escala própria; os filtros globais são respeitados."
+        "Linhas independentes por município para <25, 25–64 e ≥65 anos. "
+        "Cada ponto representa a quantidade de exames alterados do próprio grupo, "
+        "sem empilhamento. Cada painel possui escala própria."
     )
     if "ano" not in df.columns:
         st.info("A evolução anual requer a coluna 'ano' na tabela Gold.")
     else:
-        area_source = df.copy()
-        area_source["ano"] = pd.to_numeric(area_source["ano"], errors="coerce")
-        area_source["quantidade_alterados"] = pd.to_numeric(
-            area_source["quantidade_alterados"], errors="coerce"
+        lines_source = df.copy()
+        lines_source["ano"] = pd.to_numeric(lines_source["ano"], errors="coerce")
+        lines_source["quantidade_alterados"] = pd.to_numeric(
+            lines_source["quantidade_alterados"], errors="coerce"
         )
-        area_source = area_source.dropna(
+        lines_source = lines_source.dropna(
             subset=["municipio", "ano", "grupo_3", "quantidade_alterados"]
         )
-        area_source = area_source.loc[
-            area_source["grupo_3"].isin(ordem_grupos)
-            & (area_source["quantidade_alterados"] >= 0)
+        lines_source = lines_source.loc[
+            lines_source["grupo_3"].isin(ordem_grupos)
+            & (lines_source["quantidade_alterados"] >= 0)
         ].copy()
-        if area_source.empty:
+        if lines_source.empty:
             st.info("Não há exames alterados por município e grupo etário no período selecionado.")
         else:
-            area_yearly = (
-                area_source.groupby(
+            lines_yearly = (
+                lines_source.groupby(
                     ["municipio", "ano", "grupo_3"], as_index=False
                 )["quantidade_alterados"].sum(min_count=1)
             )
-            area_yearly["ano"] = area_yearly["ano"].astype(int)
-            area_yearly["ano_label"] = area_yearly["ano"].astype(str)
-            municipios_area = sorted(
-                area_yearly["municipio"].unique(), key=lambda name: name.casefold()
+            lines_yearly["ano"] = lines_yearly["ano"].astype(int)
+            lines_yearly["ano_label"] = lines_yearly["ano"].astype(str)
+            municipios_lines = sorted(
+                lines_yearly["municipio"].unique(), key=lambda name: name.casefold()
             )
-            anos_area = sorted(area_yearly["ano"].unique().tolist())
-            fig_area = px.area(
-                area_yearly,
+            anos_lines = sorted(lines_yearly["ano"].unique().tolist())
+            fig_lines = px.line(
+                lines_yearly,
                 x="ano_label",
                 y="quantidade_alterados",
                 color="grupo_3",
@@ -150,8 +150,8 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 facet_col_spacing=0.045,
                 facet_row_spacing=0.10,
                 category_orders={
-                    "municipio": municipios_area,
-                    "ano_label": [str(ano) for ano in anos_area],
+                    "municipio": municipios_lines,
+                    "ano_label": [str(ano) for ano in anos_lines],
                     "grupo_3": ordem_grupos,
                 },
                 color_discrete_map={
@@ -167,31 +167,31 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 },
                 markers=True,
             )
-            fig_area.for_each_annotation(
+            fig_lines.for_each_annotation(
                 lambda annotation: annotation.update(
                     text=annotation.text.split("=", 1)[-1],
                     font=dict(size=12, color=NAVY),
                 )
             )
-            fig_area.update_traces(
+            fig_lines.update_traces(
                 hovertemplate=(
                     "Ano: %{x}<br>Exames alterados: %{y:,.0f}"
                     "<extra>%{fullData.name}</extra>"
                 ),
-                line=dict(width=1.6),
-                marker=dict(size=5),
+                line=dict(width=2.5),
+                marker=dict(size=7),
                 connectgaps=False,
             )
-            fig_area.update_xaxes(
+            fig_lines.update_xaxes(
                 type="category",
                 categoryorder="array",
-                categoryarray=[str(ano) for ano in anos_area],
+                categoryarray=[str(ano) for ano in anos_lines],
                 showticklabels=True,
                 matches=None,
                 title_text=None,
                 showgrid=False,
             )
-            fig_area.update_yaxes(
+            fig_lines.update_yaxes(
                 matches=None,
                 showticklabels=True,
                 title_text=None,
@@ -199,18 +199,18 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 tickformat=",.0f",
                 gridcolor="#E9EDF1",
             )
-            fig_area.add_annotation(
+            fig_lines.add_annotation(
                 x=-0.065, y=0.5, xref="paper", yref="paper",
                 text="Exames alterados", textangle=-90,
                 showarrow=False, font=dict(size=13, color=NAVY),
             )
-            fig_area.add_annotation(
+            fig_lines.add_annotation(
                 x=0.5, y=-0.025, xref="paper", yref="paper",
                 text="Anos", showarrow=False,
                 font=dict(size=13, color=NAVY),
             )
-            n_linhas = (len(municipios_area) + 2) // 3
-            fig_area.update_layout(
+            n_linhas = (len(municipios_lines) + 2) // 3
+            fig_lines.update_layout(
                 height=max(480, 300 * n_linhas),
                 showlegend=True,
                 legend=dict(
@@ -223,56 +223,23 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 plot_bgcolor="#FFFFFF",
                 font=dict(color=NAVY, size=11),
             )
-            # Na área empilhada, a borda superior é a SOMA dos grupos;
-            # portanto nunca rotular essa borda como valor de uma faixa.
-            # O PNG mostra a contagem de CADA grupo dentro da sua própria faixa.
-            export_area = copy.deepcopy(fig_area)
-            import plotly.graph_objects as go
-            for pos, municipio in enumerate(municipios_area):
-                serie = area_yearly.loc[
-                    area_yearly["municipio"].eq(municipio)
-                ]
-                if serie.empty:
-                    continue
-                row = n_linhas - (pos // 3)
-                col = (pos % 3) + 1
-                por_grupo = (
-                    serie.pivot_table(
-                        index="ano", columns="grupo_3",
-                        values="quantidade_alterados", aggfunc="sum"
-                    )
-                    .reindex(columns=ordem_grupos)
+            # No PNG, os rótulos representam cada grupo individualmente.
+            # Nunca colocar um total acumulado em uma das três linhas.
+            export_lines = copy.deepcopy(fig_lines)
+            label_positions = {
+                "<25 anos": "bottom left",
+                "25–64 anos": "top center",
+                "≥65 anos": "bottom right",
+            }
+            for trace in export_lines.data:
+                trace.update(
+                    mode="lines+markers+text",
+                    texttemplate="%{y:,.0f}",
+                    textposition=label_positions.get(trace.name, "top center"),
+                    textfont=dict(size=11, color=NAVY),
+                    cliponaxis=False,
                 )
-                # A posição vertical central de cada área é:
-                # soma dos grupos anteriores + metade do próprio grupo.
-                base = pd.Series(0.0, index=por_grupo.index)
-                for grupo in ordem_grupos:
-                    valores = por_grupo[grupo]
-                    meio = base + valores.fillna(0) / 2
-                    validos = valores.notna() & (valores > 0)
-                    if validos.any():
-                        export_area.add_trace(
-                            go.Scatter(
-                                x=por_grupo.index[validos].astype(str).tolist(),
-                                y=meio[validos].tolist(),
-                                text=[
-                                    f"{int(v):,}" for v in valores[validos]
-                                ],
-                                mode="text",
-                                textposition="middle center",
-                                textfont=dict(
-                                    size=11,
-                                    color="#FFFFFF" if grupo == "25–64 anos" else NAVY,
-                                    family="Arial",
-                                ),
-                                showlegend=False,
-                                hoverinfo="skip",
-                                cliponaxis=False,
-                            ),
-                            row=row, col=col,
-                        )
-                    base = base + valores.fillna(0)
-            export_area.update_layout(
+            export_lines.update_layout(
                 title=dict(
                     text="Evolução anual de exames alterados por município e grupo etário",
                     x=0.5, xanchor="center", y=0.995,
@@ -289,14 +256,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             )
             st.caption(
                 "No celular, deslize o gráfico para os lados. "
-                "No PNG, os números indicam os exames de cada faixa dentro da sua área."
+                "No PNG, os valores de cada linha são identificados individualmente."
             )
             chart_with_right_click_download(
-                fig_area,
-                filename="exames_alterados_areas_empilhadas_por_municipio.png",
-                height=fig_area.layout.height,
+                fig_lines,
+                filename="exames_alterados_linhas_grupos_etarios_por_municipio.png",
+                height=fig_lines.layout.height,
                 min_chart_width=850,
-                export_fig=export_area,
+                export_fig=export_lines,
             )
 
     # Série anual por município: utiliza as quantidades já existentes na Gold.
