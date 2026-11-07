@@ -282,10 +282,10 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 width=1500,
                 legend=dict(
                     title_text="Grupo etário", orientation="h",
-                    x=0.5, xanchor="center", y=1.035, yanchor="bottom",
+                    x=0.5, xanchor="center", y=-0.10, yanchor="top",
                     font=dict(size=14, color=NAVY),
                 ),
-                margin=dict(l=115, r=65, t=190, b=110),
+                margin=dict(l=115, r=65, t=135, b=160),
             )
             st.caption(
                 "No celular, deslize o gráfico para os lados. "
