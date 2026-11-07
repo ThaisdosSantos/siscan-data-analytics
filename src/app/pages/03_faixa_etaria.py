@@ -414,7 +414,7 @@ with b:
             export_fig=export_fig,
         )
 
-with st.expander("Ver dados detalhados da distribuição etária (Q3)"):
+with st.expander("Ver tabela detalhada de exames por município e faixa etária"):
     export_table(agg, "siscan_faixa_etaria.csv")
 
 # ---------------------------------------------------------------------------
