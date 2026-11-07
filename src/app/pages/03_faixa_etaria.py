@@ -497,11 +497,36 @@ chart_with_right_click_download(
 
 # Tabela município × ano da razão calculada diretamente pela fórmula.
 st.markdown("#### Razão anual de exames por município e ano (%)")
-pivo_cob = (
-    cob.pivot_table(index="municipio", columns="ano",
-                    values="razao_anual_exames_pct", aggfunc="mean")
-    .reindex(municipios_cob)
+ordenar_tabela_razao = st.selectbox(
+    "Ordenar por",
+    options=["A–Z", "Maior para menor"],
+    index=0,
+    key="ordenacao_tabela_razao_anual_q3",
+    help=(
+        "Maior para menor considera a média das razões anuais (%) "
+        "de cada município nos anos selecionados. Percentuais não são somados."
+    ),
 )
+pivo_cob = cob.pivot_table(
+    index="municipio",
+    columns="ano",
+    values="razao_anual_exames_pct",
+    aggfunc="mean",
+)
+if ordenar_tabela_razao == "Maior para menor":
+    # Média calculada apenas sobre os anos disponíveis no filtro atual.
+    medias_razao = pivo_cob.mean(axis=1, skipna=True)
+    ordem_tabela_razao = sorted(
+        pivo_cob.index,
+        key=lambda municipio: (
+            -float(medias_razao.loc[municipio])
+            if pd.notna(medias_razao.loc[municipio]) else float("inf"),
+            normalize(municipio),
+        ),
+    )
+else:
+    ordem_tabela_razao = sorted(pivo_cob.index, key=normalize)
+pivo_cob = pivo_cob.reindex(ordem_tabela_razao)
 pivo_cob.columns = [str(coluna) for coluna in pivo_cob.columns]
 # Mesmo padrão visual das tabelas detalhadas do dashboard: cabeçalho
 # azul-marinho e linhas alternadas, sem gradiente ou cores de classificação.
