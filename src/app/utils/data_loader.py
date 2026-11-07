@@ -14,6 +14,7 @@ TABLES = {
  "etaria":"fato_conformidade_faixa_etaria",
  "adequabilidade":"fato_adequabilidade_amostras",
  "alterados":"fato_exames_alterados",
+ "cobertura":"fato_evolucao_cobertura_municipios",
 }
 MUNICIPIOS = {
  "430040":"Alegrete", "430187":"Barra do Quaraí", "431060":"Itaqui",
@@ -84,7 +85,8 @@ def load_table(table_key, source="CSV local"):
     if "mes" in df: df["mes"]=pd.to_numeric(df["mes"],errors="coerce")
     if "dt_competencia" in df: df["dt_competencia"]=pd.to_datetime(df["dt_competencia"],errors="coerce")
     for col in ["quantidade","quantidade_exames","quantidade_amostras",
-                "exames_mes","exames_referencia_setembro","quantidade_alterados","total_exames_validos"]:
+                "exames_mes","exames_referencia_setembro","quantidade_alterados","total_exames_validos",
+                "total_exames_25_64","mulheres_25_64_anos","taxa_cobertura_pct","meta_ans_pct"]:
         if col in df: df[col]=pd.to_numeric(df[col],errors="coerce")
     return df
 

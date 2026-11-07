@@ -471,3 +471,195 @@ else:
 with st.expander("Ver dados detalhados da distribuição etária (Q3)"):
     export_table(agg, "siscan_faixa_etaria.csv")
 st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3).")
+
+# ---------------------------------------------------------------------------
+# Cobertura Populacional Anual (Q3) — consome gold.fato_evolucao_cobertura_municipios.
+# Fórmula: TC(%) = (exames 25–64 no ano t ÷ população feminina 25–64 IBGE 2022) × 100.
+# Denominador fixo (Censo 2022); meta de referência ANS/MS: 33% ao ano.
+# ---------------------------------------------------------------------------
+import copy
+
+st.markdown("### Taxa de cobertura populacional anual (25–64 anos)")
+st.markdown(
+    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
+    'font-weight:400;margin:4px 0 18px 0;">'
+    'Relaciona o volume anual de exames da população-alvo (25 a 64 anos) com o '
+    'teto populacional feminino fixo do Censo IBGE 2022 de cada município: '
+    '<b>Taxa de Cobertura Anual do ano t (%) = (exames realizados na faixa '
+    '25–64 anos no ano t ÷ população feminina alvo IBGE 2022 de 25–64 anos) '
+    '× 100</b>. A linha tracejada laranja marca a meta de referência de 33% ao '
+    'ano (ANS/MS). Como o denominador é fixo, a série reflete variação na '
+    'oferta/realização de exames, não na população.</p>',
+    unsafe_allow_html=True,
+)
+
+df_cob = filtered("cobertura")
+if not require(df_cob, ["municipio", "ano", "total_exames_25_64",
+                        "mulheres_25_64_anos", "taxa_cobertura_pct",
+                        "st_meta_ans"]):
+    st.stop()
+
+cob = df_cob.copy()
+cob["ano"] = pd.to_numeric(cob["ano"], errors="coerce")
+cob["taxa_cobertura_pct"] = pd.to_numeric(cob["taxa_cobertura_pct"], errors="coerce")
+cob = cob.dropna(subset=["municipio", "ano", "taxa_cobertura_pct"])
+cob["ano"] = cob["ano"].astype(int)
+if cob.empty:
+    st.info("Não há registros de cobertura populacional para os filtros selecionados.")
+    st.stop()
+
+# KPIs respeitam os filtros globais de município e ano.
+exames_periodo = int(cob["total_exames_25_64"].sum(min_count=1))
+cobertura_media = float(cob["taxa_cobertura_pct"].mean())
+ano_recente = int(cob["ano"].max())
+na_meta_ano_recente = int(
+    cob.loc[cob["ano"].eq(ano_recente) & cob["taxa_cobertura_pct"].ge(33),
+            "municipio"].nunique()
+)
+municipios_filtrados = int(cob["municipio"].nunique())
+
+kpi_titles = [
+    "Exames 25–64 anos (período)",
+    "Cobertura média anual",
+    f"Municípios na meta em {ano_recente}",
+]
+kpi_values = [fmt_num(exames_periodo), fmt_pct(cobertura_media),
+              f"{na_meta_ano_recente} de {municipios_filtrados}"]
+kpi_helps = [
+    "Somatório de exames da população-alvo nos anos selecionados.",
+    "Média das taxas anuais dos municípios selecionados (denominador fixo IBGE 2022).",
+    "Municípios com taxa de cobertura anual ≥ 33% no ano mais recente do recorte.",
+]
+for col, titulo, valor, ajuda in zip(st.columns(3), kpi_titles, kpi_values, kpi_helps):
+    with col:
+        st.metric(titulo, valor, help=ajuda)
+
+# Evolução da taxa de cobertura por município, com meta ANS de 33%.
+cob["ano_label"] = cob["ano"].astype(str)
+municipios_cob = sorted(cob["municipio"].dropna().unique(), key=normalize)
+anos_cob = sorted(cob["ano"].unique().tolist())
+
+fig_cob = px.line(
+    cob,
+    x="ano_label",
+    y="taxa_cobertura_pct",
+    facet_col="municipio",
+    facet_col_wrap=3,
+    facet_col_spacing=0.055,
+    facet_row_spacing=0.09,
+    category_orders={
+        "municipio": municipios_cob,
+        "ano_label": [str(ano) for ano in anos_cob],
+    },
+    markers=True,
+    color_discrete_sequence=[OCEAN],
+    labels={
+        "ano_label": "Anos",
+        "taxa_cobertura_pct": "Taxa de cobertura anual (%)",
+        "municipio": "Município",
+    },
+)
+fig_cob.for_each_annotation(
+    lambda annotation: annotation.update(
+        text=annotation.text.split("=", 1)[-1],
+        font=dict(size=13, color=NAVY),
+    )
+)
+# Meta ANS 33% em todos os subgráficos.
+fig_cob.add_hline(y=33, line_dash="dash", line_color=ORANGE, line_width=1.6)
+fig_cob.update_traces(
+    line=dict(width=2.7),
+    marker=dict(size=7),
+    connectgaps=False,
+    hovertemplate=(
+        "Ano: %{x}<br>Taxa de cobertura: %{y:.2f}%<extra></extra>"
+    ),
+)
+fig_cob.update_xaxes(
+    matches=None,
+    type="category",
+    categoryorder="array",
+    categoryarray=[str(ano) for ano in anos_cob],
+    showticklabels=True,
+    title_text=None,
+)
+fig_cob.update_yaxes(
+    matches=None, showticklabels=True, title_text=None,
+    rangemode="tozero", ticksuffix="%", tickformat=",.0f",
+    gridcolor="#E9EDF1", zeroline=False,
+)
+fig_cob.add_annotation(
+    x=-0.065, y=0.5, xref="paper", yref="paper",
+    text="Taxa de cobertura (%)", textangle=-90, showarrow=False,
+    font=dict(size=13, color=NAVY),
+)
+fig_cob.add_annotation(
+    x=0.5, y=-0.025, xref="paper", yref="paper",
+    text="Anos", showarrow=False,
+    font=dict(size=13, color=NAVY),
+)
+qtd_linhas_cob = (len(municipios_cob) + 2) // 3
+fig_cob.update_layout(
+    height=max(520, 330 * qtd_linhas_cob),
+    showlegend=False,
+    margin=dict(l=100, r=25, t=65, b=110),
+    paper_bgcolor="#FFFFFF",
+    plot_bgcolor="#FFFFFF",
+    font=dict(color=NAVY, size=11),
+)
+export_cob = copy.deepcopy(fig_cob)
+export_cob.update_traces(
+    mode="lines+markers+text",
+    texttemplate="%{y:.2f}%",
+    textposition="top center",
+    textfont=dict(size=13, color=NAVY),
+    cliponaxis=False,
+)
+export_cob.update_yaxes(automargin=True)
+export_cob.update_layout(
+    title=dict(
+        text="Taxa de cobertura populacional anual (25–64 anos) por município",
+        x=0.5, xanchor="center",
+        font=dict(size=24, color=NAVY),
+    ),
+    width=1650,
+    height=max(850, 430 * qtd_linhas_cob),
+    margin=dict(l=115, r=65, t=135, b=130),
+)
+chart_with_right_click_download(
+    fig_cob,
+    filename="faixa_etaria_cobertura_populacional_municipios.png",
+    height=fig_cob.layout.height,
+    min_chart_width=820,
+    export_fig=export_cob,
+)
+
+# Matriz município × ano da taxa de cobertura, com gradiente 0 → meta 33%.
+st.markdown("#### Taxa de cobertura anual por município e ano (%)")
+pivo_cob = (
+    cob.pivot_table(index="municipio", columns="ano",
+                    values="taxa_cobertura_pct", aggfunc="mean")
+    .reindex(municipios_cob)
+)
+pivo_cob.columns = [str(coluna) for coluna in pivo_cob.columns]
+vmax_cob = max(33.0, float(pivo_cob.max().max())) if not pivo_cob.empty else 33.0
+st.dataframe(
+    pivo_cob.style
+    .format("{:.2f}%", na_rep="—")
+    .background_gradient(cmap="RdYlGn", axis=None, vmin=0, vmax=vmax_cob),
+    use_container_width=True,
+)
+st.caption(
+    "Classificação: 🟢 Meta Atingida (≥33%) · 🟡 Cobertura Parcial (3% a 32,9%) · "
+    "🔴 Crítico (≤3%). Fonte: SISCAN/DATASUS (numerador) · Censo IBGE 2022 "
+    "(denominador fixo) · camada Gold."
+)
+
+with st.expander("Ver dados detalhados da cobertura populacional (Q3)"):
+    detalhe_cob = cob[
+        ["codigo_municipio", "municipio", "ano", "total_exames_25_64",
+         "mulheres_25_64_anos", "taxa_cobertura_pct", "meta_ans_pct",
+         "st_meta_ans"]
+    ].sort_values(["municipio", "ano"])
+    export_table(detalhe_cob, "siscan_cobertura_populacional.csv")
+st.caption("Fonte: SISCAN/DATASUS · camada Gold (Q3).")
