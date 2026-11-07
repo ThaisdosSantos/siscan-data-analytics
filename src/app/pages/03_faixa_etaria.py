@@ -215,7 +215,7 @@ with b:
             unsafe_allow_html=True,
         )
         # Barras horizontais empilhadas 100%, alinhadas à referência visual.
-        bar_order = ["25–64 anos", "<25 anos", "≥65 anos"]
+        bar_order = ["<25 anos", "25–64 anos", "≥65 anos"]
         st.markdown("""
         <style>
         .st-key-sort_composicao_etaria [data-testid="stSelectbox"] label p {
