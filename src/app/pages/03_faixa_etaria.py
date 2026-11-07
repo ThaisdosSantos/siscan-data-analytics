@@ -6,7 +6,7 @@ import plotly.express as px
 import streamlit as st
 
 from utils.theme import (
-    apply_custom_css, page_header, display_chart, export_table,
+    apply_custom_css, page_header, display_chart, display_table, export_table,
     fmt_num, fmt_pct, pct, style_chart, OCEAN, SKY, ORANGE, NAVY,
 )
 from utils.chart_download import chart_with_right_click_download
@@ -663,17 +663,27 @@ pivo_cob = (
     .reindex(municipios_cob)
 )
 pivo_cob.columns = [str(coluna) for coluna in pivo_cob.columns]
-vmax_cob = max(33.0, float(pivo_cob.max().max())) if not pivo_cob.empty else 33.0
-st.dataframe(
-    pivo_cob.style
-    .format("{:.2f}%", na_rep="—")
-    .background_gradient(cmap="RdYlGn", axis=None, vmin=0, vmax=vmax_cob),
-    use_container_width=True,
+# Mesmo padrão visual das tabelas detalhadas do dashboard: cabeçalho
+# azul-marinho e linhas alternadas, sem gradiente ou cores de classificação.
+tabela_cob = pivo_cob.reset_index().rename(columns={"municipio": "Município"})
+tabela_cob_visual = tabela_cob.copy()
+for ano_col in pivo_cob.columns:
+    tabela_cob_visual[ano_col] = tabela_cob_visual[ano_col].map(
+        lambda valor: f"{valor:.2f}%" if pd.notna(valor) else "—"
+    )
+display_table(tabela_cob_visual)
+st.download_button(
+    "⬇️ Exportar razão anual de exames (CSV)",
+    tabela_cob.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
+    file_name="siscan_razao_anual_exames_municipio_ano.csv",
+    mime="text/csv",
+    key="exportar_razao_anual_municipio_ano",
 )
 st.caption(
-    "Faixas exploratórias da razão: 🟢 ≥33% · 🟡 de 3% a menos de 33% · "
-    "🔴 abaixo de 3%. Essas categorias não representam cobertura comprovada. "
-    "Fonte: SISCAN/DATASUS (exames) · Censo IBGE 2022 (população fixa) · Gold."
+    "Cada célula representa a razão anual de exames registrados em mulheres "
+    "de 25–64 anos em relação à população feminina da mesma faixa (IBGE 2022). "
+    "Não representa a proporção de mulheres únicas rastreadas. "
+    "Fonte: SISCAN/DATASUS · Censo IBGE 2022 · Gold."
 )
 
 with st.expander("Ver dados detalhados da razão anual (Q3)"):
