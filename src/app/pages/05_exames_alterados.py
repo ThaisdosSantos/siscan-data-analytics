@@ -198,7 +198,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     "grupo_3": ordem_grupos,
                 },
                 color_discrete_map={
-                    "<25 anos": BABY_BLUE,
+                    "<25 anos": "#169B62",
                     "25–64 anos": ROYAL_BLUE,
                     "≥65 anos": ORANGE,
                 },
