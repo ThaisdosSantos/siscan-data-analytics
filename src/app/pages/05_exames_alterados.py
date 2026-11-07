@@ -256,19 +256,29 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         else:
             st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
 
-    matrix=df.groupby(["municipio","faixa_etaria"],as_index=False)[["quantidade_alterados","total_exames_validos"]].sum(min_count=1)
-    matrix["taxa"]=matrix.quantidade_alterados.div(matrix.total_exames_validos.where(matrix.total_exames_validos>0)).mul(100)
-    heat=matrix.pivot(index="municipio",columns="faixa_etaria",values="taxa")
+    # Matriz com as três categorias já classificadas na Gold.
+    # A taxa de cada célula é ponderada pelos exames válidos; nunca é
+    # a média simples das taxas das faixas quinquenais.
+    matrix = df.groupby(["municipio", "grupo_3"], as_index=False)[
+        ["quantidade_alterados", "total_exames_validos"]
+    ].sum(min_count=1)
+    matrix["taxa"] = (
+        matrix["quantidade_alterados"]
+        .div(matrix["total_exames_validos"].where(matrix["total_exames_validos"] > 0))
+        .mul(100)
+    )
+    heat = matrix.pivot(index="municipio", columns="grupo_3", values="taxa")
+    heat = heat.reindex(columns=ordem_grupos)
     if not heat.empty:
-        st.caption("Valores nas células em (%) · — indica ausência de dados.")
+        st.caption("Proporção de exames alterados em cada grupo etário (%) · — indica ausência de dados.")
         fig=px.imshow(
             heat, aspect="auto", color_continuous_scale="Blues",
-            labels={"x":"Faixa etária","y":"Município","color":"%"},
-            title="Matriz territorial de proporção operacional",
+            labels={"x":"Grupo etário","y":"Município","color":"%"},
+            title="Matriz territorial de proporção de exames alterados por grupo etário",
         )
         fig.update_traces(
             xgap=3, ygap=3,
-            hovertemplate="Faixa etária: %{x}<br>Município: %{y}<br>Proporção: %{z:.2f}%<extra></extra>",
+            hovertemplate="Grupo etário: %{x}<br>Município: %{y}<br>Proporção: %{z:.2f}%<extra></extra>",
         )
         fig.update_coloraxes(colorbar_tickformat=".2f", colorbar_ticksuffix="%")
         # Rótulos permanentes para leitura também em imagens estáticas.
@@ -287,14 +297,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 )
                 fig.add_annotation(
                     x=age, y=city, text=label, showarrow=False,
-                    font=dict(size=10, color=font_color),
+                    font=dict(size=12, color=font_color),
                     xanchor="center", yanchor="middle",
                     hovertext=None,
                 )
         # Contraste dos rótulos dos eixos, sem negrito.
         fig.update_xaxes(
             tickfont=dict(color="#1A3B5C", size=12, family="Arial"),
-            title_text="Faixa etária",
+            title_text="Grupo etário",
             title_font=dict(color="#1A3B5C", size=14, family="Arial"),
             title_standoff=16,
         )
@@ -306,18 +316,16 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         )
         fig.update_layout(
             template="plotly_white",
-            height=max(500, 43 * len(heat.index) + 155),
+            height=max(480, 43 * len(heat.index) + 155),
             margin=dict(l=25, r=15, t=70, b=65),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="#FFFFFF",
             font=dict(color="#1A3B5C"),
         )
-        # Em telas estreitas, a matriz pode ser rolada horizontalmente sem
-        # comprimir os valores das 15 faixas etárias.
-        st.caption("No celular, deslize o gráfico para os lados para ver todas as faixas etárias.")
+        # Apenas três colunas, sem a largura mínima exigida pela antiga matriz de 15 faixas.
         chart_with_right_click_download(
             fig, filename="matriz_territorial_exames_alterados.png",
-            height=fig.layout.height, min_chart_width=1050,
+            height=fig.layout.height, min_chart_width=0,
         )
     with st.expander("Ver dados detalhados de exames alterados", expanded=False):
         export_table(matrix, "siscan_exames_alterados.csv")
