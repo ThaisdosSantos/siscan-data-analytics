@@ -884,19 +884,21 @@ if not macambara_consolidado.empty:
         and abs(atingimento_macambara - float(menor_atingimento)) < 0.005
         else "percentual de atingimento da referência"
     )
+    media_macambara_fmt = f"{media_macambara:,.0f}".replace(",", ".")
+    referencia_macambara_fmt = f"{referencia_macambara:,.0f}".replace(",", ".")
+    atingimento_macambara_fmt = f"{atingimento_macambara:.2f}".replace(".", ",")
     st.warning(
         "**Nota analítica — Maçambará:** "
         f"no período selecionado, o município apresenta {destaque_macambara} "
-        f"de **{atingimento_macambara:.2f}%** "
-        f"(média de **{media_macambara:,.0f} exames/ano** frente a "
-        f"**{referencia_macambara:,.0f} exames/ano** correspondentes "
+        f"de **{atingimento_macambara_fmt}%** "
+        f"(média de **{media_macambara_fmt} exames/ano** frente a "
+        f"**{referencia_macambara_fmt} exames/ano** correspondentes "
         "à referência exploratória de 33% da população feminina de 25–64 anos). "
         "Essa diferença descreve o volume de exames registrado no SISCAN, "
         "mas **não permite concluir que houve baixa adesão, subnotificação "
         "ou encaminhamento para outros municípios**. Essas possibilidades "
         "exigiriam informações adicionais sobre fluxos assistenciais, "
         "registro e acesso aos serviços."
-        .replace(",", ".")
     )
 
 anos_selecionados_consolidado = sorted(base_consolidada["ano"].unique().tolist())
