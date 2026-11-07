@@ -82,7 +82,7 @@ a, b = st.columns([2, 3], gap="medium")
 st.markdown("""
 <style>
 .st-key-age_donut_card {
-  min-height:625px;
+  min-height:760px;
   box-sizing:border-box;
   background:#fff;
   border:1px solid #dce4eb;
@@ -95,7 +95,7 @@ st.markdown("""
   background:transparent!important;
 }
 .st-key-age_donut_card .age-legend {padding:0 4px 4px;}
-.st-key-age_bar_card {margin-top:0;min-height:625px;box-sizing:border-box;background:#fff;border:1px solid #dce4eb;border-radius:14px;padding:16px 18px 22px;box-shadow:0 2px 8px rgba(26,59,92,.04);min-height:454px;}
+.st-key-age_bar_card {margin-top:0;min-height:760px;box-sizing:border-box;background:#fff;border:1px solid #dce4eb;border-radius:14px;padding:16px 18px 22px;box-shadow:0 2px 8px rgba(26,59,92,.04);}
 .st-key-age_bar_card [data-testid="stPlotlyChart"] {border:0!important;box-shadow:none!important;padding:0!important;background:transparent!important;}
 @media(max-width:900px) {
   .st-key-age_donut_card,.st-key-age_bar_card {min-height:0!important;padding:14px!important;}
