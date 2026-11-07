@@ -40,7 +40,7 @@ sidebar_filters()
 page_header(
     "Faixa etária · Q3",
     "Conformidade etária",
-    "Distribuição dos exames por grupos etários e comparação entre municípios.",
+    "Analisa a distribuição dos exames por faixa etária nos municípios da 10ª CRS, a evolução anual da produção entre 2020 e 2025 e a comparação dos volumes registrados com uma referência populacional exploratória.",
 )
 
 st.markdown("""
