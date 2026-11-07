@@ -540,27 +540,18 @@ else:
     ordem_tabela_razao = sorted(pivo_cob.index, key=normalize)
 pivo_cob = pivo_cob.reindex(ordem_tabela_razao)
 pivo_cob.columns = [str(coluna) for coluna in pivo_cob.columns]
-# Heatmap categórico e contínuo: V = (razão - 3) / 30, limitado a [0,1].
-# O gradiente azul vale apenas para 3 < razão < 33; os extremos são faixas
-# próprias. Limiares exploratórios, não metas de cobertura clínica.
+# Tabela com realce discreto apenas para faixas extremas; valores intermediários
+# permanecem brancos para manter a leitura limpa. Limiares exploratórios.
 tabela_cob = pivo_cob.reset_index().rename(columns={"municipio": "Município"})
 
 def cor_heatmap_razao(valor):
     if pd.isna(valor):
         return "#F1F5F9", "#64748B"
     if valor <= 3:
-        return "#F2A34A", "#40250B"
+        return "#FCE8D4", "#8E450F"
     if valor >= 33:
-        return "#169B62", "#FFFFFF"
-    v = (float(valor) - 3.0) / 30.0
-    azul_claro = (42, 91, 137)
-    azul_forte = (13, 38, 69)
-    rgb = tuple(
-        round(inicio + (fim - inicio) * v)
-        for inicio, fim in zip(azul_claro, azul_forte)
-    )
-    fundo = "#{:02X}{:02X}{:02X}".format(*rgb)
-    return fundo, "#FFFFFF"
+        return "#D8F2E4", "#126B46"
+    return "#FFFFFF", "#1A3B5C"
 
 cabecalho_heatmap = "<th scope='col'>Município</th>" + "".join(
     f"<th scope='col'>{escape(str(ano))}</th>" for ano in pivo_cob.columns
@@ -594,8 +585,8 @@ st.markdown(
         margin:12px 0 16px; box-shadow:0 2px 9px rgba(26,59,92,.12);
     }
     .q3-razao-heatmap {
-        width:100%; min-width:690px; border-collapse:separate;
-        border-spacing:3px; background:#fff; color:#1A3B5C;
+        width:100%; min-width:690px; border-collapse:collapse;
+        background:#fff; color:#1A3B5C;
         font:500 15px Manrope,Arial,sans-serif;
     }
     .q3-razao-heatmap thead th {
@@ -604,14 +595,16 @@ st.markdown(
     }
     .q3-razao-heatmap thead th:first-child {text-align:left;}
     .q3-razao-heatmap tbody th {
-        background:#F4F7FA; color:#1A3B5C; text-align:left;
+        background:#FFFFFF; color:#1A3B5C; text-align:left;
         padding:12px 14px; white-space:nowrap; font-weight:650;
+        border-bottom:1px solid #E6EBF0;
     }
     .q3-razao-heatmap tbody td {
         padding:12px; text-align:center; font-variant-numeric:tabular-nums;
-        font-weight:650; white-space:nowrap; border-radius:4px;
+        font-weight:600; white-space:nowrap;
+        border-bottom:1px solid #E6EBF0;
     }
-    .q3-razao-heatmap tbody tr:hover th {background:#E8F0F6;}
+    .q3-razao-heatmap tbody tr:hover th {background:#F4F7FA;}
     .q3-razao-legenda {
         display:flex; gap:12px 22px; flex-wrap:wrap;
         align-items:center; color:#334E68; font-size:15px; margin:6px 0 16px;
@@ -623,9 +616,9 @@ st.markdown(
     }
     </style>
     <div class="q3-razao-legenda" aria-label="Legenda do heatmap">
-      <span><i style="background:#F2A34A"></i>Até 3% — laranja</span>
-      <span><i style="background:linear-gradient(90deg,#2A5B89,#0D2645)"></i>Acima de 3% e abaixo de 33% — azul-marinho</span>
-      <span><i style="background:#169B62"></i>33% ou mais — verde</span>
+      <span><i style="background:#FCE8D4"></i>Até 3% — laranja suave</span>
+      <span><i style="background:#FFFFFF"></i>Acima de 3% e abaixo de 33% — branco</span>
+      <span><i style="background:#D8F2E4"></i>33% ou mais — verde suave</span>
       <span><i style="background:#F1F5F9"></i>Sem dados</span>
     </div>
     """,
@@ -640,9 +633,9 @@ st.download_button(
     key="exportar_razao_anual_municipio_ano",
 )
 st.caption(
-     "As cores representam faixas exploratórias da razão: até 3% (laranja), "
-    "de mais de 3% a menos de 33% (gradiente azul-marinho) e 33% ou mais "
-    "(verde). No gradiente, V = (razão − 3) / 30. "
+     "Os valores intermediários (mais de 3% e menos de 33%) aparecem em branco; "
+    "valores até 3% recebem realce laranja suave e valores de 33% ou mais, "
+    "verde suave. "
     "Não são categorias oficiais de cobertura e não identificam mulheres únicas. "
     "Fonte: SISCAN/DATASUS · Censo IBGE 2022 · Gold."
 )
