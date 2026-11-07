@@ -70,8 +70,10 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         )
         macro_fig.update_layout(
             showlegend=False,
-            bargap=0.48,  # barras mais estreitas e com espaçamento confortável
-            margin=dict(l=65, r=25, t=20, b=65),
+            bargap=0.54,  # barras proporcionais à área branca ampliada
+            margin=dict(l=90, r=90, t=30, b=70),
+            paper_bgcolor="#FFFFFF",
+            plot_bgcolor="#FFFFFF",
         )
         macro_fig.update_yaxes(rangemode="tozero", ticksuffix="%", tickformat=".2f")
         macro_fig.update_traces(
@@ -94,13 +96,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
             margin=dict(l=85, r=40, t=100, b=80),
         )
-        # Ocupa cerca de 2/3 do conteúdo no desktop e a largura
-        # disponível no celular; não afeta os demais gráficos.
-        _, chart_col, _ = st.columns([1, 4, 1], gap="small")
+        # Área branca ampliada (~83% no desktop) e centralizada com
+        # margens laterais simétricas. Na tela estreita, ocupa a largura
+        # disponível sem alterar os outros gráficos.
+        _, chart_col, _ = st.columns([1, 10, 1], gap="small")
         with chart_col:
             chart_with_right_click_download(
                 macro_fig, filename="exames_alterados_grupos_etarios.png",
-                height=380, export_fig=macro_export,
+                height=410, export_fig=macro_export,
             )
 
     # Evolução anual com linhas independentes para os três grupos etários.
