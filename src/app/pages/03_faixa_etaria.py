@@ -738,6 +738,110 @@ st.caption(
     "Fonte: SISCAN/DATASUS · Censo IBGE 2022 · Gold."
 )
 
+# Tabela consolidada: volume anual observado × referência exploratória de 33%.
+# Usar a mesma Gold carregada para a razão anual, respeitando os filtros.
+st.markdown("#### Tabela consolidada de exames na população-alvo (25–64 anos)")
+st.markdown(
+    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
+    'font-weight:400;margin:4px 0 18px 0;">'
+    'Compara a média anual de exames registrados no período selecionado '
+    'com um volume de referência equivalente a 33% da população feminina '
+    'de 25–64 anos de cada município (Censo IBGE 2022). A diferença mostra '
+    'quantos exames, em média, ficaram acima ou abaixo dessa referência, '
+    'sem representar cobertura individual de rastreamento.</p>',
+    unsafe_allow_html=True,
+)
+
+# Consolidar primeiro por município e ano: não duplicar população ao somar exames.
+base_consolidada = (
+    cob.groupby(["municipio", "ano"], as_index=False)
+    .agg(
+        exames=("total_exames_25_64", "sum"),
+        populacao=("mulheres_25_64_anos", "max"),
+    )
+)
+resumo_consolidado = (
+    base_consolidada.groupby("municipio", as_index=False)
+    .agg(
+        populacao=("populacao", "max"),
+        media_exames=("exames", "mean"),
+    )
+)
+resumo_consolidado["referencia_anual"] = resumo_consolidado["populacao"] * 0.33
+resumo_consolidado["diferenca_anual"] = (
+    resumo_consolidado["media_exames"] - resumo_consolidado["referencia_anual"]
+)
+resumo_consolidado["atingimento_pct"] = (
+    resumo_consolidado["media_exames"]
+    / resumo_consolidado["referencia_anual"].where(
+        resumo_consolidado["referencia_anual"].gt(0)
+    ) * 100
+)
+
+# A linha regional agrega as médias municipais e as populações da seleção.
+# Não calcular a média dos percentuais municipais.
+linha_total_consolidado = {
+    "municipio": (
+        "TOTAL 10ª CRS" if cob["municipio"].nunique() == 11
+        else "TOTAL MUNICÍPIOS SELECIONADOS"
+    ),
+    "populacao": resumo_consolidado["populacao"].sum(),
+    "referencia_anual": resumo_consolidado["referencia_anual"].sum(),
+    "media_exames": resumo_consolidado["media_exames"].sum(),
+    "diferenca_anual": resumo_consolidado["diferenca_anual"].sum(),
+}
+linha_total_consolidado["atingimento_pct"] = (
+    linha_total_consolidado["media_exames"]
+    / linha_total_consolidado["referencia_anual"] * 100
+    if linha_total_consolidado["referencia_anual"] > 0 else float("nan")
+)
+resumo_consolidado = resumo_consolidado.sort_values(
+    "municipio", key=lambda nomes: nomes.map(normalize), kind="stable"
+)
+resumo_consolidado = pd.concat(
+    [resumo_consolidado, pd.DataFrame([linha_total_consolidado])],
+    ignore_index=True,
+)
+colunas_consolidadas = {
+    "municipio": "Município",
+    "populacao": "População elegível (25–64 anos)",
+    "referencia_anual": "Referência anual (33% de exames/ano)",
+    "media_exames": "Média anual de exames executados",
+    "diferenca_anual": "Diferença anual média de exames",
+    "atingimento_pct": "Atingimento da referência (%)",
+}
+tabela_consolidada = resumo_consolidado[list(colunas_consolidadas)].rename(
+    columns=colunas_consolidadas
+)
+display_table(
+    tabela_consolidada,
+    integer_columns=[
+        "População elegível (25–64 anos)",
+        "Referência anual (33% de exames/ano)",
+        "Média anual de exames executados",
+        "Diferença anual média de exames",
+    ],
+    percent_columns=["Atingimento da referência (%)"],
+)
+st.download_button(
+    "⬇️ Exportar tabela consolidada (CSV)",
+    data=tabela_consolidada.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
+    file_name="siscan_tabela_consolidada_exames_25_64.csv",
+    mime="text/csv",
+    key="exportar_tabela_consolidada_25_64",
+)
+anos_selecionados_consolidado = sorted(base_consolidada["ano"].unique().tolist())
+st.caption(
+    "Média executada = exames anuais registrados ÷ anos com registros do município "
+    "no filtro; referência anual = população feminina de 25–64 anos × 33%; "
+    "diferença = média executada − referência; atingimento = média executada "
+    "÷ referência × 100. O total regional é a soma das médias municipais "
+    "e não uma média simples das porcentagens. "
+    f"Anos selecionados com dados: {', '.join(map(str, anos_selecionados_consolidado))}. "
+    "33% é um parâmetro exploratório, não uma meta oficial comprovada. "
+    "Fonte: SISCAN/DATASUS · Censo IBGE 2022 · Gold."
+)
+
 with st.expander("Ver dados detalhados da razão anual (Q3)"):
     detalhe_cob = cob[
         ["codigo_municipio", "municipio", "ano", "total_exames_25_64",
