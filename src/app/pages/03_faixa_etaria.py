@@ -106,7 +106,12 @@ st.markdown(
     '<strong>Fontes dos dados:</strong> '
     '<strong>Exames citopatológicos:</strong> SISCAN/DATASUS '
     '&nbsp;·&nbsp; <strong>População feminina de 25 a 64 anos:</strong> '
-    'Censo Demográfico IBGE 2022.'
+    'Censo Demográfico IBGE 2022 (denominador fixo em todos os anos, '
+    'por ser o censo mais recente).'
+    '<br><strong>Referência técnica:</strong> indicador 1.5 do IDSS/ANS '
+    '(ano-base 2023); o parâmetro de 33 exames por 100 mulheres/ano '
+    'é adaptado aqui à produção municipal do SISCAN, sem desduplicação '
+    'das pacientes, e não corresponde à taxa oficial de beneficiárias da ANS.'
     '</div>',
     unsafe_allow_html=True,
 )
@@ -130,6 +135,26 @@ if groups.empty:
     st.stop()
 if unknown:
     st.warning(f"Há {fmt_num(unknown)} exames em categorias etárias não classificáveis; esses registros não entram nos percentuais apresentados.")
+
+st.markdown(
+    """
+    <style>
+    .q3-section-title {
+      margin:30px 0 17px;padding:9px 0 12px;
+      border-bottom:2px solid #D8E5EF;
+      font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
+      color:#1A3B5C;
+    }
+    .q3-section-title .q3-section-index {color:#006C9A;margin-right:10px;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    '<h2 class="q3-section-title"><span class="q3-section-index">01</span>'
+    'Perfil etário dos exames</h2>', unsafe_allow_html=True,
+)
 
 sums = groups.groupby("grupo")["quantidade_exames"].sum()
 total = sums.sum()
@@ -176,7 +201,7 @@ a, b = st.columns([2, 3], gap="medium")
 st.markdown("""
 <style>
 .st-key-age_donut_card {
-  min-height:760px;
+  min-height:670px;
   box-sizing:border-box;
   background:#fff;
   border:1px solid #dce4eb;
@@ -189,7 +214,7 @@ st.markdown("""
   background:transparent!important;
 }
 .st-key-age_donut_card .age-legend {padding:0 4px 4px;}
-.st-key-age_bar_card {margin-top:0;min-height:760px;box-sizing:border-box;background:#fff;border:1px solid #dce4eb;border-radius:14px;padding:16px 18px 22px;box-shadow:0 2px 8px rgba(26,59,92,.04);}
+.st-key-age_bar_card {margin-top:0;min-height:670px;box-sizing:border-box;background:#fff;border:1px solid #dce4eb;border-radius:14px;padding:16px 18px 22px;box-shadow:0 2px 8px rgba(26,59,92,.04);}
 .st-key-age_bar_card [data-testid="stPlotlyChart"] {border:0!important;box-shadow:none!important;padding:0!important;background:transparent!important;}
 @media(max-width:900px) {
   .st-key-age_donut_card,.st-key-age_bar_card {min-height:0!important;padding:14px!important;}
@@ -202,7 +227,7 @@ with a:
     with st.container(border=True, key="age_donut_card"):
         # Rosca e legenda conforme referência visual; valores são calculados da Gold.
         donut_order = ["<25 anos", "25–64 anos", "≥65 anos"]
-        donut_colors = {"25–64 anos": "#0076A5", "≥65 anos": "#4A9FD8", "<25 anos": "#EE5325"}
+        donut_colors = {"<25 anos": SKY, "25–64 anos": OCEAN, "≥65 anos": ORANGE}
         donut_values = [float(sums.get(group, 0)) for group in donut_order]
         target_percent = pct(sums.get("25–64 anos", 0), total)
         fig = px.pie(
@@ -353,7 +378,7 @@ with b:
             agg, x="percentual", y="municipio", color="grupo",
             orientation="h", barmode="stack",
             category_orders={"grupo": bar_order, "municipio": cities_order},
-            color_discrete_map={"25–64 anos": OCEAN, "<25 anos": SKY, "≥65 anos": ORANGE},
+            color_discrete_map=donut_colors,
             labels={"municipio": "", "percentual": "Participação (%)", "grupo": "Faixa etária"},
         )
         fig.update_traces(
@@ -437,6 +462,10 @@ with st.expander("Ver tabela detalhada de exames por município e faixa etária"
 # ---------------------------------------------------------------------------
 import copy
 
+st.markdown(
+    '<h2 class="q3-section-title"><span class="q3-section-index">02</span>'
+    'Evolução da produção</h2>', unsafe_allow_html=True,
+)
 st.markdown("### Quantidade anual de exames na população-alvo (25–64 anos)")
 st.markdown(
     '<p style="font-size:18px;line-height:1.55;color:#334E68;'
@@ -797,6 +826,10 @@ st.download_button(
 
 # Tabela consolidada: volume anual observado × referência exploratória de 33%.
 # Usar a mesma Gold carregada para a razão anual, respeitando os filtros.
+st.markdown(
+    '<h2 class="q3-section-title"><span class="q3-section-index">03</span>'
+    'Comparação com a referência populacional</h2>', unsafe_allow_html=True,
+)
 st.markdown("#### Tabela consolidada de exames na população-alvo (25–64 anos)")
 st.markdown(
     '<p style="font-size:18px;line-height:1.55;color:#334E68;'
@@ -958,8 +991,9 @@ anos_selecionados_consolidado = sorted(base_consolidada["ano"].unique().tolist()
 with st.expander("ℹ️ Como interpretar a Capacidade Assistencial (Volume de Exames)", expanded=False):
     st.markdown(
         "**Referência anual (33%):** população feminina de 25–64 anos "
-        "× 0,33; parâmetro exploratório para comparar o volume anual de exames, "
-        "não meta oficial de cobertura de mulheres.\n\n"
+        "× 0,33; adaptação municipal do parâmetro de 33 exames por 100 "
+        "beneficiárias/ano previsto no indicador 1.5 do IDSS/ANS (ano-base 2023). "
+        "Não equivale ao cálculo oficial da ANS nem à cobertura de mulheres.\n\n"
         "**Média executada:** média de exames registrados por ano com dados no período filtrado.\n\n"
         "**Diferença anual média:** média executada − referência anual. "
         "Valores negativos indicam quantos exames por ano, em média, "
