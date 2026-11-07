@@ -32,7 +32,7 @@ def q3_group(label):
 
 
 def q5_group(label):
-    """Agrupa faixas Q5 fechadas somente quando não cruzam limites de 25/65."""
+    """Compatibilidade com rótulos de faixas detalhadas; usar grupo_etario_3 na Gold."""
     text = normalize(label).replace("–", "-").replace("—", "-")
     if not text or "ignorado" in text or "sem informacao" in text:
         return None
@@ -74,11 +74,21 @@ def build_matrix(q3, q5, municipalities):
     result["Taxa 25–64 (%)"] = float("nan")
     result["Taxa ≥65 (%)"] = float("nan")
     if not q5.empty:
-        needed = {"municipio", "faixa_etaria", "quantidade_alterados", "total_exames_validos"}
+        needed = {"municipio", "quantidade_alterados", "total_exames_validos", "grupo_etario_3"}
         if needed.issubset(q5.columns):
             work = q5.copy()
-            work["grupo"] = work["faixa_etaria"].map(q5_group)
-            work = work.loc[work.grupo.notna()]
+            # A agregação Q5 segue os três grupos oficiais da tabela Gold.
+            # Nunca aplicar média simples das taxas por faixa quinquenal.
+            q5_group_labels = {
+                "<= 24 anos": "<25 anos",
+                "25 a 64 anos": "25–64 anos",
+                ">= 65 anos": "≥65 anos",
+            }
+            work["grupo"] = (
+                work["grupo_etario_3"].astype("string").str.strip()
+                .map(q5_group_labels)
+            )
+            work = work.loc[work["grupo"].notna()].copy()
             grouped = work.groupby(["municipio", "grupo"])[
                 ["quantidade_alterados", "total_exames_validos"]
             ].sum(min_count=1)
@@ -419,6 +429,8 @@ threshold = st.slider(
 matrix["Classificação de impacto"] = matrix.apply(impact, axis=1, threshold=threshold)
 if q5.empty:
     st.warning("A tabela Gold de exames alterados (Q5) não retornou registros. Taxas e razão serão exibidas como N/D.")
+elif "grupo_etario_3" not in q5.columns:
+    st.warning("A coluna grupo_etario_3 ainda não está disponível no recorte da Gold; as taxas Q5 serão exibidas como N/D.")
 
 def format_br(value, digits=2):
     """Formata número no padrão brasileiro, sem transformar ausências em zero."""
