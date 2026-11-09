@@ -156,7 +156,24 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             "não taxas populacionais. Municípios maiores podem apresentar volumes maiores "
             "sem que isso represente maior cobertura ou melhor desempenho no rastreamento."
         )
-    bars = bycity.sort_values("quantidade", ascending=True)
+    with st.container(key="panorama_volume_sort_panel"):
+        ordem_volume = st.selectbox(
+            "Ordenar por",
+            ["A–Z", "Maior para menor"],
+            index=0,
+            key="ordenacao_volume_municipios_panorama",
+        )
+    if ordem_volume == "A–Z":
+        bars = bycity.sort_values(
+            "municipio", key=lambda nomes: nomes.str.casefold(), kind="stable"
+        )
+    else:
+        bars = bycity.sort_values(
+            ["quantidade", "municipio"], ascending=[False, True], kind="stable"
+        )
+    # Em barras horizontais o Plotly apresenta o último item no topo.
+    # Inverter o eixo mantém A–Z ou maior volume primeiro de cima para baixo.
+    ordem_eixo = list(reversed(bars["municipio"].tolist()))
     fig = px.bar(bars, x="quantidade", y="municipio", orientation="h",
                  color_discrete_sequence=[OCEAN],
                  labels={"quantidade":"Exames registrados", "municipio":"Município"},
@@ -165,6 +182,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                       cliponaxis=False,
                       hovertemplate="%{y}<br>%{x:,.0f} exames<extra></extra>")
     fig.update_xaxes(tickformat=",d", range=[0, max(1, bars.quantidade.max())*1.22])
+    fig.update_yaxes(categoryorder="array", categoryarray=ordem_eixo)
     display_chart(fig, filename="panorama_volume_municipio.png")
 
     st.subheader("Evolução anual de exames por município")
