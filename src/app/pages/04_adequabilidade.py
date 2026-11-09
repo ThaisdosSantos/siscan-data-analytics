@@ -15,6 +15,28 @@ page_header(
     "adequabilidade, a evolução anual das amostras insatisfatórias e rejeitadas "
     "e a comparação dos resultados entre os municípios selecionados.",
 )
+# Mesmo padrão de hierarquia e espaçamento das páginas Faixa Etária e Panorama Geral.
+# Impede que o primeiro título fique sobreposto ao cabeçalho azul.
+st.markdown(
+    """
+    <style>
+    .pet-hero {margin-bottom:0 !important;}
+    .adequabilidade-section-title {
+      margin:30px 0 17px; padding:9px 0 12px;
+      border-bottom:2px solid #D8E5EF;
+      font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
+      color:#1A3B5C;
+    }
+    .adequabilidade-section-title .adequabilidade-section-index {
+      color:#006C9A; margin-right:10px;
+    }
+    @media(max-width:768px) {
+      .adequabilidade-section-title {margin-top:23px;}
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 df=filtered("adequabilidade")
 if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras"]):
     def cat(s):
@@ -27,6 +49,12 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
     g=df.groupby("categoria").quantidade_amostras.sum(min_count=1)
     tot=g.sum(min_count=1)
     ruim=g.get("Insatisfatória",0)+g.get("Rejeitada",0)
+    st.markdown(
+        '<h2 class="adequabilidade-section-title">'
+        '<span class="adequabilidade-section-index">01</span>'
+        'Perfil de adequabilidade das amostras</h2>',
+        unsafe_allow_html=True,
+    )
     st.markdown(
         "Os indicadores resumem a **quantidade de amostras registradas** e a "
         "**proporção de amostras satisfatórias, insatisfatórias ou rejeitadas** "
@@ -112,6 +140,12 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
         unsafe_allow_html=True,
     )
 
+    st.markdown(
+        '<h2 class="adequabilidade-section-title">'
+        '<span class="adequabilidade-section-index">02</span>'
+        'Evolução anual da adequabilidade</h2>',
+        unsafe_allow_html=True,
+    )
     series=df.groupby(["ano","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
     series=series[series.categoria.isin(["Insatisfatória","Rejeitada"])]
     if not series.empty:
@@ -167,6 +201,12 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
             height=430,
             export_fig=export_fig,
         )
+    st.markdown(
+        '<h2 class="adequabilidade-section-title">'
+        '<span class="adequabilidade-section-index">03</span>'
+        'Comparação municipal da adequabilidade</h2>',
+        unsafe_allow_html=True,
+    )
     bycity=df.groupby(["municipio","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
     pivot=bycity.pivot(index="municipio",columns="categoria",values="quantidade_amostras").fillna(0)
     for name in ["Satisfatória","Insatisfatória","Rejeitada"]:
