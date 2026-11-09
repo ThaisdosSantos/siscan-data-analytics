@@ -470,6 +470,89 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 mime="text/csv",
                 key="exportar_indice_sazonal_municipio",
             )
+            # Medidas descritivas complementares: não modificam o índice sazonal.
+            # Cada observação é uma competência (município × ano × mês) da Gold.
+            with st.expander("Ver estatísticas mensais por município", expanded=False):
+                st.markdown(
+                    "Consulte a **quantidade de exames registrada em cada mês** "
+                    "usando média, mediana ou moda entre os anos selecionados. "
+                    "Essas medidas são complementares: **o índice sazonal acima "
+                    "continua calculado pela média**."
+                )
+                medida_estatistica = st.selectbox(
+                    "Medida estatística",
+                    options=["Média", "Mediana", "Moda"],
+                    index=0,
+                    key="medida_estatistica_mensal_outubro",
+                )
+
+                def moda_unica(valores):
+                    """Retorna a moda apenas se houver repetição e uma vencedora única."""
+                    contagens = valores.dropna().value_counts()
+                    if contagens.empty or int(contagens.iloc[0]) < 2:
+                        return float("nan")
+                    if int((contagens == contagens.iloc[0]).sum()) != 1:
+                        return float("nan")
+                    return float(contagens.index[0])
+
+                agrupado_estatistico = sazonal_muni.groupby(
+                    ["municipio", "mes"]
+                )["quantidade"]
+                if medida_estatistica == "Média":
+                    valores_estatisticos = agrupado_estatistico.mean()
+                elif medida_estatistica == "Mediana":
+                    valores_estatisticos = agrupado_estatistico.median()
+                else:
+                    valores_estatisticos = agrupado_estatistico.agg(moda_unica)
+
+                tabela_estatisticas = (
+                    valores_estatisticos.unstack("mes")
+                    .reindex(columns=range(1, 13))
+                    .rename(columns=meses_colunas)
+                    .sort_index(key=lambda nomes: nomes.str.casefold())
+                    .rename_axis("Município")
+                    .reset_index()
+                )
+                st.caption(
+                    f"Valores em **quantidade de exames**, não em percentual. "
+                    f"Medida exibida: **{medida_estatistica.lower()}**. "
+                    "Meses sem registros são excluídos do cálculo, não tratados como zero."
+                )
+                with st.expander("ℹ️ Como interpretar média, mediana e moda", expanded=False):
+                    st.markdown(
+                        "**Média:** soma dos exames registrados naquele mês "
+                        "nos anos disponíveis, dividida pelo número de observações. "
+                        "É sensível a valores muito altos ou baixos.\n\n"
+                        "**Mediana:** valor central das quantidades ordenadas; "
+                        "com quantidade par de observações, é a média dos dois "
+                        "valores centrais. É menos sensível a valores extremos.\n\n"
+                        "**Moda:** quantidade de exames que se repete com maior "
+                        "frequência naquele mês entre os anos disponíveis. "
+                        "Mostra **N/D** quando todos os valores são diferentes "
+                        "ou quando há empate entre as frequências máximas; "
+                        "não é escolhida uma moda arbitrária.\n\n"
+                        "Cada município usa somente os registros dos anos "
+                        "selecionados. Essas medidas descrevem a produção "
+                        "**em números de exames**, não são versões alternativas "
+                        "do índice sazonal e não representam mulheres distintas."
+                    )
+                display_table(tabela_estatisticas)
+                st.download_button(
+                    "⬇️ Exportar estatísticas mensais (CSV)",
+                    data=tabela_estatisticas.to_csv(
+                        index=False, sep=";", decimal=".", float_format="%.2f",
+                        na_rep="N/D",
+                    ).encode("utf-8-sig"),
+                    file_name=(
+                        "siscan_estatisticas_mensais_"
+                        + {"Média": "media", "Mediana": "mediana", "Moda": "moda"}[
+                            medida_estatistica
+                        ]
+                        + ".csv"
+                    ),
+                    mime="text/csv",
+                    key="exportar_estatisticas_mensais_outubro",
+                )
         else:
             st.info("Não há competências disponíveis para a tabela sazonal neste recorte.")
 
