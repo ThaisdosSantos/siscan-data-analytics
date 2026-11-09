@@ -60,18 +60,6 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
         "**proporção de amostras satisfatórias, insatisfatórias ou rejeitadas** "
         "no recorte selecionado."
     )
-    with st.expander("ℹ️ Como interpretar os indicadores de adequabilidade", expanded=False):
-        st.markdown(
-            "**Amostras avaliadas:** soma das quantidades registradas nas categorias "
-            "de adequabilidade disponíveis. **Satisfatórias (%):** amostras "
-            "classificadas como satisfatórias divididas pelo total. "
-            "**Insatisfatórias e rejeitadas (%):** soma dessas duas categorias "
-            "dividida pelo mesmo total. "
-            "Uma amostra **insatisfatória** não oferece qualidade adequada "
-            "para interpretação citopatológica; uma amostra **rejeitada** "
-            "não é aceita para avaliação. Essas categorias não devem ser "
-            "interpretadas como resultados citológicos alterados."
-        )
     metric_row([("Amostras avaliadas",fmt_num(tot)),("Satisfatórias",fmt_pct(pct(g.get("Satisfatória",0),tot))),
                 ("Insatisfatórias e rejeitadas",fmt_pct(pct(ruim,tot)))])
 
