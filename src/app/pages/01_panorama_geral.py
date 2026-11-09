@@ -227,10 +227,10 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     # ------------------------------------------------------------------
     st.subheader("Variação anual de exames por município (ano a ano)")
     st.caption(
-        "Cruzamento ano × ano: compara o total de exames de cada município "
-        "com o ano anterior. Valores positivos indicam expansão na oferta de "
-        "exames; negativos, retração. Variação de volume não equivale à "
-        "cobertura populacional."
+        "Esta seção mostra quanto a quantidade de exames registrados aumentou "
+        "ou diminuiu em cada município de um ano para o seguinte. "
+        "O indicador representa mudança no volume de registros, não na "
+        "quantidade de mulheres atendidas nem na cobertura do rastreamento."
     )
 
     var_ano = (
@@ -277,6 +277,14 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             sorted(pivo_var.columns, key=lambda c: int(str(c).split("→")[1]))
         ]
         st.markdown("#### Variação anual (%) por município e transição")
+        st.markdown(
+            "Leia a tabela por **linha (município)** e **coluna (comparação entre anos)**. "
+            "Por exemplo, **2023→2024** mostra a mudança de 2023 para 2024. "
+            "Um resultado de **+20.00%** significa que foram registrados 20% mais "
+            "exames do que no ano anterior; **-20.00%** significa 20% menos. "
+            "O percentual é calculado sobre a quantidade do **primeiro ano** "
+            "da comparação."
+        )
 
         def estilo_variacao(v):
             if pd.isna(v):
@@ -306,9 +314,12 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             height=min(480, 48 + 36 * len(pivo_var)),
         )
         st.caption(
-            "Azul = aumento de exames registrados · Vermelho = redução · "
-            "— = comparação indisponível. Δ% = (ano atual − ano anterior) "
-            "÷ ano anterior × 100."
+            "**Como interpretar as cores:** azul = aumento; vermelho = redução; "
+            "valor próximo de 0% = pouca mudança; **—** = comparação indisponível. "
+            "**Cálculo:** Δ% = (exames no ano atual − exames no ano anterior) "
+            "÷ exames no ano anterior × 100. "
+            "A comparação exige dois anos consecutivos e quantidade anterior "
+            "maior que zero."
         )
         if any("2022" in str(c) for c in pivo_var.columns):
             st.caption(
@@ -322,7 +333,18 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             & var_ano["variacao_pct"].notna()
         ].copy()
         st.markdown(f"#### Ranking de variação — {ultima_var}")
-        st.caption("Comparação percentual entre anos consecutivos para cada município.")
+        st.markdown(
+            f"Este gráfico destaca **a comparação mais recente disponível "
+            f"({ultima_var})** nos filtros selecionados. Cada barra representa "
+            "a mudança percentual de exames registrados no município: "
+            "**à direita do zero, em azul**, houve aumento; "
+            "**à esquerda, em vermelho**, houve redução. "
+            "Quanto maior a distância até o zero, maior foi a mudança percentual. "
+            "O ranking compara **taxas de variação**, não o total de exames: "
+            "um município com poucos registros pode ter uma variação alta. "
+            "Passe o mouse sobre as barras para ver a quantidade de exames "
+            "em cada um dos dois anos."
+        )
         if not ranking_var.empty:
             ranking_plot = ranking_var.sort_values("variacao_pct", ascending=True)
             ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
