@@ -802,23 +802,38 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 ].div(base.where(base > 0)).mul(100)
                 comp = comp.dropna(subset=["participacao_pct"])
                 if not comp.empty:
-                    # Barras horizontais empilhadas: nomes longos sem rotação
-                    # e leitura de cada proporção na escala de 0 a 100%.
+                    # Barras verticais 100% com rótulos quebrados em duas linhas.
+                    # Mantém os nomes originais nos dados e no hover.
                     categorias_presentes = sorted(
                         comp["categoria"].unique(), key=str.casefold
                     )
+                    def rotulo_categoria(nome):
+                        palavras = str(nome).replace("_", " ").split()
+                        linhas = []
+                        atual = ""
+                        for palavra in palavras:
+                            candidato = (atual + " " + palavra).strip()
+                            if atual and len(candidato) > 15:
+                                linhas.append(atual)
+                                atual = palavra
+                            else:
+                                atual = candidato
+                        if atual:
+                            linhas.append(atual)
+                        return "<br>".join(linhas)
+
                     cores_faixa = {
                         "<25 anos": "#169B62",
                         "25–64 anos": ROYAL_BLUE,
                         "≥65 anos": "#E85D2A",
                     }
                     fig_faixas = px.bar(
-                        comp, x="participacao_pct", y="categoria",
-                        orientation="h", color="grupo_3", barmode="stack",
+                        comp, x="categoria", y="participacao_pct",
+                        color="grupo_3", barmode="stack",
                         color_discrete_map=cores_faixa,
                         category_orders={
                             "grupo_3": ordem_grupos,
-                            "categoria": list(reversed(categorias_presentes)),
+                            "categoria": categorias_presentes,
                         },
                         labels={
                             "categoria": "Categoria citopatológica",
@@ -828,36 +843,37 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         custom_data=["quantidade_alterados"],
                     )
                     fig_faixas.update_traces(
-                        marker_line_color="#FFFFFF",
-                        marker_line_width=0.8,
+                        marker_line_color="#FFFFFF", marker_line_width=0.8,
                         hovertemplate=(
-                            "Categoria: %{y}<br>Participação: %{x:.2f}%"
+                            "Categoria: %{x}<br>Participação: %{y:.2f}%"
                             "<br>Exames: %{customdata[0]:,.0f}"
                             "<extra>%{fullData.name}</extra>"
                         ),
                     )
-                    fig_faixas.update_xaxes(
-                        range=[0, 100], ticksuffix="%", tickformat=".0f",
-                        dtick=20, gridcolor="#E4EBF1",
+                    fig_faixas.update_yaxes(
+                        range=[0, 100], ticksuffix="%", dtick=20,
+                        gridcolor="#E4EBF1",
                         title_text="Participação dentro da categoria (%)",
                     )
-                    fig_faixas.update_yaxes(
-                        title_text=None, showgrid=False,
-                        categoryorder="array",
-                        categoryarray=list(reversed(categorias_presentes)),
+                    fig_faixas.update_xaxes(
+                        type="category", categoryorder="array",
+                        categoryarray=categorias_presentes,
+                        tickmode="array", tickvals=categorias_presentes,
+                        ticktext=[rotulo_categoria(nome) for nome in categorias_presentes],
+                        tickangle=0,
                         tickfont=dict(size=11, color=NAVY),
+                        title_text=None, automargin=True,
                     )
                     fig_faixas.update_layout(
-                        height=max(470, len(categorias_presentes) * 57 + 135),
+                        height=485, bargap=0.27,
                         plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
                         font=dict(color=NAVY),
                         legend=dict(
                             title_text="Grupo etário", orientation="h",
-                            x=0.5, xanchor="center", y=1.10, yanchor="bottom",
+                            x=0.5, xanchor="center", y=1.11, yanchor="bottom",
                             font=dict(size=12, color=NAVY),
                         ),
-                        bargap=0.25,
-                        margin=dict(l=190, r=35, t=100, b=75),
+                        margin=dict(l=75, r=25, t=95, b=115),
                     )
                     img_faixas = copy.deepcopy(fig_faixas)
                     img_faixas.update_layout(
@@ -865,14 +881,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             text="Composição etária por categoria (2020–2025)",
                             x=0.5, font=dict(size=21, color=NAVY),
                         ),
-                        width=1250,
-                        height=max(530, len(categorias_presentes) * 67 + 150),
-                        margin=dict(l=260, r=70, t=130, b=95),
+                        width=1400, height=600,
+                        margin=dict(l=95, r=60, t=125, b=145),
                     )
                     chart_with_right_click_download(
                         fig_faixas, filename="alterados_categorias_faixas.png",
-                        height=fig_faixas.layout.height, min_chart_width=760,
-                        export_fig=img_faixas,
+                        height=485, min_chart_width=970, export_fig=img_faixas,
                     )
                     with st.expander("Ver dados de categorias por faixa etária"):
                         export_table(
