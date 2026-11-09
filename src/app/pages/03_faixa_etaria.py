@@ -440,18 +440,18 @@ with b:
         )
 
 st.markdown(
-    """
-    <div style="margin:14px 0 18px;padding:14px 18px;background:#F0F6FA;
-                border-left:4px solid #006C9A;border-radius:8px;
-                font:400 18px/1.55 Manrope,Arial,sans-serif;color:#334E68;">
-      <strong>Como interpretar os gráficos:</strong>
-      o gráfico de rosca apresenta a participação de cada faixa etária no total de exames
-      selecionados. As barras mostram essa mesma distribuição em cada município,
-      permitindo comparar a proporção de exames entre as faixas etárias.
-    </div>
-    """,
-    unsafe_allow_html=True,
+    "Os gráficos mostram **a distribuição dos exames por faixa etária** no "
+    "recorte selecionado e como essa composição varia entre os municípios."
 )
+with st.expander("ℹ️ Como interpretar os gráficos de distribuição etária", expanded=False):
+    st.markdown(
+        "**Gráfico de rosca:** mostra a participação de cada grupo no total "
+        "de exames selecionados; o centro destaca a faixa-alvo de 25 a 64 anos. "
+        "**Barras por município:** cada barra representa 100% dos exames "
+        "daquele município, divididos entre as três faixas etárias. "
+        "Compare os percentuais, não somente as quantidades absolutas. "
+        "Os dados representam registros de exames, e não mulheres distintas."
+    )
 
 with st.expander("Ver tabela detalhada de exames por município e faixa etária"):
     export_table(agg, "siscan_faixa_etaria.csv")
@@ -468,15 +468,18 @@ st.markdown(
 )
 st.markdown("### Quantidade anual de exames na população-alvo (25–64 anos)")
 st.markdown(
-    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
-    'font-weight:400;margin:4px 0 18px 0;">'
-    'Mostra a evolução anual da quantidade de exames citopatológicos '
-    'registrados na faixa etária de 25 a 64 anos em cada município, entre '
-    '2020 e 2025. Cada ponto representa o número de exames no ano; '
-    'a tabela abaixo apresenta a razão entre esse total e a população '
-    'feminina de 25–64 anos (Censo IBGE 2022), em percentual.</p>',
-    unsafe_allow_html=True,
+    "Apresenta a **evolução anual dos exames registrados em mulheres de "
+    "25 a 64 anos** em cada município do período selecionado."
 )
+with st.expander("ℹ️ Como interpretar a evolução anual na população-alvo", expanded=False):
+    st.markdown(
+        "Cada painel corresponde a um município. No eixo horizontal estão "
+        "os **anos** e, no vertical, o **número de exames registrados na faixa "
+        "de 25 a 64 anos**. Linhas ascendentes indicam aumento de registros; "
+        "descendentes, redução. A quantidade de exames não equivale ao "
+        "número de mulheres distintas rastreadas. A tabela seguinte relaciona "
+        "essa produção à população feminina do Censo IBGE 2022."
+    )
 
 # Compatibilidade com instâncias do Streamlit que mantenham em memória
 # uma versão anterior do data_loader.TABLES, sem a chave "cobertura".
@@ -635,16 +638,17 @@ chart_with_right_click_download(
 # Tabela município × ano da razão calculada diretamente pela fórmula.
 st.markdown("#### Razão anual de exames por município e ano (%)")
 st.markdown(
-    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
-    'font-weight:400;margin:4px 0 18px 0;">'
-    'Apresenta, para cada município e ano, a razão entre a quantidade de '
-    'exames citopatológicos registrados em mulheres de 25 a 64 anos e a '
-    'população feminina dessa faixa etária (Censo IBGE 2022), multiplicada '
-    'por 100. Permite comparar a produção de exames em relação à população '
-    'entre municípios e ao longo do tempo; não representa a porcentagem '
-    'de mulheres distintas rastreadas.</p>',
-    unsafe_allow_html=True,
+    "Compara, por município e ano, a **quantidade de exames na população-alvo "
+    "em relação à população feminina de 25 a 64 anos** (IBGE 2022)."
 )
+with st.expander("ℹ️ O que significa a razão anual de exames?", expanded=False):
+    st.markdown(
+        "**Razão anual (%) = exames registrados em mulheres de 25 a 64 anos "
+        "÷ população feminina dessa faixa etária (Censo IBGE 2022) × 100.** "
+        "O denominador populacional é fixo para todos os anos. "
+        "A razão serve para comparar produção relativa à população, "
+        "**não representa a porcentagem de mulheres distintas rastreadas**."
+    )
 ordenar_tabela_razao = st.selectbox(
     "Ordenar por",
     options=["A–Z", "Maior média", "Menor média"],
@@ -832,25 +836,24 @@ st.markdown(
 )
 st.markdown("#### Tabela consolidada de exames na população-alvo (25–64 anos)")
 st.markdown(
-    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
-    'font-weight:400;margin:4px 0 18px 0;">'
-    'Esta tabela mostra, para cada município, a população feminina de 25 a 64 '
-    'anos (Censo IBGE 2022), a quantidade anual de exames equivalente a 33% '
-    'dessa população e a média de exames efetivamente registrados no SISCAN '
-    'nos anos selecionados.</p>'
-    '<p style="font-size:18px;line-height:1.55;color:#334E68;'
-    'font-weight:400;margin:0 0 18px 0;">'
-    'A coluna <b>Diferença anual média</b> indica '
-    'quantos exames ficaram abaixo da referência (valor negativo) ou acima '
-    'dela (valor positivo). Já o <b>Atingimento da referência (%)</b> mostra '
-    'quanto da quantidade esperada foi alcançada: 100% significa que os '
-    'volumes são iguais. A linha <b>TOTAL 10ª CRS</b> reúne os municípios '
-    'selecionados. A referência de 33% foi adaptada do indicador 1.5 '
-    'do IDSS/ANS (ano-base 2023), que define esse parâmetro para '
-    'beneficiárias de planos de saúde. Aqui, ela permite comparar volumes '
-    'municipais, sem medir a proporção de mulheres rastreadas.</p>',
-    unsafe_allow_html=True,
+    "Compara a **média anual de exames registrados** com uma referência "
+    "exploratória equivalente a **33% da população feminina de 25 a 64 anos** "
+    "em cada município."
 )
+with st.expander("ℹ️ Como interpretar a comparação populacional", expanded=False):
+    st.markdown(
+        "**População de referência:** mulheres de 25 a 64 anos no Censo IBGE 2022. "
+        "**Referência anual (33%):** população × 0,33. "
+        "**Média anual de exames:** média dos registros nos anos com dados selecionados. "
+        "**Diferença anual média:** média observada menos o volume de referência "
+        "(negativa quando abaixo; positiva quando acima). "
+        "**Atingimento (%):** média observada ÷ referência × 100; "
+        "100% indica igualdade entre os volumes. "
+        "O parâmetro de 33% é uma adaptação exploratória do indicador 1.5 "
+        "IDSS/ANS (ano-base 2023), não sua aplicação oficial e **não mede "
+        "cobertura de mulheres distintas**. A linha total soma os volumes "
+        "dos municípios selecionados."
+    )
 
 # Consolidar primeiro por município e ano: não duplicar população ao somar exames.
 base_consolidada = (
