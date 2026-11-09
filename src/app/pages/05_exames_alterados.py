@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,SKY,ORANGE,NAVY
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered,require,sidebar_filters
+from utils.data_loader import filtered,require,sidebar_filters,selected_years
 
 # Cores com maior contraste entre os grupos etários (PET-Saúde).
 BABY_BLUE = "#A9DDF4"   # <25 anos
@@ -656,3 +656,172 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         )
     with st.expander("Ver dados detalhados de exames alterados", expanded=False):
         export_table(matrix, "siscan_exames_alterados.csv")
+
+    # Novas métricas Q5: fatos de composição da Gold, separados do indicador canônico.
+    st.markdown("### Composição dos exames alterados por categoria e ano")
+    st.markdown(
+        "Mostra as **quantidades de registros por categoria citopatológica** "
+        "ao longo dos anos e municípios selecionados."
+    )
+    with st.expander("ℹ️ Como interpretar a composição anual", expanded=False):
+        st.markdown(
+            "Cada barra representa um ano e suas cores representam as categorias. "
+            "A altura mostra **quantidades absolutas**, não taxas entre exames válidos. "
+            "Na Gold, combinações não retornadas pelo TabNet são preenchidas com zero. "
+            "**A soma das categorias pode diferir ligeiramente da métrica geral** "
+            "de exames alterados em alguns pares município/ano; a métrica geral "
+            "acima continua sendo a referência oficial deste dashboard."
+        )
+    cat_anual = filtered("categoria_anual")
+    if not cat_anual.empty and {
+        "ano", "categoria", "quantidade_alterados"
+    }.issubset(cat_anual.columns):
+        cat_anual["quantidade_alterados"] = pd.to_numeric(
+            cat_anual["quantidade_alterados"], errors="coerce"
+        )
+        por_cat_ano = (
+            cat_anual.groupby(["ano", "categoria"], as_index=False)[
+                "quantidade_alterados"
+            ].sum(min_count=1).dropna(subset=["quantidade_alterados"])
+        )
+        if not por_cat_ano.empty:
+            fig_cat = px.bar(
+                por_cat_ano, x="ano", y="quantidade_alterados",
+                color="categoria", barmode="stack",
+                labels={"ano": "Ano", "quantidade_alterados": "Exames por categoria",
+                        "categoria": "Categoria citopatológica"},
+            )
+            fig_cat.update_xaxes(type="category")
+            fig_cat.update_yaxes(rangemode="tozero", tickformat=",d")
+            fig_cat.update_layout(
+                height=480, plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                legend=dict(title="Categoria", x=1.02, y=1),
+                margin=dict(l=70, r=190, t=35, b=65),
+            )
+            export_cat = copy.deepcopy(fig_cat)
+            export_cat.update_layout(
+                title=dict(text="Exames alterados por categoria e ano", x=0.5),
+                margin=dict(l=90, r=240, t=100, b=85),
+            )
+            chart_with_right_click_download(
+                fig_cat, filename="alterados_categorias_ano.png",
+                height=480, export_fig=export_cat,
+            )
+            with st.expander("Ver dados de categorias por ano", expanded=False):
+                total_ano = por_cat_ano.groupby("ano")[
+                    "quantidade_alterados"
+                ].transform("sum")
+                tabela_cat = por_cat_ano.assign(
+                    participacao_pct=por_cat_ano["quantidade_alterados"].div(
+                        total_ano.where(total_ano > 0)
+                    ).mul(100)
+                ).rename(columns={
+                    "ano": "Ano", "categoria": "Categoria",
+                    "quantidade_alterados": "Exames na categoria",
+                    "participacao_pct": "Participação entre categorias (%)",
+                })
+                export_table(tabela_cat, "siscan_categoria_anual.csv")
+        else:
+            st.info("Não há registros por categoria nos filtros selecionados.")
+    else:
+        st.info("A tabela Gold de categorias anuais está vazia ou incompleta.")
+
+    st.markdown("### Distribuição etária dos exames alterados por categoria")
+    st.markdown(
+        "Compara a **distribuição dos registros de cada categoria** entre "
+        "os grupos etários no consolidado de 2020–2025."
+    )
+    with st.expander("ℹ️ Como interpretar a distribuição por faixa etária", expanded=False):
+        st.markdown(
+            "Cada barra corresponde a uma categoria e os segmentos representam "
+            "a participação de cada grupo etário **dentro daquela categoria**. "
+            "A distribuição não mede o risco de alteração em cada faixa. "
+            "**A Gold não possui ano nessa tabela:** o cruzamento representa "
+            "todo o período 2020–2025, e não pode ser filtrado por ano."
+        )
+    if selected_years() != list(range(2020, 2026)):
+        st.info(
+            "Este cruzamento foi consolidado na Gold para 2020–2025, sem "
+            "detalhamento anual. Selecione todos os anos para visualizá-lo."
+        )
+    else:
+        cat_faixa = filtered("categoria_faixa")
+        if not cat_faixa.empty and {
+            "categoria", "grupo_etario_3", "quantidade_alterados"
+        }.issubset(cat_faixa.columns):
+            cat_faixa["grupo_3"] = (
+                cat_faixa["grupo_etario_3"].astype("string").str.strip()
+                .map(grupo_para_rotulo)
+            )
+            cat_faixa["quantidade_alterados"] = pd.to_numeric(
+                cat_faixa["quantidade_alterados"], errors="coerce"
+            )
+            comp = (
+                cat_faixa.dropna(subset=["grupo_3", "quantidade_alterados"])
+                .groupby(["categoria", "grupo_3"], as_index=False)[
+                    "quantidade_alterados"
+                ].sum(min_count=1)
+            )
+            if not comp.empty:
+                base = comp.groupby("categoria")[
+                    "quantidade_alterados"
+                ].transform("sum")
+                comp["participacao_pct"] = comp[
+                    "quantidade_alterados"
+                ].div(base.where(base > 0)).mul(100)
+                comp = comp.dropna(subset=["participacao_pct"])
+                if not comp.empty:
+                    fig_faixas = px.bar(
+                        comp, x="categoria", y="participacao_pct",
+                        color="grupo_3", barmode="stack",
+                        color_discrete_map={
+                            "<25 anos": "#169B62",
+                            "25–64 anos": ROYAL_BLUE,
+                            "≥65 anos": ORANGE,
+                        },
+                        category_orders={"grupo_3": ordem_grupos},
+                        labels={"categoria": "Categoria",
+                                "participacao_pct": "Participação (%)",
+                                "grupo_3": "Grupo etário"},
+                        custom_data=["quantidade_alterados"],
+                    )
+                    fig_faixas.update_traces(
+                        hovertemplate=(
+                            "Categoria: %{x}<br>Participação: %{y:.2f}%"
+                            "<br>Exames: %{customdata[0]:,.0f}"
+                            "<extra>%{fullData.name}</extra>"
+                        )
+                    )
+                    fig_faixas.update_yaxes(range=[0, 100], ticksuffix="%")
+                    fig_faixas.update_xaxes(tickangle=-25)
+                    fig_faixas.update_layout(
+                        height=510, plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                        legend=dict(title="Grupo etário", orientation="h",
+                                    x=0.5, xanchor="center", y=1.12),
+                        margin=dict(l=70, r=35, t=105, b=160),
+                    )
+                    img_faixas = copy.deepcopy(fig_faixas)
+                    img_faixas.update_layout(
+                        title=dict(text="Composição etária por categoria (2020–2025)",
+                                   x=0.5),
+                        margin=dict(l=90, r=50, t=130, b=170),
+                    )
+                    chart_with_right_click_download(
+                        fig_faixas, filename="alterados_categorias_faixas.png",
+                        height=510, min_chart_width=760, export_fig=img_faixas,
+                    )
+                    with st.expander("Ver dados de categorias por faixa etária"):
+                        export_table(
+                            comp.rename(columns={
+                                "categoria": "Categoria", "grupo_3": "Grupo etário",
+                                "quantidade_alterados": "Exames na categoria",
+                                "participacao_pct": "Participação na categoria (%)",
+                            }), "siscan_categoria_faixa_etaria.csv",
+                        )
+                else:
+                    st.info("Não há categorias com registros para esta visualização.")
+            else:
+                st.info("Não há registros por categoria e faixa etária.")
+        else:
+            st.info("A tabela Gold de categorias por faixa etária está indisponível.")
+
