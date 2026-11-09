@@ -9,16 +9,6 @@ from utils.data_loader import filtered,require,sidebar_filters
 # Cores com maior contraste entre os grupos etários (PET-Saúde).
 BABY_BLUE = "#A9DDF4"   # <25 anos
 ROYAL_BLUE = "#1757A6"  # 25–64 anos
-def descricao_grafico(texto: str) -> None:
-    """Exibe explicações dos gráficos com legibilidade reforçada."""
-    st.markdown(
-        '<p style="font-size:18px;line-height:1.55;color:#334E68;'
-        'font-weight:400;margin:4px 0 18px 0;overflow-wrap:anywhere;">'
-        + texto + '</p>',
-        unsafe_allow_html=True,
-    )
-
-
 st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
@@ -50,11 +40,21 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     metric_row([("Exames alterados",fmt_num(num)),("Proporção operacional",fmt_pct(pct(num,den))),
                 ("Exames no denominador disponível",fmt_num(den) if pd.notna(den) else "N/D")])
     st.markdown("### Proporção de exames alterados por grupo etário")
-    descricao_grafico(
-        "Apresenta o percentual de exames citopatológicos alterados em cada grupo "
-        "etário (<25, 25–64 e ≥65 anos), considerando os exames válidos do próprio "
-        "grupo. Permite identificar em quais faixas etárias a proporção de alterações é maior."
+    st.markdown(
+        "Compara a **proporção de exames citopatológicos alterados** nos grupos "
+        "etários de menores de 25 anos, 25–64 anos e 65 anos ou mais."
     )
+    with st.expander("ℹ️ Como interpretar a proporção por grupo etário", expanded=False):
+        st.markdown(
+            "**Eixo horizontal:** grupos etários. **Eixo vertical:** proporção de "
+            "exames alterados (%). Cada barra mostra quantos exames tiveram "
+            "resultado alterado em relação ao total de **exames válidos do próprio "
+            "grupo**, e não ao total de todos os grupos. "
+            "**Proporção (%) = exames alterados ÷ exames válidos × 100.** "
+            "Uma barra mais alta indica maior proporção de resultados alterados "
+            "naquele grupo, não necessariamente maior quantidade de exames. "
+            "A medida se refere a exames, não a mulheres distintas."
+        )
     ordem_grupos = ["<25 anos", "25–64 anos", "≥65 anos"]
     macro = df.groupby("grupo_3", as_index=False)[
         ["quantidade_alterados", "total_exames_validos"]
@@ -119,11 +119,22 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     # Evolução anual com linhas independentes para os três grupos etários.
     # Dois municípios por linha (até seis linhas), sem acumular grupos.
     st.markdown("### Evolução anual de exames alterados por município e grupo etário")
-    descricao_grafico(
-        "Mostra a evolução anual da quantidade de exames alterados em cada município, "
-        "separada em três grupos etários (<25, 25–64 e ≥65 anos). Permite comparar "
-        "o comportamento das faixas etárias entre 2020 e 2025."
+    st.markdown(
+        "Apresenta a **quantidade anual de exames alterados por município**, "
+        "com linhas separadas para os três grupos etários no período selecionado."
     )
+    with st.expander("ℹ️ Como interpretar a evolução anual por grupo etário", expanded=False):
+        st.markdown(
+            "Cada painel corresponde a um **município**. **Eixo horizontal:** "
+            "anos selecionados. **Eixo vertical:** quantidade de exames alterados. "
+            "As cores e os símbolos identificam os grupos **<25 anos**, "
+            "**25–64 anos** e **≥65 anos**. Linhas ascendentes indicam aumento "
+            "de registros alterados; descendentes, redução. "
+            "**Este gráfico apresenta quantidades absolutas, não percentuais.** "
+            "Um aumento pode acompanhar mudanças no volume total de exames; "
+            "não significa, isoladamente, maior risco ou prevalência de alterações. "
+            "Ausências de registros não devem ser interpretadas automaticamente como zero."
+        )
     if "ano" not in df.columns:
         st.info("A evolução anual requer a coluna 'ano' na tabela Gold.")
     else:
@@ -382,11 +393,23 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     # Série anual por município: utiliza as quantidades já existentes na Gold.
     # Ausências de ano são mantidas como lacunas, nunca convertidas em zero.
     st.markdown("### Evolução anual de exames alterados por município")
-    descricao_grafico(
-        "Apresenta a quantidade anual de exames citopatológicos alterados em cada "
-        "município, considerando todas as faixas etárias. Permite identificar "
-        "variações no número de exames alterados entre 2020 e 2025."
+    st.markdown(
+        "Mostra a **evolução anual do total de exames alterados em cada município**, "
+        "considerando os grupos etários disponíveis no recorte selecionado."
     )
+    with st.expander("ℹ️ Como interpretar a evolução anual por município", expanded=False):
+        st.markdown(
+            "Cada painel representa um município. No **eixo horizontal** estão "
+            "os anos e no **vertical**, a quantidade anual de exames alterados. "
+            "Linhas ascendentes representam mais exames alterados registrados "
+            "do que no ano anterior; descendentes, menos. "
+            "Os valores são **contagens**, não proporções. "
+            "Municípios com maior volume de exames podem registrar mais alterações "
+            "sem apresentar maior percentual de resultados alterados. "
+            "Anos sem registros aparecem como lacunas, e não como zero. "
+            "Compare as proporções no gráfico etário ou na matriz territorial "
+            "para avaliar diferenças relativas."
+        )
     if "ano" not in df.columns:
         st.info("O gráfico anual requer a coluna 'ano' na tabela Gold de exames alterados.")
     else:
@@ -551,11 +574,22 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
     heat = heat.reindex(columns=ordem_grupos)
     if not heat.empty:
         st.markdown("### Matriz territorial de proporção de exames alterados por grupo etário")
-        descricao_grafico(
-            "Apresenta o percentual de exames alterados por município e grupo etário. "
-            "Quanto mais escura a célula, maior a proporção de exames alterados "
-            "naquele município e grupo. O símbolo — indica ausência de dados."
+        st.markdown(
+            "Compara a **proporção de exames alterados por município e grupo etário**. "
+            "Tons mais escuros indicam percentuais maiores no recorte selecionado."
         )
+        with st.expander("ℹ️ Como interpretar a matriz territorial", expanded=False):
+            st.markdown(
+                "Cada **linha** corresponde a um município e cada **coluna**, "
+                "a um grupo etário. A célula apresenta a **proporção (%) de exames "
+                "alterados entre os exames válidos daquele município e grupo**. "
+                "**Proporção (%) = exames alterados ÷ exames válidos × 100.** "
+                "Quanto mais escura a célula, maior a proporção. "
+                "O símbolo **—** indica comparação sem dado disponível; "
+                "não equivale a 0%. Os percentuais usam os totais de exames "
+                "válidos como denominador, e não devem ser interpretados "
+                "como prevalência de doença ou número de mulheres afetadas."
+            )
         fig=px.imshow(
             heat, aspect="auto", color_continuous_scale="Blues",
             labels={"x":"Grupo etário","y":"Município","color":"%"},
