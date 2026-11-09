@@ -39,6 +39,24 @@ page_header(
     "diferenças na produção registrada entre os municípios.",
 )
 
+# Títulos de seção alinhados à hierarquia visual da página Faixa Etária.
+st.markdown(
+    """
+    <style>
+    .panorama-section-title {
+      margin:30px 0 17px;padding:9px 0 12px;
+      border-bottom:2px solid #D8E5EF;
+      font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
+      color:#1A3B5C;
+    }
+    .panorama-section-title .panorama-section-index {
+      color:#006C9A;margin-right:10px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 df = filtered("temporal")
 if require(df, ["municipio", "ano", "mes", "quantidade"]):
     years = selected_years()
@@ -53,6 +71,11 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     bycity = (df.groupby("municipio", as_index=False).quantidade.sum(min_count=1)
               .sort_values("quantidade", ascending=False))
     top = bycity.iloc[0] if not bycity.empty else None
+
+    st.markdown(
+        '<h2 class="panorama-section-title"><span class="panorama-section-index">01</span>'
+        'Panorama da produção de exames</h2>', unsafe_allow_html=True,
+    )
 
     col_total, col_media, col_municipio = st.columns(3)
     with col_total:
@@ -110,6 +133,11 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                      ticktext=[f"{short_pt[d.month-1]}/{str(d.year)[2:]}" for d in axis_dates])
     fig.update_yaxes(tickformat=",d")
     display_chart(fig, filename="panorama_evolucao_mensal.png")
+
+    st.markdown(
+        '<h2 class="panorama-section-title"><span class="panorama-section-index">02</span>'
+        'Distribuição e evolução municipal</h2>', unsafe_allow_html=True,
+    )
 
     st.subheader("Volume de exames por município")
     st.markdown(
@@ -290,6 +318,11 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     # no recorte; anos sem registro não geram variação (evita interpretar
     # dado ausente como crescimento ou queda).
     # ------------------------------------------------------------------
+    st.markdown(
+        '<h2 class="panorama-section-title"><span class="panorama-section-index">03</span>'
+        'Variação anual da produção</h2>', unsafe_allow_html=True,
+    )
+
     st.subheader("Variação anual de exames por município (ano a ano)")
     st.caption(
         "Esta seção mostra quanto a quantidade de exames registrados aumentou "
@@ -542,7 +575,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     detail = detail.rename(columns={
         "municipio":"Município", "ano":"Ano", "mes":"Mês", "quantidade":"Exames registrados"
     })
-    with st.expander("Ver dados detalhados de exames registrados", expanded=False):
+    with st.expander("Ver dados detalhados da produção", expanded=False):
         display_table(detail, integer_columns=['Ano', 'Exames registrados'])
         st.download_button(
             "⬇️ Exportar dados filtrados (CSV)",
