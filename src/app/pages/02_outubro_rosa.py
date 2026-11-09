@@ -62,20 +62,27 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
 
     st.subheader("Produção de exames de setembro a dezembro")
     st.markdown(
-        "Compara a **quantidade de exames registrados de setembro a dezembro** "
-        "em cada ano selecionado, permitindo observar o comportamento antes, "
-        "durante e após outubro."
+        "Mostra **quantos exames foram registrados em cada competência mensal**, "
+        "de setembro a dezembro, para comparar os volumes entre os meses "
+        "e observar sua evolução nos anos selecionados."
     )
-    with st.expander("ℹ️ Como interpretar a produção de setembro a dezembro", expanded=False):
+    with st.expander("ℹ️ Como interpretar este gráfico", expanded=False):
         st.markdown(
-            "**Eixo horizontal:** anos selecionados. **Eixo vertical:** número de exames. "
-            "As cores identificam setembro (referência), outubro (campanha), novembro "
-            "e dezembro (meses posteriores). A Gold registra outubro a dezembro e "
-            "associa a cada município e ano o total de setembro correspondente. "
-            "Compare as barras dentro do mesmo ano para identificar mudanças "
-            "no volume de registros. **Mudanças mensais não demonstram, por si "
-            "só, que a campanha tenha causado o aumento ou a redução.** "
-            "Os valores representam exames, não mulheres distintas."
+            "**Como ler:** cada grupo de barras corresponde a um ano. "
+            "As cores representam os meses: **setembro (azul-claro), "
+            "outubro (laranja), novembro (verde) e dezembro (azul-escuro)**. "
+            "Quanto mais alta a barra, maior a quantidade de exames registrada "
+            "naquele mês. Compare as quatro barras do mesmo ano para identificar "
+            "aumentos ou reduções.\n\n"
+            "**O que significa o mês:** no SISCAN, a competência do exame "
+            "é determinada pela **data do resultado laboratorial**, que pode "
+            "ser posterior à coleta. Portanto, exames contabilizados em "
+            "novembro ou dezembro **podem ter sido coletados em outubro ou "
+            "em outros meses**.\n\n"
+            "**Limitação:** o gráfico mostra registros de exames, não quantas "
+            "mulheres realizaram a coleta em cada mês. Por isso, um aumento "
+            "após outubro não comprova, isoladamente, efeito da campanha "
+            "Outubro Rosa."
         )
     plot = df.groupby(["ano", "mes"], as_index=False)["exames_mes"].sum(min_count=1)
     ref = octdf.groupby("ano", as_index=False)["exames_referencia_setembro"].sum(min_count=1)
