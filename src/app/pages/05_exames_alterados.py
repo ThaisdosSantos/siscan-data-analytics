@@ -685,18 +685,49 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             ].sum(min_count=1).dropna(subset=["quantidade_alterados"])
         )
         if not por_cat_ano.empty:
+            # Paleta PET-Saúde: uma cor fixa por categoria, inclusive quando
+            # os filtros ocultam categorias em determinados anos.
+            categorias_ordenadas = sorted(
+                por_cat_ano["categoria"].dropna().unique(), key=str.casefold
+            )
+            cores_categorias = [
+                "#006C9A", "#E85D2A", "#218B65", "#6B5FB5",
+                "#D49B22", "#1A3B5C", "#C24B75", "#54A8C3",
+            ]
+            mapa_cores = {
+                categoria: cores_categorias[i % len(cores_categorias)]
+                for i, categoria in enumerate(categorias_ordenadas)
+            }
             fig_cat = px.bar(
                 por_cat_ano, x="ano", y="quantidade_alterados",
                 color="categoria", barmode="stack",
+                color_discrete_map=mapa_cores,
+                category_orders={"categoria": categorias_ordenadas},
                 labels={"ano": "Ano", "quantidade_alterados": "Exames por categoria",
                         "categoria": "Categoria citopatológica"},
             )
-            fig_cat.update_xaxes(type="category")
-            fig_cat.update_yaxes(rangemode="tozero", tickformat=",d")
+            fig_cat.update_traces(
+                hovertemplate=(
+                    "Ano: %{x}<br>Exames: %{y:,.0f}"
+                    "<extra>%{fullData.name}</extra>"
+                ),
+                marker_line_color="#FFFFFF",
+                marker_line_width=0.6,
+            )
+            fig_cat.update_xaxes(type="category", showgrid=False)
+            fig_cat.update_yaxes(
+                rangemode="tozero", tickformat=",d", gridcolor="#E4EBF1"
+            )
             fig_cat.update_layout(
-                height=480, plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
-                legend=dict(title="Categoria", x=1.02, y=1),
-                margin=dict(l=70, r=190, t=35, b=65),
+                height=500, plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                font=dict(color=NAVY),
+                legend=dict(
+                    title_text="Categoria citopatológica",
+                    x=1.02, xanchor="left", y=1, yanchor="top",
+                    font=dict(size=11, color=NAVY),
+                    bgcolor="rgba(255,255,255,0)",
+                ),
+                margin=dict(l=70, r=225, t=35, b=65),
             )
             export_cat = copy.deepcopy(fig_cat)
             export_cat.update_layout(
