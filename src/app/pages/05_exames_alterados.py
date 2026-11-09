@@ -869,11 +869,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
                         font=dict(color=NAVY),
                         legend=dict(
-                            title_text="", orientation="h",
-                            x=0.5, xanchor="center", y=1.11, yanchor="bottom",
+                            title_text="", orientation="v",
+                            x=1.02, xanchor="left", y=1, yanchor="top",
                             font=dict(size=12, color=NAVY),
+                            bgcolor="rgba(255,255,255,0)",
                         ),
-                        margin=dict(l=75, r=25, t=95, b=115),
+                        margin=dict(l=75, r=125, t=55, b=115),
                     )
                     img_faixas = copy.deepcopy(fig_faixas)
                     img_faixas.update_layout(
@@ -882,7 +883,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             x=0.5, font=dict(size=21, color=NAVY),
                         ),
                         width=1400, height=600,
-                        margin=dict(l=95, r=60, t=125, b=145),
+                        margin=dict(l=95, r=165, t=125, b=145),
                     )
                     chart_with_right_click_download(
                         fig_faixas, filename="alterados_categorias_faixas.png",
