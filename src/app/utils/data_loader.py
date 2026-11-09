@@ -14,6 +14,8 @@ TABLES = {
  "etaria":"fato_conformidade_faixa_etaria",
  "adequabilidade":"fato_adequabilidade_amostras",
  "alterados":"fato_exames_alterados",
+ "categoria_anual":"fato_categoria_anual",
+ "categoria_faixa":"fato_categoria_faixa_etaria",
  "cobertura":"fato_evolucao_cobertura_municipios",
 }
 MUNICIPIOS = {
