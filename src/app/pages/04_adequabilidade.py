@@ -213,16 +213,11 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
             "em cada categoria. **Total:** soma dessas categorias no município. "
             "**Taxa de insatisfatórias (%):** quantidade insatisfatória ÷ total × 100. "
             "**Taxa de rejeitadas (%):** quantidade rejeitada ÷ total × 100. "
-            "O **destaque exploratório** sinaliza municípios em que a soma das "
-            "duas taxas ultrapassa o limiar escolhido; ele **não representa "
-            "um parâmetro oficial de qualidade**. A última linha totaliza as "
-            "quantidades e recalcula as taxas sobre o total selecionado, "
+            "A última linha totaliza as quantidades e recalcula as taxas "
+            "sobre o total selecionado, "
             "sem somar percentuais municipais. "
             "As taxas descrevem adequabilidade da amostra, não alterações citológicas."
         )
-    limiar=st.number_input("Limiar exploratório para destaque (%); não é um limite oficial",min_value=0.0,max_value=100.0,value=5.0,step=0.5)
-    pivot["alerta_exploratorio"]=pivot.taxa_insatisfatorias_pct.add(pivot.taxa_rejeitadas_pct).gt(limiar)
-    st.caption("Limiar configurável, exclusivamente visual; não representa tolerância ministerial.")
     # Linha consolidada ao final: soma contagens e recalcula taxas pelo total,
     # evitando a soma incorreta de percentuais entre municípios.
     table = pivot.reset_index()
@@ -238,7 +233,6 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
         "taxa_rejeitadas_pct": (
             totals["Rejeitada"] / denominator * 100 if denominator > 0 else float("nan")
         ),
-        "alerta_exploratorio": "—",
     }
     table = pd.concat([table, pd.DataFrame([total_row])], ignore_index=True)
     st.markdown(
