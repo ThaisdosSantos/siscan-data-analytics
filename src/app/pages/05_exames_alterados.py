@@ -708,9 +708,18 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 .div(total_por_ano.where(total_por_ano > 0))
                 .mul(100)
             )
+            # Rótulos preparados na origem: cada texto acompanha sua barra
+            # sem precisar interpretar arrays internos do Plotly.
+            por_cat_ano["rotulo_exportacao"] = por_cat_ano[
+                "participacao_pct"
+            ].map(
+                lambda valor: f"{valor:.2f}%"
+                if pd.notna(valor) and valor >= 6 else ""
+            )
             fig_cat = px.bar(
                 por_cat_ano, x="ano", y="quantidade_alterados",
                 color="categoria", barmode="stack",
+                text="rotulo_exportacao",
                 custom_data=["participacao_pct"],
                 color_discrete_map=mapa_cores,
                 category_orders={"categoria": categorias_ordenadas},
@@ -725,6 +734,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 ),
                 marker_line_color="#FFFFFF",
                 marker_line_width=0.6,
+                textposition="none",  # os rótulos aparecem apenas no PNG
             )
             fig_cat.update_xaxes(type="category", showgrid=False)
             fig_cat.update_yaxes(
@@ -741,20 +751,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 ),
                 margin=dict(l=70, r=225, t=35, b=65),
             )
-            # O custom_data acompanha a ordem correta de cada trace do Plotly.
-            # Não convertemos rótulos de ano para inteiro (podem vir como string).
+            # O texto já foi associado a cada registro pelo Plotly Express.
+            # Nenhuma conversão ou comparação de arrays durante a exportação.
             export_cat = copy.deepcopy(fig_cat)
-            for trace in export_cat.data:
-                trace.update(
-                    text=[
-                        f"{float(valor[0]):.2f}%"
-                        if pd.notna(valor[0]) and float(valor[0]) >= 6 else ""
-                        for valor in trace.customdata
-                    ],
-                    textposition="inside",
-                    textfont=dict(size=13, color="#FFFFFF"),
-                    insidetextanchor="middle",
-                )
+            export_cat.update_traces(
+                textposition="inside",
+                textfont=dict(size=13, color="#FFFFFF"),
+                insidetextanchor="middle",
+            )
             export_cat.update_layout(
                 title=dict(text="Exames alterados por categoria e ano", x=0.5),
                 height=650, width=1600,
