@@ -399,13 +399,13 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         st.markdown("#### Variação anual (%) por município e transição")
         modo_ordem_var = st.selectbox(
             "Ordenar por",
-            ["A–Z (município)", "Maior para menor (última variação)"],
+            ["A–Z", "Maior para menor (última variação)"],
             index=0,
             key="ordenacao_matriz_variacao_panorama",
             help="A ordenação por variação considera a transição anual mais recente "
                  "disponível nos filtros; comparações indisponíveis ficam ao final.",
         )
-        if modo_ordem_var == "A–Z (município)":
+        if modo_ordem_var == "A–Z":
             pivo_var = pivo_var.sort_index(key=lambda nomes: nomes.str.casefold())
         else:
             ultima_coluna_matriz = pivo_var.columns[-1]
