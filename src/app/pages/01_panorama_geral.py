@@ -258,7 +258,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     ]
 
     def fmt_delta(v):
-        return "N/D" if pd.isna(v) else f"{v:+.2f}%".replace(".", ",")
+        return "—" if pd.isna(v) else f"{v:+.2f}%"
 
     if not var_ano["variacao_pct"].notna().any():
         st.info(
@@ -266,7 +266,9 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             "calcular a variação anual por município."
         )
     else:
-        # Matriz município × transição, com gradiente centrado em zero.
+        # Identidade PET-Saúde: azul para crescimento, vermelho suave para queda,
+        # fundo claro para valores próximos de zero; sem gradiente arco-íris.
+        positivo, negativo = "#006C9A", "#A83A20"
         pivo_var = var_ano.pivot_table(
             index="municipio", columns="transicao",
             values="variacao_pct", aggfunc="mean",
@@ -274,58 +276,102 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         pivo_var = pivo_var[
             sorted(pivo_var.columns, key=lambda c: int(str(c).split("→")[1]))
         ]
-        vmax_var = float(pivo_var.abs().max().max())
         st.markdown("#### Variação anual (%) por município e transição")
-        st.dataframe(
+
+        def estilo_variacao(v):
+            if pd.isna(v):
+                return "background-color:#F1F5F9;color:#64748B;"
+            if v > 0:
+                return "background-color:#E8F0F6;color:#143650;font-weight:650;"
+            if v < 0:
+                return "background-color:#FDE8E4;color:#A83A20;font-weight:650;"
+            return "background-color:#F4F7FA;color:#334E68;font-weight:650;"
+
+        estilo_matriz = (
             pivo_var.style
             .format(fmt_delta, na_rep="—")
-            .background_gradient(cmap="RdYlGn", axis=None, vmin=-vmax_var, vmax=vmax_var),
+            .map(estilo_variacao)
+            .set_properties(**{"font-size": "14px", "text-align": "center",
+                               "padding": "10px 12px"})
+            .set_table_styles([
+                {"selector": "th", "props": [
+                    ("font-size", "14px"), ("font-weight", "700"),
+                    ("color", "#1A3B5C"), ("background-color", "#EEF5FA"),
+                    ("padding", "10px 12px")]},
+            ])
+        )
+        st.dataframe(
+            estilo_matriz,
             use_container_width=True,
+            height=min(480, 48 + 36 * len(pivo_var)),
         )
         st.caption(
-            "Δ% = (exames do ano − exames do ano anterior) ÷ exames do ano "
-            "anterior × 100. Verde = alta; vermelho = queda; — = transição "
-            "sem os dois anos presentes no recorte."
+            "Azul = aumento de exames registrados · Vermelho = redução · "
+            "— = comparação indisponível. Δ% = (ano atual − ano anterior) "
+            "÷ ano anterior × 100."
         )
         if any("2022" in str(c) for c in pivo_var.columns):
             st.caption(
-                "⚠️ agosto/2022 não existe na fonte do SISCAN: o total de 2022 "
-                "refere-se a 11 meses de registro, o que tende a subestimar a "
-                "variação 2021→2022 e a superestimar a 2022→2023."
+                "⚠️ Agosto/2022 não possui registros na fonte SISCAN. "
+                "As comparações 2021→2022 e 2022→2023 podem ser afetadas."
             )
 
-        # Ranking da transição mais recente do recorte selecionado.
         ultima_var = pivo_var.columns[-1]
-        ranking_var = var_ano.loc[var_ano["transicao"].eq(ultima_var)].copy()
-        ranking_var = ranking_var.sort_values("variacao_pct", ascending=False)
-        st.markdown(f"#### Ranking de variação na transição {ultima_var}")
-        st.caption("Do maior crescimento ao maior recuo no volume anual de exames.")
-        ranking_plot = ranking_var.sort_values("variacao_pct")
-        fig_var = px.bar(
-            ranking_plot, x="variacao_pct", y="municipio", orientation="h",
-            color="variacao_pct", color_continuous_scale="RdYlGn",
-            color_continuous_midpoint=0,
-            labels={
-                "variacao_pct": "Variação anual (%)",
-                "municipio": "Município",
-            },
-        )
-        fig_var.update_layout(separators=",.")
-        fig_var.update_traces(
-            texttemplate="%{x:+.2f}%",
-            textposition="outside",
-            cliponaxis=False,
-            hovertemplate=(
-                "%{y}<br>" + ultima_var + ": %{x:+.2f}%<extra></extra>"
-            ),
-        )
-        lim_inf = min(float(ranking_plot["variacao_pct"].min()) * 1.28, 0)
-        lim_sup = max(float(ranking_plot["variacao_pct"].max()) * 1.28, 1)
-        fig_var.update_xaxes(
-            zeroline=True, zerolinecolor="#1A3B5C", zerolinewidth=1.4,
-            ticksuffix="%", range=[lim_inf, lim_sup],
-        )
-        display_chart(fig_var, filename="panorama_variacao_anual_municipios.png")
+        ranking_var = var_ano.loc[
+            var_ano["transicao"].eq(ultima_var)
+            & var_ano["variacao_pct"].notna()
+        ].copy()
+        st.markdown(f"#### Ranking de variação — {ultima_var}")
+        st.caption("Comparação percentual entre anos consecutivos para cada município.")
+        if not ranking_var.empty:
+            ranking_plot = ranking_var.sort_values("variacao_pct", ascending=True)
+            ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
+                lambda valor: "Aumento" if valor >= 0 else "Redução"
+            )
+            fig_var = px.bar(
+                ranking_plot,
+                x="variacao_pct", y="municipio", orientation="h",
+                color="cor",
+                color_discrete_map={"Aumento": positivo, "Redução": negativo},
+                labels={"variacao_pct": "Variação anual (%)",
+                        "municipio": "Município"},
+                category_orders={"municipio": ranking_plot["municipio"].tolist()},
+                custom_data=["quantidade_anterior", "quantidade"],
+            )
+            fig_var.update_traces(
+                text=[fmt_delta(v) for v in ranking_plot["variacao_pct"]],
+                texttemplate="%{text}", textposition="outside",
+                textfont=dict(size=13, color="#1A3B5C"),
+                cliponaxis=False,
+                hovertemplate=(
+                    "<b>%{y}</b><br>" + ultima_var
+                    + "<br>Variação: %{x:+.2f}%"
+                    + "<br>Anterior: %{customdata[0]:,.0f} exames"
+                    + "<br>Atual: %{customdata[1]:,.0f} exames<extra></extra>"
+                ),
+            )
+            minimo = min(float(ranking_plot["variacao_pct"].min()), 0)
+            maximo = max(float(ranking_plot["variacao_pct"].max()), 0)
+            margem = max(4, (maximo - minimo) * 0.22)
+            fig_var.update_xaxes(
+                title="Variação anual (%)",
+                range=[minimo - margem, maximo + margem],
+                ticksuffix="%", tickfont=dict(size=12, color="#334E68"),
+                showgrid=True, gridcolor="#E8F0F6",
+                zeroline=True, zerolinecolor="#7C8FA0", zerolinewidth=1.5,
+            )
+            fig_var.update_yaxes(
+                title=None, tickfont=dict(size=13, color="#1A3B5C"),
+                automargin=True,
+            )
+            fig_var.update_layout(
+                height=max(440, 41 * len(ranking_plot) + 110),
+                margin=dict(l=18, r=60, t=28, b=55),
+                plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                showlegend=False, font=dict(color="#1A3B5C", size=13),
+                bargap=0.28,
+            )
+            display_chart(fig_var, filename="panorama_variacao_anual_municipios.png")
 
         with st.expander("Ver dados detalhados da variação anual", expanded=False):
             detalhe_var = (
