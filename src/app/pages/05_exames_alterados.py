@@ -736,8 +736,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             )
             # Sem imputação de anos ausentes como zero.
             if valores_alvo.notna().any().any():
+                # Plotly trata colunas numéricas como coordenadas contínuas.
+                # Convertemos anos em rótulos categóricos ANTES de montar
+                # o heatmap, preservando uma célula por ano.
+                anos_rotulos = [str(ano) for ano in anos_alvo]
+                matriz_plot = valores_alvo.copy()
+                matriz_plot.columns = anos_rotulos
                 fig_alvo = px.imshow(
-                    valores_alvo,
+                    matriz_plot,
                     aspect="auto", color_continuous_scale="Blues",
                     labels={
                         "x": "Ano", "y": "Município",
@@ -769,7 +775,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             and float(valor) / float(max_alvo) >= 0.60
                         )
                         fig_alvo.add_annotation(
-                            x=ano, y=municipio, text=rotulo,
+                            x=str(ano), y=municipio, text=rotulo,
                             showarrow=False,
                             font=dict(
                                 size=11,
@@ -784,11 +790,16 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     fig_alvo.update_coloraxes(colorbar_tickformat=",.0f")
                 fig_alvo.update_layout(
                     height=max(500, 44 * len(municipios_alvo) + 140),
-                    margin=dict(l=40, r=30, t=45, b=65),
+                    margin=dict(l=180, r=45, t=45, b=65),
                     paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
                     font=dict(color=NAVY),
-                    xaxis=dict(type="category", title="Ano"),
-                    yaxis=dict(title="Município"),
+                    xaxis=dict(
+                        type="category", title="Ano",
+                        categoryorder="array", categoryarray=anos_rotulos,
+                        tickmode="array", tickvals=anos_rotulos,
+                        ticktext=anos_rotulos,
+                    ),
+                    yaxis=dict(title=None, automargin=True),
                 )
                 fig_alvo_export = copy.deepcopy(fig_alvo)
                 fig_alvo_export.update_layout(
@@ -797,7 +808,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         x=0.5, font=dict(color=NAVY, size=21),
                     ),
                     width=1500,
-                    margin=dict(l=150, r=95, t=100, b=85),
+                    margin=dict(l=230, r=110, t=100, b=85),
                 )
                 chart_with_right_click_download(
                     fig_alvo,
