@@ -698,9 +698,20 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 categoria: cores_categorias[i % len(cores_categorias)]
                 for i, categoria in enumerate(categorias_ordenadas)
             }
+            # Associa o percentual ao próprio registro antes de o Plotly
+            # separar as barras por categoria, evitando converter trace.x em int.
+            total_por_ano = por_cat_ano.groupby("ano")[
+                "quantidade_alterados"
+            ].transform("sum")
+            por_cat_ano["participacao_pct"] = (
+                por_cat_ano["quantidade_alterados"]
+                .div(total_por_ano.where(total_por_ano > 0))
+                .mul(100)
+            )
             fig_cat = px.bar(
                 por_cat_ano, x="ano", y="quantidade_alterados",
                 color="categoria", barmode="stack",
+                custom_data=["participacao_pct"],
                 color_discrete_map=mapa_cores,
                 category_orders={"categoria": categorias_ordenadas},
                 labels={"ano": "Ano", "quantidade_alterados": "Exames por categoria",
@@ -709,6 +720,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             fig_cat.update_traces(
                 hovertemplate=(
                     "Ano: %{x}<br>Exames: %{y:,.0f}"
+                    "<br>Participação: %{customdata[0]:.2f}%"
                     "<extra>%{fullData.name}</extra>"
                 ),
                 marker_line_color="#FFFFFF",
@@ -729,33 +741,15 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 ),
                 margin=dict(l=70, r=225, t=35, b=65),
             )
-            # PNG: percentuais nos segmentos, sem misturar tabelas e barras
-            # no mesmo objeto Plotly. Valores pequenos seguem no CSV.
-            total_ano_export = por_cat_ano.groupby("ano")[
-                "quantidade_alterados"
-            ].transform("sum")
-            por_cat_ano["participacao_export_pct"] = (
-                por_cat_ano["quantidade_alterados"].div(
-                    total_ano_export.where(total_ano_export > 0)
-                ).mul(100)
-            )
+            # O custom_data acompanha a ordem correta de cada trace do Plotly.
+            # Não convertemos rótulos de ano para inteiro (podem vir como string).
             export_cat = copy.deepcopy(fig_cat)
             for trace in export_cat.data:
-                percentuais_categoria = (
-                    por_cat_ano.loc[
-                        por_cat_ano["categoria"].eq(trace.name),
-                        ["ano", "participacao_export_pct"],
-                    ]
-                    .set_index("ano")["participacao_export_pct"]
-                )
                 trace.update(
                     text=[
-                        f"{p:.2f}%" if pd.notna(p) and p >= 6 else ""
-                        for p in (
-                            percentuais_categoria.get(
-                                int(ano), float("nan")
-                            ) for ano in trace.x
-                        )
+                        f"{float(valor[0]):.2f}%"
+                        if pd.notna(valor[0]) and float(valor[0]) >= 6 else ""
+                        for valor in trace.customdata
                     ],
                     textposition="inside",
                     textfont=dict(size=13, color="#FFFFFF"),
@@ -772,14 +766,9 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 height=480, export_fig=export_cat,
             )
             with st.expander("Ver dados de categorias por ano", expanded=False):
-                total_ano = por_cat_ano.groupby("ano")[
-                    "quantidade_alterados"
-                ].transform("sum")
-                tabela_cat = por_cat_ano.assign(
-                    participacao_pct=por_cat_ano["quantidade_alterados"].div(
-                        total_ano.where(total_ano > 0)
-                    ).mul(100)
-                ).rename(columns={
+                tabela_cat = por_cat_ano[
+                    ["ano", "categoria", "quantidade_alterados", "participacao_pct"]
+                ].rename(columns={
                     "ano": "Ano", "categoria": "Categoria",
                     "quantidade_alterados": "Exames na categoria",
                     "participacao_pct": "Participação entre categorias (%)",
