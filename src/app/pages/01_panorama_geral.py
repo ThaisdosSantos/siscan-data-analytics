@@ -516,18 +516,22 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
                 lambda valor: "Aumento" if valor >= 0 else "Redução"
             )
+            # Plotly Express divide as barras em traces por categoria de cor.
+            # O rótulo deve ser uma coluna do DataFrame para acompanhar cada
+            # município corretamente, em vez de uma lista aplicada a todos os traces.
+            ranking_plot["rotulo_variacao"] = ranking_plot["variacao_pct"].map(fmt_delta)
             fig_var = px.bar(
                 ranking_plot,
                 x="variacao_pct", y="municipio", orientation="h",
                 color="cor",
                 color_discrete_map={"Aumento": positivo, "Redução": negativo},
+                text="rotulo_variacao",
                 labels={"variacao_pct": "Variação anual (%)",
                         "municipio": "Município"},
                 category_orders={"municipio": ranking_plot["municipio"].tolist()},
                 custom_data=["quantidade_anterior", "quantidade"],
             )
             fig_var.update_traces(
-                text=[fmt_delta(v) for v in ranking_plot["variacao_pct"]],
                 texttemplate="%{text}", textposition="outside",
                 textfont=dict(size=13, color="#1A3B5C"),
                 cliponaxis=False,
