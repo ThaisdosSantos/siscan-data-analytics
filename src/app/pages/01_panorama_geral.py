@@ -527,93 +527,107 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 "que incluem 2022 podem ser afetadas por essa ausência."
             )
 
-        # Permite comparar todas as transições consecutivas disponíveis nos filtros.
-        # O padrão permanece a transição mais recente.
+        # "Todas" apresenta um ranking independente para cada transição,
+        # sem combinar percentuais de períodos diferentes.
         transicoes_disponiveis = list(pivo_var.columns)
+        todas_transicoes = "Todas as transições"
         transicao_ranking = st.selectbox(
             "Comparar a transição anual",
-            options=transicoes_disponiveis,
-            index=len(transicoes_disponiveis) - 1,
+            options=[todas_transicoes] + transicoes_disponiveis,
+            index=0,
             key="transicao_ranking_panorama",
-            help="Selecione dois anos consecutivos para visualizar o ranking "
-                 "municipal daquela transição.",
+            help="Veja todos os rankings anuais ou escolha uma transição específica. "
+                 "Cada comparação utiliza dois anos consecutivos com registros.",
         )
-        ranking_var = var_ano.loc[
-            var_ano["transicao"].eq(transicao_ranking)
-            & var_ano["variacao_pct"].notna()
-        ].copy()
-        st.markdown(f"#### Ranking de variação — {transicao_ranking}")
+        modo_todas = transicao_ranking == todas_transicoes
+        transicoes_ranking = (
+            transicoes_disponiveis if modo_todas else [transicao_ranking]
+        )
         st.markdown(
-            "Compara o **aumento ou a redução percentual** dos exames entre "
-            "os dois anos selecionados. **Azul, à direita do zero**, indica aumento; "
+            "Visualize a **variação percentual por município** em cada "
+            "comparação anual. **Azul, à direita do zero**, indica aumento; "
             "**vermelho, à esquerda**, indica redução."
         )
         with st.expander("ℹ️ Como interpretar o ranking", expanded=False):
             st.markdown(
-                "Quanto maior a distância da barra em relação ao zero, maior a "
-                "variação percentual. O ranking compara **percentuais**, não o "
-                "total de exames: municípios com volumes pequenos podem ter "
-                "mudanças percentuais expressivas. Passe o mouse sobre a barra "
-                "para consultar os totais dos dois anos."
+                "Cada ranking compara o total de exames de **dois anos consecutivos**. "
+                "Quanto maior a distância da barra ao zero, maior a variação. "
+                "São **percentuais de mudança**, não quantidades absolutas. "
+                "Passe o mouse sobre as barras para conferir os dois volumes. "
+                "Na opção **Todas as transições**, cada período é apresentado "
+                "separadamente; os percentuais não são somados nem calculados "
+                "como uma média entre anos."
             )
-            if agosto_2022_ausente and "2022" in transicao_ranking:
-                st.warning(
-                    "A transição selecionada inclui 2022, que não possui registros "
-                    "de agosto no recorte; interprete as diferenças com cautela."
+        if agosto_2022_ausente and any(
+            "2022" in t for t in transicoes_ranking
+        ):
+            st.caption(
+                "⚠️ As comparações que incluem 2022 podem ser afetadas "
+                "pela ausência de registros de agosto/2022."
+            )
+
+        for transicao_atual in transicoes_ranking:
+            ranking_var = var_ano.loc[
+                var_ano["transicao"].eq(transicao_atual)
+                & var_ano["variacao_pct"].notna()
+            ].copy()
+            st.markdown(f"#### Ranking de variação — {transicao_atual}")
+            if ranking_var.empty:
+                st.info("Não há valores calculáveis para esta transição no recorte.")
+                continue
+            # Reutiliza o mesmo padrão do ranking individual para cada período.
+                ranking_plot = ranking_var.sort_values("variacao_pct", ascending=True)
+                ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
+                    lambda valor: "Aumento" if valor >= 0 else "Redução"
                 )
-        if not ranking_var.empty:
-            ranking_plot = ranking_var.sort_values("variacao_pct", ascending=True)
-            ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
-                lambda valor: "Aumento" if valor >= 0 else "Redução"
-            )
-            # Plotly Express divide as barras em traces por categoria de cor.
-            # O rótulo deve ser uma coluna do DataFrame para acompanhar cada
-            # município corretamente, em vez de uma lista aplicada a todos os traces.
-            ranking_plot["rotulo_variacao"] = ranking_plot["variacao_pct"].map(fmt_delta)
-            fig_var = px.bar(
-                ranking_plot,
-                x="variacao_pct", y="municipio", orientation="h",
-                color="cor",
-                color_discrete_map={"Aumento": positivo, "Redução": negativo},
-                text="rotulo_variacao",
-                labels={"variacao_pct": "Variação anual (%)",
-                        "municipio": "Município"},
-                category_orders={"municipio": ranking_plot["municipio"].tolist()},
-                custom_data=["quantidade_anterior", "quantidade"],
-            )
-            fig_var.update_traces(
-                texttemplate="%{text}", textposition="outside",
-                textfont=dict(size=13, color="#1A3B5C"),
-                cliponaxis=False,
-                hovertemplate=(
-                    "<b>%{y}</b><br>" + transicao_ranking
-                    + "<br>Variação: %{x:+.2f}%"
-                    + "<br>Anterior: %{customdata[0]:,.0f} exames"
-                    + "<br>Atual: %{customdata[1]:,.0f} exames<extra></extra>"
-                ),
-            )
-            minimo = min(float(ranking_plot["variacao_pct"].min()), 0)
-            maximo = max(float(ranking_plot["variacao_pct"].max()), 0)
-            margem = max(4, (maximo - minimo) * 0.22)
-            fig_var.update_xaxes(
-                title="Variação anual (%)",
-                range=[minimo - margem, maximo + margem],
-                ticksuffix="%", tickfont=dict(size=12, color="#334E68"),
-                showgrid=True, gridcolor="#E8F0F6",
-                zeroline=True, zerolinecolor="#7C8FA0", zerolinewidth=1.5,
-            )
-            fig_var.update_yaxes(
-                title=None, tickfont=dict(size=13, color="#1A3B5C"),
-                automargin=True,
-            )
-            fig_var.update_layout(
-                height=max(440, 41 * len(ranking_plot) + 110),
-                margin=dict(l=18, r=60, t=28, b=55),
-                plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
-                showlegend=False, font=dict(color="#1A3B5C", size=13),
-                bargap=0.28,
-            )
-            display_chart(fig_var, filename="panorama_variacao_anual_municipios.png")
+                # Plotly Express divide as barras em traces por categoria de cor.
+                # O rótulo deve ser uma coluna do DataFrame para acompanhar cada
+                # município corretamente, em vez de uma lista aplicada a todos os traces.
+                ranking_plot["rotulo_variacao"] = ranking_plot["variacao_pct"].map(fmt_delta)
+                fig_var = px.bar(
+                    ranking_plot,
+                    x="variacao_pct", y="municipio", orientation="h",
+                    color="cor",
+                    color_discrete_map={"Aumento": positivo, "Redução": negativo},
+                    text="rotulo_variacao",
+                    labels={"variacao_pct": "Variação anual (%)",
+                            "municipio": "Município"},
+                    category_orders={"municipio": ranking_plot["municipio"].tolist()},
+                    custom_data=["quantidade_anterior", "quantidade"],
+                )
+                fig_var.update_traces(
+                    texttemplate="%{text}", textposition="outside",
+                    textfont=dict(size=13, color="#1A3B5C"),
+                    cliponaxis=False,
+                    hovertemplate=(
+                        "<b>%{y}</b><br>" + transicao_atual
+                        + "<br>Variação: %{x:+.2f}%"
+                        + "<br>Anterior: %{customdata[0]:,.0f} exames"
+                        + "<br>Atual: %{customdata[1]:,.0f} exames<extra></extra>"
+                    ),
+                )
+                minimo = min(float(ranking_plot["variacao_pct"].min()), 0)
+                maximo = max(float(ranking_plot["variacao_pct"].max()), 0)
+                margem = max(4, (maximo - minimo) * 0.22)
+                fig_var.update_xaxes(
+                    title="Variação anual (%)",
+                    range=[minimo - margem, maximo + margem],
+                    ticksuffix="%", tickfont=dict(size=12, color="#334E68"),
+                    showgrid=True, gridcolor="#E8F0F6",
+                    zeroline=True, zerolinecolor="#7C8FA0", zerolinewidth=1.5,
+                )
+                fig_var.update_yaxes(
+                    title=None, tickfont=dict(size=13, color="#1A3B5C"),
+                    automargin=True,
+                )
+                fig_var.update_layout(
+                    height=max(440, 41 * len(ranking_plot) + 110),
+                    margin=dict(l=18, r=60, t=28, b=55),
+                    plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                    showlegend=False, font=dict(color="#1A3B5C", size=13),
+                    bargap=0.28,
+                )
+                display_chart(fig_var, filename=f"panorama_variacao_{transicao_atual.replace('→', '_')}.png")
 
         with st.expander("Ver dados detalhados da variação anual", expanded=False):
             detalhe_var = var_ano.loc[
