@@ -802,44 +802,77 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 ].div(base.where(base > 0)).mul(100)
                 comp = comp.dropna(subset=["participacao_pct"])
                 if not comp.empty:
+                    # Barras horizontais empilhadas: nomes longos sem rotação
+                    # e leitura de cada proporção na escala de 0 a 100%.
+                    categorias_presentes = sorted(
+                        comp["categoria"].unique(), key=str.casefold
+                    )
+                    cores_faixa = {
+                        "<25 anos": "#169B62",
+                        "25–64 anos": ROYAL_BLUE,
+                        "≥65 anos": "#E85D2A",
+                    }
                     fig_faixas = px.bar(
-                        comp, x="categoria", y="participacao_pct",
-                        color="grupo_3", barmode="stack",
-                        color_discrete_map={
-                            "<25 anos": "#169B62",
-                            "25–64 anos": ROYAL_BLUE,
-                            "≥65 anos": ORANGE,
+                        comp, x="participacao_pct", y="categoria",
+                        orientation="h", color="grupo_3", barmode="stack",
+                        color_discrete_map=cores_faixa,
+                        category_orders={
+                            "grupo_3": ordem_grupos,
+                            "categoria": list(reversed(categorias_presentes)),
                         },
-                        category_orders={"grupo_3": ordem_grupos},
-                        labels={"categoria": "Categoria",
-                                "participacao_pct": "Participação (%)",
-                                "grupo_3": "Grupo etário"},
+                        labels={
+                            "categoria": "Categoria citopatológica",
+                            "participacao_pct": "Participação (%)",
+                            "grupo_3": "Grupo etário",
+                        },
                         custom_data=["quantidade_alterados"],
                     )
                     fig_faixas.update_traces(
+                        marker_line_color="#FFFFFF",
+                        marker_line_width=0.8,
                         hovertemplate=(
-                            "Categoria: %{x}<br>Participação: %{y:.2f}%"
+                            "Categoria: %{y}<br>Participação: %{x:.2f}%"
                             "<br>Exames: %{customdata[0]:,.0f}"
                             "<extra>%{fullData.name}</extra>"
-                        )
+                        ),
                     )
-                    fig_faixas.update_yaxes(range=[0, 100], ticksuffix="%")
-                    fig_faixas.update_xaxes(tickangle=-25)
+                    fig_faixas.update_xaxes(
+                        range=[0, 100], ticksuffix="%", tickformat=".0f",
+                        dtick=20, gridcolor="#E4EBF1",
+                        title_text="Participação dentro da categoria (%)",
+                    )
+                    fig_faixas.update_yaxes(
+                        title_text=None, showgrid=False,
+                        categoryorder="array",
+                        categoryarray=list(reversed(categorias_presentes)),
+                        tickfont=dict(size=11, color=NAVY),
+                    )
                     fig_faixas.update_layout(
-                        height=510, plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
-                        legend=dict(title="Grupo etário", orientation="h",
-                                    x=0.5, xanchor="center", y=1.12),
-                        margin=dict(l=70, r=35, t=105, b=160),
+                        height=max(470, len(categorias_presentes) * 57 + 135),
+                        plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                        font=dict(color=NAVY),
+                        legend=dict(
+                            title_text="Grupo etário", orientation="h",
+                            x=0.5, xanchor="center", y=1.10, yanchor="bottom",
+                            font=dict(size=12, color=NAVY),
+                        ),
+                        bargap=0.25,
+                        margin=dict(l=190, r=35, t=100, b=75),
                     )
                     img_faixas = copy.deepcopy(fig_faixas)
                     img_faixas.update_layout(
-                        title=dict(text="Composição etária por categoria (2020–2025)",
-                                   x=0.5),
-                        margin=dict(l=90, r=50, t=130, b=170),
+                        title=dict(
+                            text="Composição etária por categoria (2020–2025)",
+                            x=0.5, font=dict(size=21, color=NAVY),
+                        ),
+                        width=1250,
+                        height=max(530, len(categorias_presentes) * 67 + 150),
+                        margin=dict(l=260, r=70, t=130, b=95),
                     )
                     chart_with_right_click_download(
                         fig_faixas, filename="alterados_categorias_faixas.png",
-                        height=510, min_chart_width=760, export_fig=img_faixas,
+                        height=fig_faixas.layout.height, min_chart_width=760,
+                        export_fig=img_faixas,
                     )
                     with st.expander("Ver dados de categorias por faixa etária"):
                         export_table(
