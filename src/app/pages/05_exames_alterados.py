@@ -838,6 +838,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         "25–64 anos": ROYAL_BLUE,
                         "≥65 anos": "#E85D2A",
                     }
+                    # Prepara rótulos no DataFrame para evitar comparações
+                    # com arrays internos retornados pelos traces do Plotly.
+                    comp["rotulo_exportacao"] = comp["participacao_pct"].map(
+                        lambda valor: f"{valor:.2f}%"
+                        if pd.notna(valor) and valor >= 6 else ""
+                    )
                     fig_faixas = px.bar(
                         comp, x="categoria", y="participacao_pct",
                         color="grupo_3", barmode="stack",
@@ -852,9 +858,11 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             "grupo_3": "Grupo etário",
                         },
                         custom_data=["quantidade_alterados"],
+                        text="rotulo_exportacao",
                     )
                     fig_faixas.update_traces(
                         marker_line_color="#FFFFFF", marker_line_width=0.8,
+                        textposition="none",  # rótulos apenas na exportação
                         hovertemplate=(
                             "Categoria: %{x}<br>Participação: %{y:.2f}%"
                             "<br>Exames: %{customdata[0]:,.0f}"
@@ -890,20 +898,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         ),
                         margin=dict(l=75, r=125, t=55, b=210),
                     )
-                    # PNG: rótulos percentuais dentro dos segmentos.
-                    # Valores muito pequenos são apresentados no CSV detalhado.
+                    # O próprio Plotly Express preserva a relação entre cada
+                    # percentual, categoria e grupo, sem conversão de arrays.
                     img_faixas = copy.deepcopy(fig_faixas)
-                    for trace in img_faixas.data:
-                        trace.update(
-                            text=[
-                                f"{valor:.2f}%"
-                                if pd.notna(valor) and valor >= 6 else ""
-                                for valor in trace.y
-                            ],
-                            textposition="inside",
-                            textfont=dict(color="#FFFFFF", size=13),
-                            insidetextanchor="middle",
-                        )
+                    img_faixas.update_traces(
+                        textposition="inside",
+                        textfont=dict(color="#FFFFFF", size=13),
+                        insidetextanchor="middle",
+                    )
                     img_faixas.update_layout(
                         title=dict(
                             text="Composição etária por categoria (2020–2025)",
