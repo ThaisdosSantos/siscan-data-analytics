@@ -12,7 +12,15 @@ ROYAL_BLUE = "#1757A6"  # 25–64 anos
 st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
-page_header("Resultados", "Exames citopatológicos alterados")
+page_header(
+    "Resultados",
+    "Exames citopatológicos alterados",
+    "Apresenta a quantidade e a proporção de exames citopatológicos com "
+    "resultados alterados entre os exames válidos, considerando os municípios "
+    "e anos selecionados. Permite comparar os grupos etários, acompanhar "
+    "a evolução anual dos registros e identificar diferenças entre municípios. "
+    "As proporções se referem a exames, não ao número de mulheres com alterações.",
+)
 df=filtered("alterados")
 if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados","total_exames_validos"]):
     # A Gold classifica as idades sem perder o detalhamento quinquenal.
