@@ -381,6 +381,25 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             sorted(pivo_var.columns, key=lambda c: int(str(c).split("→")[1]))
         ]
         st.markdown("#### Variação anual (%) por município e transição")
+        modo_ordem_var = st.selectbox(
+            "Ordenar por",
+            ["A–Z (município)", "Maior para menor (última variação)",
+             "Menor para maior (última variação)"],
+            index=0,
+            key="ordenacao_matriz_variacao_panorama",
+            help="A ordenação por variação considera a transição anual mais recente "
+                 "disponível nos filtros; comparações indisponíveis ficam ao final.",
+        )
+        if modo_ordem_var == "A–Z (município)":
+            pivo_var = pivo_var.sort_index(key=lambda nomes: nomes.str.casefold())
+        else:
+            ultima_coluna_matriz = pivo_var.columns[-1]
+            pivo_var = pivo_var.sort_values(
+                by=ultima_coluna_matriz,
+                ascending=modo_ordem_var.startswith("Menor"),
+                na_position="last",
+                kind="stable",
+            )
         st.markdown(
             "Leia a tabela por **linha (município)** e **coluna (comparação entre anos)**. "
             "Por exemplo, **2023→2024** mostra a mudança de 2023 para 2024. "
@@ -479,6 +498,16 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             """ + tabela_var_html,
             unsafe_allow_html=True,
         )
+        export_matriz_var = pivo_var.reset_index().rename(columns={"municipio": "Município"})
+        st.download_button(
+            "⬇️ Exportar matriz de variação anual (CSV)",
+            data=export_matriz_var.to_csv(
+                index=False, sep=";", decimal=".", float_format="%.2f"
+            ).encode("utf-8-sig"),
+            file_name="siscan_matriz_variacao_anual_municipios.csv",
+            mime="text/csv",
+            key="exportar_matriz_variacao_panorama",
+        )
         st.caption(
             "**Como interpretar as cores:** azul = aumento; vermelho = redução; "
             "valor próximo de 0% = pouca mudança; **—** = comparação indisponível. "
@@ -566,15 +595,52 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             display_chart(fig_var, filename="panorama_variacao_anual_municipios.png")
 
         with st.expander("Ver dados detalhados da variação anual", expanded=False):
-            detalhe_var = (
-                var_ano.loc[var_ano["variacao_pct"].notna(), [
+            detalhe_var = var_ano.loc[
+                var_ano["variacao_pct"].notna(), [
                     "municipio", "transicao", "ano_anterior",
-                    "quantidade_anterior", "ano", "quantidade",
-                    "variacao_pct",
-                ]]
-                .sort_values(["municipio", "ano"])
+                    "quantidade_anterior", "ano", "quantidade", "variacao_pct",
+                ]
+            ].copy()
+            ordem_detalhe_var = st.selectbox(
+                "Ordenar por",
+                ["A–Z (município)", "Maior para menor (variação %)",
+                 "Menor para maior (variação %)"],
+                key="ordenacao_detalhe_variacao_panorama",
             )
-            export_table(detalhe_var, "siscan_variacao_anual_municipios.csv")
+            if ordem_detalhe_var == "A–Z (município)":
+                detalhe_var = detalhe_var.sort_values(
+                    ["municipio", "ano"], key=lambda serie: (
+                        serie.str.casefold() if serie.name == "municipio" else serie
+                    ), kind="stable",
+                )
+            else:
+                detalhe_var = detalhe_var.sort_values(
+                    ["variacao_pct", "municipio"],
+                    ascending=[ordem_detalhe_var.startswith("Menor"), True],
+                    kind="stable",
+                )
+            tabela_detalhe_var = detalhe_var.rename(columns={
+                "municipio": "Município", "transicao": "Transição",
+                "ano_anterior": "Ano anterior",
+                "quantidade_anterior": "Exames no ano anterior",
+                "ano": "Ano atual", "quantidade": "Exames no ano atual",
+                "variacao_pct": "Variação anual (%)",
+            })
+            display_table(
+                tabela_detalhe_var,
+                integer_columns=["Ano anterior", "Exames no ano anterior",
+                                 "Ano atual", "Exames no ano atual"],
+                percent_columns=["Variação anual (%)"],
+            )
+            st.download_button(
+                "⬇️ Exportar dados detalhados da variação anual (CSV)",
+                data=tabela_detalhe_var.to_csv(
+                    index=False, sep=";", decimal=".", float_format="%.2f"
+                ).encode("utf-8-sig"),
+                file_name="siscan_variacao_anual_municipios.csv",
+                mime="text/csv",
+                key="exportar_detalhe_variacao_panorama",
+            )
 
     detail = df[["municipio", "ano", "mes", "quantidade"]].copy()
     detail["mes"] = detail["mes"].astype(int).map({
@@ -586,6 +652,26 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         "municipio":"Município", "ano":"Ano", "mes":"Mês", "quantidade":"Exames registrados"
     })
     with st.expander("Ver dados detalhados da produção", expanded=False):
+        ordem_producao = st.selectbox(
+            "Ordenar por",
+            ["A–Z (município)", "Maior para menor (exames registrados)",
+             "Menor para maior (exames registrados)"],
+            key="ordenacao_detalhe_producao_panorama",
+        )
+        if ordem_producao == "A–Z (município)":
+            detail = detail.sort_values(
+                ["Município", "Ano"],
+                key=lambda serie: (
+                    serie.str.casefold() if serie.name == "Município" else serie
+                ),
+                kind="stable",
+            )
+        else:
+            detail = detail.sort_values(
+                ["Exames registrados", "Município"],
+                ascending=[ordem_producao.startswith("Menor"), True],
+                kind="stable",
+            )
         display_table(detail, integer_columns=['Ano', 'Exames registrados'])
         st.download_button(
             "⬇️ Exportar dados filtrados (CSV)",
