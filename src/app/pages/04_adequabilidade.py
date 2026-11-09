@@ -8,7 +8,13 @@ from utils.data_loader import filtered,require,sidebar_filters
 st.set_page_config(page_title="Adequabilidade | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
-page_header("Qualidade da amostra", "Adequabilidade das amostras")
+page_header(
+    "Qualidade da amostra",
+    "Adequabilidade das amostras",
+    "Apresenta a distribuição das amostras citopatológicas segundo sua "
+    "adequabilidade, a evolução anual das amostras insatisfatórias e rejeitadas "
+    "e a comparação dos resultados entre os municípios selecionados.",
+)
 df=filtered("adequabilidade")
 if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras"]):
     def cat(s):
@@ -21,11 +27,44 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
     g=df.groupby("categoria").quantidade_amostras.sum(min_count=1)
     tot=g.sum(min_count=1)
     ruim=g.get("Insatisfatória",0)+g.get("Rejeitada",0)
+    st.markdown(
+        "Os indicadores resumem a **quantidade de amostras registradas** e a "
+        "**proporção de amostras satisfatórias, insatisfatórias ou rejeitadas** "
+        "no recorte selecionado."
+    )
+    with st.expander("ℹ️ Como interpretar os indicadores de adequabilidade", expanded=False):
+        st.markdown(
+            "**Amostras avaliadas:** soma das quantidades registradas nas categorias "
+            "de adequabilidade disponíveis. **Satisfatórias (%):** amostras "
+            "classificadas como satisfatórias divididas pelo total. "
+            "**Insatisfatórias e rejeitadas (%):** soma dessas duas categorias "
+            "dividida pelo mesmo total. "
+            "Uma amostra **insatisfatória** não oferece qualidade adequada "
+            "para interpretação citopatológica; uma amostra **rejeitada** "
+            "não é aceita para avaliação. Essas categorias não devem ser "
+            "interpretadas como resultados citológicos alterados."
+        )
     metric_row([("Amostras avaliadas",fmt_num(tot)),("Satisfatórias",fmt_pct(pct(g.get("Satisfatória",0),tot))),
                 ("Insatisfatórias e rejeitadas",fmt_pct(pct(ruim,tot)))])
     series=df.groupby(["ano","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
     series=series[series.categoria.isin(["Insatisfatória","Rejeitada"])]
     if not series.empty:
+        st.subheader("Evolução anual de amostras insatisfatórias e rejeitadas")
+        st.markdown(
+            "Mostra **quantas amostras insatisfatórias e rejeitadas foram registradas "
+            "em cada ano**, permitindo acompanhar mudanças no volume dessas categorias."
+        )
+        with st.expander("ℹ️ Como interpretar a evolução anual da adequabilidade", expanded=False):
+            st.markdown(
+                "**Eixo horizontal:** anos selecionados. **Eixo vertical:** "
+                "quantidade de amostras. A linha **laranja** representa "
+                "amostras insatisfatórias e a linha **azul-claro**, rejeitadas. "
+                "Cada ponto mostra o total registrado naquela categoria e ano. "
+                "Uma linha ascendente indica aumento do **número absoluto** "
+                "de amostras, não necessariamente piora proporcional da qualidade: "
+                "o volume total de exames também pode ter mudado. "
+                "Os resultados não indicam quantas mulheres distintas foram atendidas."
+            )
         fig=px.line(
             series, x="ano", y="quantidade_amostras", color="categoria", markers=True,
             color_discrete_map={"Insatisfatória":ORANGE,"Rejeitada":SKY},
@@ -69,6 +108,24 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
     pivot["total"]=pivot[["Satisfatória","Insatisfatória","Rejeitada"]].sum(axis=1)
     pivot["taxa_insatisfatorias_pct"]=pivot["Insatisfatória"]/pivot.total.replace(0,float("nan"))*100
     pivot["taxa_rejeitadas_pct"]=pivot["Rejeitada"]/pivot.total.replace(0,float("nan"))*100
+    st.subheader("Adequabilidade das amostras por município")
+    st.markdown(
+        "Compara a **quantidade e a proporção de amostras insatisfatórias e "
+        "rejeitadas** entre os municípios do período selecionado."
+    )
+    with st.expander("ℹ️ Como interpretar a tabela municipal", expanded=False):
+        st.markdown(
+            "**Satisfatória, insatisfatória e rejeitada:** contagens de amostras "
+            "em cada categoria. **Total:** soma dessas categorias no município. "
+            "**Taxa de insatisfatórias (%):** quantidade insatisfatória ÷ total × 100. "
+            "**Taxa de rejeitadas (%):** quantidade rejeitada ÷ total × 100. "
+            "O **destaque exploratório** sinaliza municípios em que a soma das "
+            "duas taxas ultrapassa o limiar escolhido; ele **não representa "
+            "um parâmetro oficial de qualidade**. A última linha totaliza as "
+            "quantidades e recalcula as taxas sobre o total selecionado, "
+            "sem somar percentuais municipais. "
+            "As taxas descrevem adequabilidade da amostra, não alterações citológicas."
+        )
     limiar=st.number_input("Limiar exploratório para destaque (%); não é um limite oficial",min_value=0.0,max_value=100.0,value=5.0,step=0.5)
     pivot["alerta_exploratorio"]=pivot.taxa_insatisfatorias_pct.add(pivot.taxa_rejeitadas_pct).gt(limiar)
     st.caption("Limiar configurável, exclusivamente visual; não representa tolerância ministerial.")
