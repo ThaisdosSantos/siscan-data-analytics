@@ -58,6 +58,20 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         st.caption(f"Disponibilidade temporal: **{months_count} de {expected} meses** com registros.")
 
     st.subheader("Evolução mensal")
+    st.markdown(
+        "O gráfico mostra **quantos exames citopatológicos foram registrados "
+        "em cada mês** do período selecionado, considerando os municípios "
+        "filtrados. No eixo horizontal estão os **meses e anos**; no vertical, "
+        "a **quantidade de exames**. Pontos mais altos representam meses com "
+        "mais registros e pontos mais baixos, meses com menos registros. "
+        "Observe a linha para identificar aumentos, quedas e possíveis "
+        "padrões sazonais, sem atribuir suas causas apenas pelo gráfico."
+    )
+    st.caption(
+        "**Atenção:** meses sem dados aparecem como interrupções na linha, "
+        "não como zero exames. Os valores representam registros de exames, "
+        "e não o número de mulheres distintas atendidas."
+    )
     fig = px.line(x=complete, y=series["quantidade"], markers=True,
                   labels={"x": "Competência", "y": "Exames registrados"},
                   color_discrete_sequence=[OCEAN])
@@ -72,6 +86,18 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     display_chart(fig, filename="panorama_evolucao_mensal.png")
 
     st.subheader("Volume de exames por município")
+    st.markdown(
+        "Este gráfico compara o **total acumulado de exames registrados "
+        "em cada município** durante os anos selecionados. Cada barra "
+        "representa um município: quanto **maior seu comprimento**, maior "
+        "o volume de exames no período. Use a comparação para identificar "
+        "quais municípios concentram mais ou menos registros na seleção."
+    )
+    st.caption(
+        "**Como interpretar:** a comparação é de quantidades absolutas, "
+        "não de taxas. Municípios com populações maiores podem apresentar "
+        "mais exames sem necessariamente ter maior cobertura de rastreamento."
+    )
     bars = bycity.sort_values("quantidade", ascending=True)
     fig = px.bar(bars, x="quantidade", y="municipio", orientation="h",
                  color_discrete_sequence=[OCEAN],
@@ -84,10 +110,22 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     display_chart(fig, filename="panorama_volume_municipio.png")
 
     st.subheader("Evolução anual de exames por município")
+    st.markdown(
+        "Os pequenos gráficos mostram **a quantidade anual de exames "
+        "registrados separadamente para cada município**, permitindo "
+        "acompanhar sua trajetória entre os anos escolhidos. No eixo "
+        "horizontal estão os **anos**; no vertical, o **total de exames "
+        "do município naquele ano**. Linhas ascendentes indicam aumento "
+        "nos registros em relação ao ponto anterior; linhas descendentes, "
+        "redução. Compare a evolução dentro de cada município e observe "
+        "se as tendências se repetem entre eles."
+    )
     st.caption(
-        "Quantidade de exames citopatológicos registrados por município e ano. "
-        "Cada gráfico apresenta a evolução do seu município; anos sem registros "
-        "permanecem sem ponto, em vez de serem interpretados como zero."
+        "**Atenção:** anos sem registros não são tratados como zero. "
+        "O ano de 2022 não possui registros de agosto na fonte, portanto "
+        "seu total anual pode ficar subestimado. Para comparar a mudança "
+        "percentual entre anos consecutivos, consulte a seção "
+        "**Variação anual de exames por município** logo abaixo."
     )
     annual = (
         df.dropna(subset=["municipio", "ano"])
