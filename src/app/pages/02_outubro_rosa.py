@@ -110,7 +110,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         fig = px.bar(
             plot_city, y="municipio", x="variacao_pct", orientation="h",
             color="direcao",
-            color_discrete_map={"Redução":NAVY, "Aumento ou estabilidade":ORANGE},
+            color_discrete_map={"Redução":"#A83A20", "Aumento ou estabilidade":ORANGE},
             custom_data=["exames_referencia_setembro", "exames_mes", "diferenca_exames", "variacao_formatada"],
             labels={"municipio":"Município","variacao_pct":"Variação (%)"},
             title=f"Variação outubro × setembro por município · {period}"
@@ -123,8 +123,21 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 "<br>Diferença: %{customdata[2]:+.0f} exames<extra></extra>"
             )
         )
-        fig.update_xaxes(tickformat=".2f", ticksuffix="%")
-        fig.update_layout(showlegend=False)
+        # O zero separa visualmente queda (esquerda, vermelho) e aumento
+        # (direita, laranja); a referência permanece visível na exportação PNG.
+        fig.update_xaxes(
+            tickformat=".2f", ticksuffix="%",
+            zeroline=True, zerolinecolor="#1A3B5C", zerolinewidth=2,
+        )
+        fig.add_vline(x=0, line_width=2, line_color="#1A3B5C")
+        fig.add_annotation(
+            x=0, y=1.035, xref="x", yref="paper",
+            text="<b>0% — sem variação</b>", showarrow=False,
+            font=dict(size=12, color="#1A3B5C"),
+            bgcolor="#FFFFFF", bordercolor="#D8E5EF", borderwidth=1,
+            borderpad=4, yanchor="bottom",
+        )
+        fig.update_layout(showlegend=False, margin=dict(t=90))
         # Exportação: rótulos numéricos no PNG (o tooltip não existe em imagem).
         # Mantém o gráfico interativo sem rótulos para não poluir a tela.
         export_fig = copy.deepcopy(fig)
@@ -159,6 +172,11 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             height=430,
             export_fig=export_fig,
         )
+    st.caption(
+        "**Como ler:** barras vermelhas à esquerda de **0%** indicam redução "
+        "de exames em outubro em relação a setembro; barras laranjas à direita "
+        "indicam aumento. O eixo de 0% significa ausência de variação."
+    )
     st.caption(
         "Percentuais calculados sobre bases pequenas podem ser elevados mesmo "
         "quando a diferença absoluta é pequena. Não representam, por si só, "
