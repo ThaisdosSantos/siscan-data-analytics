@@ -110,7 +110,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         fig = px.bar(
             plot_city, y="municipio", x="variacao_pct", orientation="h",
             color="direcao",
-            color_discrete_map={"Redução":"#A83A20", "Aumento ou estabilidade":ORANGE},
+            color_discrete_map={"Redução":"#A83A20", "Aumento ou estabilidade":"#218B65"},
             custom_data=["exames_referencia_setembro", "exames_mes", "diferenca_exames", "variacao_formatada"],
             labels={"municipio":"Município","variacao_pct":"Variação (%)"},
             title=f"Variação outubro × setembro por município · {period}"
@@ -124,7 +124,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             )
         )
         # O zero separa visualmente queda (esquerda, vermelho) e aumento
-        # (direita, laranja); a referência permanece visível na exportação PNG.
+        # (direita, verde); a referência permanece visível na exportação PNG.
         fig.update_xaxes(
             tickformat=".2f", ticksuffix="%",
             zeroline=True, zerolinecolor="#1A3B5C", zerolinewidth=2,
