@@ -2,7 +2,6 @@ import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,SKY,ORANGE,NAVY
 from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered,require,sidebar_filters,selected_years
@@ -760,45 +759,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 textfont=dict(size=13, color="#FFFFFF"),
                 insidetextanchor="middle",
             )
-            # Tabela no próprio PNG: os segmentos muito pequenos não
-            # comportam rótulos; a grade exibe os percentuais de TODOS.
-            anos_tabela = sorted(por_cat_ano["ano"].dropna().unique())
-            tabela_percentuais_ano = (
-                por_cat_ano.pivot(
-                    index="categoria", columns="ano", values="participacao_pct"
-                )
-                .reindex(index=categorias_ordenadas, columns=anos_tabela)
-            )
-            export_cat.add_trace(
-                go.Table(
-                    domain=dict(x=[0, 1], y=[0.0, 0.30]),
-                    columnwidth=[2.9] + [1] * len(anos_tabela),
-                    header=dict(
-                        values=["Categoria / participação (%)"] + [
-                            str(ano).removesuffix(".0") for ano in anos_tabela
-                        ],
-                        fill_color=NAVY,
-                        font=dict(color="#FFFFFF", size=14),
-                        align="left", height=34,
-                    ),
-                    cells=dict(
-                        values=[tabela_percentuais_ano.index.tolist()] + [
-                            [
-                                f"{p:.2f}%" if pd.notna(p) else "N/D"
-                                for p in tabela_percentuais_ano[ano]
-                            ] for ano in anos_tabela
-                        ],
-                        fill_color="#EFF5F9",
-                        font=dict(color=NAVY, size=13),
-                        align="left", height=32,
-                    ),
-                )
-            )
-            export_cat.update_yaxes(domain=[0.47, 1.0])
+            # PNG contém apenas o gráfico. Segmentos pequenos continuam
+            # consultáveis no tooltip do site e na exportação CSV.
             export_cat.update_layout(
                 title=dict(text="Exames alterados por categoria e ano", x=0.5),
-                height=1000, width=1600,
-                margin=dict(l=90, r=265, t=110, b=60),
+                height=650, width=1600,
+                margin=dict(l=90, r=265, t=110, b=90),
                 uniformtext=dict(mode="hide", minsize=12),
             )
             chart_with_right_click_download(
@@ -942,46 +908,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         textfont=dict(color="#FFFFFF", size=13),
                         insidetextanchor="middle",
                     )
-                    # Tabela complementar dentro do PNG permite consultar
-                    # também percentuais menores que 6%, sem sobreposição.
-                    tabela_percentuais_etarios = (
-                        comp.pivot(
-                            index="categoria", columns="grupo_3",
-                            values="participacao_pct"
-                        )
-                        .reindex(index=categorias_presentes, columns=ordem_grupos)
-                    )
-                    img_faixas.add_trace(
-                        go.Table(
-                            domain=dict(x=[0, 1], y=[0.0, 0.28]),
-                            columnwidth=[3.2, 1, 1, 1],
-                            header=dict(
-                                values=["Categoria / participação (%)"] + ordem_grupos,
-                                fill_color=NAVY,
-                                font=dict(color="#FFFFFF", size=14),
-                                align="left", height=34,
-                            ),
-                            cells=dict(
-                                values=[tabela_percentuais_etarios.index.tolist()] + [
-                                    [
-                                        f"{p:.2f}%" if pd.notna(p) else "N/D"
-                                        for p in tabela_percentuais_etarios[grupo]
-                                    ] for grupo in ordem_grupos
-                                ],
-                                fill_color="#EFF5F9",
-                                font=dict(color=NAVY, size=13),
-                                align="left", height=32,
-                            ),
-                        )
-                    )
-                    img_faixas.update_yaxes(domain=[0.57, 1.0])
+                    # PNG contém somente o gráfico e os rótulos legíveis.
                     img_faixas.update_layout(
                         title=dict(
                             text="Composição etária por categoria (2020–2025)",
                             x=0.5, font=dict(size=21, color=NAVY),
                         ),
-                        width=1600, height=1280,
-                        margin=dict(l=100, r=185, t=125, b=75),
+                        width=1600, height=760,
+                        margin=dict(l=100, r=185, t=125, b=260),
                         uniformtext=dict(mode="hide", minsize=12),
                     )
                     chart_with_right_click_download(
