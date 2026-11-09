@@ -807,21 +807,6 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     categorias_presentes = sorted(
                         comp["categoria"].unique(), key=str.casefold
                     )
-                    def rotulo_categoria(nome):
-                        palavras = str(nome).replace("_", " ").split()
-                        linhas = []
-                        atual = ""
-                        for palavra in palavras:
-                            candidato = (atual + " " + palavra).strip()
-                            if atual and len(candidato) > 15:
-                                linhas.append(atual)
-                                atual = palavra
-                            else:
-                                atual = candidato
-                        if atual:
-                            linhas.append(atual)
-                        return "<br>".join(linhas)
-
                     cores_faixa = {
                         "<25 anos": "#169B62",
                         "25–64 anos": ROYAL_BLUE,
@@ -859,13 +844,16 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         type="category", categoryorder="array",
                         categoryarray=categorias_presentes,
                         tickmode="array", tickvals=categorias_presentes,
-                        ticktext=[rotulo_categoria(nome) for nome in categorias_presentes],
-                        tickangle=0,
+                        ticktext=[
+                            str(nome).replace("_", " ")
+                            for nome in categorias_presentes
+                        ],
+                        tickangle=-90,
                         tickfont=dict(size=11, color=NAVY),
                         title_text="Categoria citopatológica", automargin=True,
                     )
                     fig_faixas.update_layout(
-                        height=485, bargap=0.27,
+                        height=570, bargap=0.27,
                         plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
                         font=dict(color=NAVY),
                         legend=dict(
@@ -874,7 +862,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             font=dict(size=12, color=NAVY),
                             bgcolor="rgba(255,255,255,0)",
                         ),
-                        margin=dict(l=75, r=125, t=55, b=115),
+                        margin=dict(l=75, r=125, t=55, b=210),
                     )
                     img_faixas = copy.deepcopy(fig_faixas)
                     img_faixas.update_layout(
@@ -882,12 +870,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             text="Composição etária por categoria (2020–2025)",
                             x=0.5, font=dict(size=21, color=NAVY),
                         ),
-                        width=1400, height=600,
-                        margin=dict(l=95, r=165, t=125, b=145),
+                        width=1400, height=710,
+                        margin=dict(l=95, r=165, t=125, b=250),
                     )
                     chart_with_right_click_download(
                         fig_faixas, filename="alterados_categorias_faixas.png",
-                        height=485, min_chart_width=970, export_fig=img_faixas,
+                        height=570, min_chart_width=970, export_fig=img_faixas,
                     )
                     with st.expander("Ver dados de categorias por faixa etária"):
                         export_table(
