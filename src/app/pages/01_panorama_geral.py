@@ -103,6 +103,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     )
     series = monthly.set_index("data").reindex(complete)
     missing = selected_dates[series.loc[selected_dates, "quantidade"].isna()]
+    agosto_2022_ausente = pd.Timestamp("2022-08-01") in missing
     if len(missing):
         months_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
                      "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
@@ -114,19 +115,17 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
 
     st.subheader("Evolução mensal")
     st.markdown(
-        "O gráfico mostra **quantos exames citopatológicos foram registrados "
-        "em cada mês** do período selecionado, considerando os municípios "
-        "filtrados. No eixo horizontal estão os **meses e anos**; no vertical, "
-        "a **quantidade de exames**. Pontos mais altos representam meses com "
-        "mais registros e pontos mais baixos, meses com menos registros. "
-        "Observe a linha para identificar aumentos, quedas e possíveis "
-        "padrões sazonais, sem atribuir suas causas apenas pelo gráfico."
+        "Apresenta a **quantidade de exames registrada a cada mês** no recorte "
+        "selecionado, permitindo observar aumentos, reduções e possíveis padrões ao longo do tempo."
     )
-    st.caption(
-        "**Atenção:** meses sem dados aparecem como interrupções na linha, "
-        "não como zero exames. Os valores representam registros de exames, "
-        "e não o número de mulheres distintas atendidas."
-    )
+    with st.expander("ℹ️ Como interpretar a evolução mensal", expanded=False):
+        st.markdown(
+            "**Eixo horizontal:** meses e anos. **Eixo vertical:** quantidade de exames. "
+            "Pontos mais altos indicam maior volume mensal; pontos mais baixos, menor volume. "
+            "Meses sem dados aparecem como interrupções da linha, e **não como zero exames**. "
+            "Os valores se referem a exames registrados, não a mulheres distintas. "
+            "O gráfico permite observar padrões, mas não determinar suas causas."
+        )
     fig = px.line(x=complete, y=series["quantidade"], markers=True,
                   labels={"x": "Competência", "y": "Exames registrados"},
                   color_discrete_sequence=[OCEAN])
@@ -147,17 +146,16 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
 
     st.subheader("Volume de exames por município")
     st.markdown(
-        "Este gráfico compara o **total acumulado de exames registrados "
-        "em cada município** durante os anos selecionados. Cada barra "
-        "representa um município: quanto **maior seu comprimento**, maior "
-        "o volume de exames no período. Use a comparação para identificar "
-        "quais municípios concentram mais ou menos registros na seleção."
+        "Compara o **total de exames registrados em cada município** durante "
+        "o período selecionado, destacando os maiores e menores volumes."
     )
-    st.caption(
-        "**Como interpretar:** a comparação é de quantidades absolutas, "
-        "não de taxas. Municípios com populações maiores podem apresentar "
-        "mais exames sem necessariamente ter maior cobertura de rastreamento."
-    )
+    with st.expander("ℹ️ Como interpretar o volume municipal", expanded=False):
+        st.markdown(
+            "Cada barra representa um município; barras mais longas indicam "
+            "mais exames acumulados no período. A comparação utiliza **quantidades absolutas**, "
+            "não taxas populacionais. Municípios maiores podem apresentar volumes maiores "
+            "sem que isso represente maior cobertura ou melhor desempenho no rastreamento."
+        )
     bars = bycity.sort_values("quantidade", ascending=True)
     fig = px.bar(bars, x="quantidade", y="municipio", orientation="h",
                  color_discrete_sequence=[OCEAN],
@@ -171,22 +169,22 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
 
     st.subheader("Evolução anual de exames por município")
     st.markdown(
-        "Os pequenos gráficos mostram **a quantidade anual de exames "
-        "registrados separadamente para cada município**, permitindo "
-        "acompanhar sua trajetória entre os anos escolhidos. No eixo "
-        "horizontal estão os **anos**; no vertical, o **total de exames "
-        "do município naquele ano**. Linhas ascendentes indicam aumento "
-        "nos registros em relação ao ponto anterior; linhas descendentes, "
-        "redução. Compare a evolução dentro de cada município e observe "
-        "se as tendências se repetem entre eles."
+        "Mostra a **evolução anual do volume de exames em cada município**, "
+        "em gráficos separados para facilitar a comparação de tendências."
     )
-    st.caption(
-        "**Atenção:** anos sem registros não são tratados como zero. "
-        "O ano de 2022 não possui registros de agosto na fonte, portanto "
-        "seu total anual pode ficar subestimado. Para comparar a mudança "
-        "percentual entre anos consecutivos, consulte a seção "
-        "**Variação anual de exames por município** logo abaixo."
-    )
+    with st.expander("ℹ️ Como interpretar a evolução anual", expanded=False):
+        st.markdown(
+            "**Eixo horizontal:** anos selecionados. **Eixo vertical:** quantidade anual "
+            "de exames do município. Linhas ascendentes indicam aumento de registros; "
+            "descendentes, redução. Anos sem registros não são tratados como zero. "
+            "As diferenças percentuais entre anos consecutivos podem ser consultadas "
+            "na seção **03 — Variação anual da produção**."
+        )
+        if agosto_2022_ausente:
+            st.warning(
+                "Agosto/2022 não possui registros no recorte: o total anual de 2022 "
+                "pode ficar subestimado em comparações com outros anos."
+            )
     annual = (
         df.dropna(subset=["municipio", "ano"])
         .groupby(["municipio", "ano"], as_index=False)["quantidade"]
@@ -401,13 +399,18 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 kind="stable",
             )
         st.markdown(
-            "Leia a tabela por **linha (município)** e **coluna (comparação entre anos)**. "
-            "Por exemplo, **2023→2024** mostra a mudança de 2023 para 2024. "
-            "Um resultado de **+20.00%** significa que foram registrados 20% mais "
-            "exames do que no ano anterior; **-20.00%** significa 20% menos. "
-            "O percentual é calculado sobre a quantidade do **primeiro ano** "
-            "da comparação."
+            "Compara a **variação percentual dos exames entre anos consecutivos** "
+            "para cada município. Azul indica aumento e vermelho indica redução."
         )
+        with st.expander("ℹ️ Como interpretar a matriz de variação", expanded=False):
+            st.markdown(
+                "Cada **linha** corresponde a um município e cada **coluna** a uma "
+                "transição, como 2023→2024. **+20.00%** significa 20% mais exames "
+                "que no ano anterior; **-20.00%**, 20% menos. O percentual toma "
+                "como base o **primeiro ano** da comparação. O símbolo **—** "
+                "representa comparação indisponível. O indicador mede registros "
+                "de exames, não cobertura de mulheres rastreadas."
+            )
 
         # Mesma linguagem visual de display_table: cabeçalho azul-marinho,
         # primeira coluna destacada, linhas alternadas e rolagem horizontal.
@@ -516,30 +519,48 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             "A comparação exige dois anos consecutivos e quantidade anterior "
             "maior que zero."
         )
-        if any("2022" in str(c) for c in pivo_var.columns):
+        if agosto_2022_ausente and any(
+            "2022" in str(coluna) for coluna in pivo_var.columns
+        ):
             st.caption(
-                "⚠️ Agosto/2022 não possui registros na fonte SISCAN. "
-                "As comparações 2021→2022 e 2022→2023 podem ser afetadas."
+                "⚠️ Agosto/2022 não possui registros no recorte. As transições "
+                "que incluem 2022 podem ser afetadas por essa ausência."
             )
 
-        ultima_var = pivo_var.columns[-1]
+        # Permite comparar todas as transições consecutivas disponíveis nos filtros.
+        # O padrão permanece a transição mais recente.
+        transicoes_disponiveis = list(pivo_var.columns)
+        transicao_ranking = st.selectbox(
+            "Comparar a transição anual",
+            options=transicoes_disponiveis,
+            index=len(transicoes_disponiveis) - 1,
+            key="transicao_ranking_panorama",
+            help="Selecione dois anos consecutivos para visualizar o ranking "
+                 "municipal daquela transição.",
+        )
         ranking_var = var_ano.loc[
-            var_ano["transicao"].eq(ultima_var)
+            var_ano["transicao"].eq(transicao_ranking)
             & var_ano["variacao_pct"].notna()
         ].copy()
-        st.markdown(f"#### Ranking de variação — {ultima_var}")
+        st.markdown(f"#### Ranking de variação — {transicao_ranking}")
         st.markdown(
-            f"Este gráfico destaca **a comparação mais recente disponível "
-            f"({ultima_var})** nos filtros selecionados. Cada barra representa "
-            "a mudança percentual de exames registrados no município: "
-            "**à direita do zero, em azul**, houve aumento; "
-            "**à esquerda, em vermelho**, houve redução. "
-            "Quanto maior a distância até o zero, maior foi a mudança percentual. "
-            "O ranking compara **taxas de variação**, não o total de exames: "
-            "um município com poucos registros pode ter uma variação alta. "
-            "Passe o mouse sobre as barras para ver a quantidade de exames "
-            "em cada um dos dois anos."
+            "Compara o **aumento ou a redução percentual** dos exames entre "
+            "os dois anos selecionados. **Azul, à direita do zero**, indica aumento; "
+            "**vermelho, à esquerda**, indica redução."
         )
+        with st.expander("ℹ️ Como interpretar o ranking", expanded=False):
+            st.markdown(
+                "Quanto maior a distância da barra em relação ao zero, maior a "
+                "variação percentual. O ranking compara **percentuais**, não o "
+                "total de exames: municípios com volumes pequenos podem ter "
+                "mudanças percentuais expressivas. Passe o mouse sobre a barra "
+                "para consultar os totais dos dois anos."
+            )
+            if agosto_2022_ausente and "2022" in transicao_ranking:
+                st.warning(
+                    "A transição selecionada inclui 2022, que não possui registros "
+                    "de agosto no recorte; interprete as diferenças com cautela."
+                )
         if not ranking_var.empty:
             ranking_plot = ranking_var.sort_values("variacao_pct", ascending=True)
             ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
@@ -565,7 +586,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 textfont=dict(size=13, color="#1A3B5C"),
                 cliponaxis=False,
                 hovertemplate=(
-                    "<b>%{y}</b><br>" + ultima_var
+                    "<b>%{y}</b><br>" + transicao_ranking
                     + "<br>Variação: %{x:+.2f}%"
                     + "<br>Anterior: %{customdata[0]:,.0f} exames"
                     + "<br>Atual: %{customdata[1]:,.0f} exames<extra></extra>"
