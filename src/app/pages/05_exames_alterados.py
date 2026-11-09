@@ -853,7 +853,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     fig_faixas.update_yaxes(
                         range=[0, 100], ticksuffix="%", dtick=20,
                         gridcolor="#E4EBF1",
-                        title_text="Participação dentro da categoria (%)",
+                        title_text="Participação (%)",
                     )
                     fig_faixas.update_xaxes(
                         type="category", categoryorder="array",
@@ -862,14 +862,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         ticktext=[rotulo_categoria(nome) for nome in categorias_presentes],
                         tickangle=0,
                         tickfont=dict(size=11, color=NAVY),
-                        title_text=None, automargin=True,
+                        title_text="Categoria citopatológica", automargin=True,
                     )
                     fig_faixas.update_layout(
                         height=485, bargap=0.27,
                         plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
                         font=dict(color=NAVY),
                         legend=dict(
-                            title_text="Grupo etário", orientation="h",
+                            title_text="", orientation="h",
                             x=0.5, xanchor="center", y=1.11, yanchor="bottom",
                             font=dict(size=12, color=NAVY),
                         ),
