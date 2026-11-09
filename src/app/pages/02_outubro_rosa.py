@@ -174,7 +174,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         )
     st.caption(
         "**Como ler:** barras vermelhas à esquerda de **0%** indicam redução "
-        "de exames em outubro em relação a setembro; barras laranjas à direita "
+        "de exames em outubro em relação a setembro; barras verdes à direita "
         "indicam aumento. O eixo de 0% significa ausência de variação."
     )
     st.caption(
