@@ -2,7 +2,6 @@ import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,SKY,ORANGE,NAVY
 from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered,require,sidebar_filters,selected_years
@@ -730,76 +729,42 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 ),
                 margin=dict(l=70, r=225, t=35, b=65),
             )
-            # PNG: percentuais destacados nas barras e tabela completa
-            # para que participações pequenas também sejam legíveis.
+            # PNG: percentuais nos segmentos, sem misturar tabelas e barras
+            # no mesmo objeto Plotly. Valores pequenos seguem no CSV.
             total_ano_export = por_cat_ano.groupby("ano")[
                 "quantidade_alterados"
             ].transform("sum")
             por_cat_ano["participacao_export_pct"] = (
-                por_cat_ano["quantidade_alterados"]
-                .div(total_ano_export.where(total_ano_export > 0))
-                .mul(100)
+                por_cat_ano["quantidade_alterados"].div(
+                    total_ano_export.where(total_ano_export > 0)
+                ).mul(100)
             )
             export_cat = copy.deepcopy(fig_cat)
             for trace in export_cat.data:
-                serie_categoria = (
+                percentuais_categoria = (
                     por_cat_ano.loc[
                         por_cat_ano["categoria"].eq(trace.name),
                         ["ano", "participacao_export_pct"],
                     ]
                     .set_index("ano")["participacao_export_pct"]
                 )
-                percentuais = [
-                    serie_categoria.get(int(ano), float("nan"))
-                    for ano in trace.x
-                ]
                 trace.update(
                     text=[
-                        f"{valor:.1f}%" if pd.notna(valor) and valor >= 7 else ""
-                        for valor in percentuais
+                        f"{p:.2f}%" if pd.notna(p) and p >= 6 else ""
+                        for p in (
+                            percentuais_categoria.get(
+                                int(ano), float("nan")
+                            ) for ano in trace.x
+                        )
                     ],
                     textposition="inside",
-                    textfont=dict(size=14, color="#FFFFFF"),
+                    textfont=dict(size=13, color="#FFFFFF"),
                     insidetextanchor="middle",
                 )
-            anos_export = sorted(por_cat_ano["ano"].unique().tolist())
-            grade_percentual = (
-                por_cat_ano.pivot_table(
-                    index="categoria", columns="ano",
-                    values="participacao_export_pct", aggfunc="first",
-                )
-                .reindex(index=categorias_ordenadas, columns=anos_export)
-            )
-            export_cat.add_trace(
-                go.Table(
-                    domain=dict(x=[0, 1], y=[0, 0.30]),
-                    columnwidth=[2.7] + [1] * len(anos_export),
-                    header=dict(
-                        values=["Categoria / participação (%)"] + [
-                            str(int(ano)) for ano in anos_export
-                        ],
-                        fill_color="#1A3B5C", font=dict(color="white", size=13),
-                        align="left", height=32,
-                    ),
-                    cells=dict(
-                        values=[grade_percentual.index.tolist()] + [
-                            [
-                                f"{v:.2f}%" if pd.notna(v) else "N/D"
-                                for v in grade_percentual[ano]
-                            ]
-                            for ano in anos_export
-                        ],
-                        fill_color="#F3F7FA",
-                        font=dict(color="#1A3B5C", size=12),
-                        align="left", height=29,
-                    ),
-                )
-            )
-            export_cat.update_yaxes(domain=[0.46, 1.0])
             export_cat.update_layout(
                 title=dict(text="Exames alterados por categoria e ano", x=0.5),
-                height=1000, width=1600,
-                margin=dict(l=100, r=275, t=110, b=50),
+                height=650, width=1600,
+                margin=dict(l=90, r=265, t=110, b=90),
                 uniformtext=dict(mode="hide", minsize=12),
             )
             chart_with_right_click_download(
@@ -932,62 +897,27 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         ),
                         margin=dict(l=75, r=125, t=55, b=210),
                     )
-                    # PNG: rótulos para segmentos legíveis e quadro com
-                    # TODOS os percentuais, inclusive os muito pequenos.
+                    # PNG: rótulos percentuais dentro dos segmentos.
+                    # Valores muito pequenos são apresentados no CSV detalhado.
                     img_faixas = copy.deepcopy(fig_faixas)
                     for trace in img_faixas.data:
                         trace.update(
                             text=[
-                                f"{v:.1f}%" if pd.notna(v) and v >= 8 else ""
-                                for v in trace.y
+                                f"{valor:.2f}%"
+                                if pd.notna(valor) and valor >= 6 else ""
+                                for valor in trace.y
                             ],
                             textposition="inside",
-                            textfont=dict(color="#FFFFFF", size=14),
+                            textfont=dict(color="#FFFFFF", size=13),
                             insidetextanchor="middle",
                         )
-                    tabela_percentual_etaria = (
-                        comp.pivot_table(
-                            index="categoria", columns="grupo_3",
-                            values="participacao_pct", aggfunc="first",
-                        )
-                        .reindex(
-                            index=categorias_presentes, columns=ordem_grupos
-                        )
-                    )
-                    img_faixas.add_trace(
-                        go.Table(
-                            domain=dict(x=[0, 1], y=[0, 0.27]),
-                            columnwidth=[2.9, 1, 1, 1],
-                            header=dict(
-                                values=["Categoria / participação (%)"]
-                                + ordem_grupos,
-                                fill_color="#1A3B5C",
-                                font=dict(color="white", size=13),
-                                align="left", height=33,
-                            ),
-                            cells=dict(
-                                values=[tabela_percentual_etaria.index.tolist()]
-                                + [
-                                    [
-                                        f"{v:.2f}%" if pd.notna(v) else "N/D"
-                                        for v in tabela_percentual_etaria[grupo]
-                                    ]
-                                    for grupo in ordem_grupos
-                                ],
-                                fill_color="#F3F7FA",
-                                font=dict(color="#1A3B5C", size=12),
-                                align="left", height=30,
-                            ),
-                        )
-                    )
-                    img_faixas.update_yaxes(domain=[0.59, 1.0])
                     img_faixas.update_layout(
                         title=dict(
                             text="Composição etária por categoria (2020–2025)",
                             x=0.5, font=dict(size=21, color=NAVY),
                         ),
-                        width=1600, height=1250,
-                        margin=dict(l=105, r=200, t=115, b=65),
+                        width=1600, height=760,
+                        margin=dict(l=100, r=185, t=125, b=260),
                         uniformtext=dict(mode="hide", minsize=12),
                     )
                     chart_with_right_click_download(
