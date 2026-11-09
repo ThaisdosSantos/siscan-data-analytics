@@ -10,10 +10,23 @@ from utils.data_loader import filtered, require, sidebar_filters, years_label, M
 st.set_page_config(page_title="Outubro Rosa | SISCAN", layout="wide")
 apply_custom_css()
 sidebar_filters()
-page_header("Campanha · Outubro Rosa", "Outubro em destaque: o que muda nos registros?")
-st.caption(
-    "Comparação descritiva dos exames registrados. Novembro e dezembro mostram o "
-    "comportamento após outubro; diferenças mensais não comprovam efeito causal da campanha."
+page_header(
+    "Campanha · Outubro Rosa",
+    "Outubro em destaque: o que muda nos registros?",
+    "Compara os registros de setembro e outubro, acompanha a produção nos "
+    "meses seguintes e apresenta o perfil sazonal dos exames nos municípios "
+    "selecionados, sem atribuir causalidade à campanha.",
+)
+st.markdown(
+    '<div style="margin:14px 0 19px;padding:11px 15px;'
+    'background:#EEF5FA;border-left:4px solid #006C9A;'
+    'border-radius:8px;color:#1A3B5C;line-height:1.5;">'
+    '<strong>Fonte dos dados:</strong> SISCAN/DATASUS · '
+    'tabelas Gold <code>fato_analise_outubro_rosa</code> e '
+    '<code>fato_exames_temporais_territoriais</code>. '
+    'A comparação é descritiva e não comprova efeito causal da campanha.'
+    '</div>',
+    unsafe_allow_html=True,
 )
 df = filtered("outubro")
 if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_setembro"]):
@@ -47,6 +60,23 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             f"(**{formatted_variation}**)."
         )
 
+    st.subheader("Produção de exames de setembro a dezembro")
+    st.markdown(
+        "Compara a **quantidade de exames registrados de setembro a dezembro** "
+        "em cada ano selecionado, permitindo observar o comportamento antes, "
+        "durante e após outubro."
+    )
+    with st.expander("ℹ️ Como interpretar a produção de setembro a dezembro", expanded=False):
+        st.markdown(
+            "**Eixo horizontal:** anos selecionados. **Eixo vertical:** número de exames. "
+            "As cores identificam setembro (referência), outubro (campanha), novembro "
+            "e dezembro (meses posteriores). A Gold registra outubro a dezembro e "
+            "associa a cada município e ano o total de setembro correspondente. "
+            "Compare as barras dentro do mesmo ano para identificar mudanças "
+            "no volume de registros. **Mudanças mensais não demonstram, por si "
+            "só, que a campanha tenha causado o aumento ou a redução.** "
+            "Os valores representam exames, não mulheres distintas."
+        )
     plot = df.groupby(["ano", "mes"], as_index=False)["exames_mes"].sum(min_count=1)
     ref = octdf.groupby("ano", as_index=False)["exames_referencia_setembro"].sum(min_count=1)
     ref["mes"] = 9
@@ -96,6 +126,23 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         city["exames_referencia_setembro"].where(city["exames_referencia_setembro"] > 0)
         * 100
     )
+    st.subheader("Variação de outubro em relação a setembro por município")
+    st.markdown(
+        "Mostra a **variação percentual dos exames de outubro em relação a setembro** "
+        "para cada município, distinguindo aumentos e reduções."
+    )
+    with st.expander("ℹ️ Como interpretar a variação municipal", expanded=False):
+        st.markdown(
+            "**Variação (%) = (exames de outubro − exames de setembro) "
+            "÷ exames de setembro × 100.** Para cada município, a base é setembro "
+            "do mesmo ano, ou a soma dos setembros dos anos selecionados quando "
+            "o recorte contém mais de um ano. **Barras verdes à direita de 0%** "
+            "representam aumento e **vermelhas à esquerda**, redução. "
+            "O ponto 0% significa ausência de mudança. "
+            "Passe o mouse para conferir as quantidades e a diferença absoluta. "
+            "Percentuais elevados podem decorrer de bases pequenas; "
+            "o gráfico não mede a efetividade causal da campanha."
+        )
     plot_city = city.dropna(subset=["variacao_pct"]).sort_values("variacao_pct")
     if not plot_city.empty:
         plot_city = plot_city.copy()
@@ -173,14 +220,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             export_fig=export_fig,
         )
     st.caption(
-        "**Como ler:** barras vermelhas à esquerda de **0%** indicam redução "
-        "de exames em outubro em relação a setembro; barras verdes à direita "
-        "indicam aumento. O eixo de 0% significa ausência de variação."
-    )
-    st.caption(
-        "Percentuais calculados sobre bases pequenas podem ser elevados mesmo "
-        "quando a diferença absoluta é pequena. Não representam, por si só, "
-        "maior efetividade da campanha."
+        "Verde: aumento · Vermelho: redução · Linha vertical: 0% (sem variação)."
     )
 
     # Índice sazonal (base = média das competências disponíveis).
@@ -189,6 +229,27 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
     temporal = filtered("temporal")
     if {"ano", "mes", "quantidade"}.issubset(temporal.columns) and not temporal.empty:
         st.subheader("Índice Sazonal Regional por Mês")
+        st.markdown(
+            "Compara a **produção média de cada mês** à média mensal dos "
+            "municípios selecionados. A linha de referência **100** representa "
+            "a média do recorte."
+        )
+        with st.expander("ℹ️ Como interpretar o índice sazonal regional", expanded=False):
+            st.markdown(
+                "**Índice sazonal = média de exames do mês ÷ média mensal geral "
+                "do recorte × 100.** Um índice de **120** indica volume médio "
+                "**20% acima** da média; **80** indica **20% abaixo**. "
+                "A linha tracejada marca a referência 100. "
+                "As cores indicam **janelas temporais fixas** descritas na análise "
+                "histórica do notebook Gold: maio–setembro (janela fraca), "
+                "janeiro–abril e outubro (neutros) e novembro–dezembro (pico). "
+                "Essas categorias identificam grupos de meses da análise histórica; "
+                "**não são limites numéricos aplicados ao índice atual**. "
+                "Os intervalos da legenda mostram os menores e maiores índices "
+                "observados em cada grupo no recorte filtrado. "
+                "Meses sem registros não entram como zero. "
+                "O índice resume padrões de registros, sem demonstrar suas causas."
+            )
         mensal = (
             temporal.dropna(subset=["ano", "mes", "quantidade"])
             .groupby(["ano", "mes"], as_index=False)["quantidade"]
@@ -250,13 +311,9 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 else "Média dos municípios selecionados = 100"
             )
             st.caption(
-                f"Base: {base_label}. Considera apenas competências com registros; "
-                "meses sem dados não são tratados como zero. "
-                "A linha tracejada indica a referência 100. "
-                "Janelas fixas da análise 2020–2025: mai–set (fraca), "
-                "jan–abr e out (neutro), nov–dez (pico). "
-                "Os intervalos na legenda são mínimos e máximos observados no recorte, "
-                "não critérios de classificação."
+                f"Base: {base_label}. Meses sem registros não são contados como zero. "
+                "As cores representam janelas históricas fixas, não faixas "
+                "de valores do índice."
             )
             fig_sazonal = px.bar(
                 indice, x="mes", y="indice_sazonal", color="janela_rotulo",
@@ -352,12 +409,25 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         not temporal.empty
         and {"municipio", "ano", "mes", "quantidade"}.issubset(temporal.columns)
     ):
-        st.markdown("#### Índice Sazonal por Município e Mês (base: média do próprio município)")
-        st.caption(
-            "Base 100 = média mensal de cada município no período selecionado. "
-            "Valores acima de 100 indicam volume acima da própria média. "
-            "Competências ausentes não são consideradas como zero."
+        st.markdown("#### Índice Sazonal por Município e Mês")
+        st.markdown(
+            "Mostra em quais meses cada município registra **mais ou menos exames "
+            "em relação à sua própria média**, permitindo comparar padrões sazonais "
+            "sem confundir diferenças de porte populacional."
         )
+        with st.expander("ℹ️ Como interpretar o índice sazonal municipal", expanded=False):
+            st.markdown(
+                "Cada **linha** corresponde a um município e cada **coluna** "
+                "a um mês. **Base 100** é a média das competências disponíveis "
+                "do próprio município nos anos selecionados. "
+                "**Índice municipal = média de exames no mês ÷ média mensal "
+                "do município × 100.** Valores acima de 100 indicam volume "
+                "superior à sua média; abaixo de 100, inferior. "
+                "Como as bases são municipais, **100 não representa a mesma "
+                "quantidade absoluta de exames em cidades diferentes**. "
+                "Competências ausentes não são consideradas zero; agosto/2022, "
+                "por exemplo, não deve ser tratado como ausência de produção."
+            )
         sazonal_muni = (
             temporal.dropna(subset=["municipio", "ano", "mes", "quantidade"])
             .loc[lambda d: d["mes"].between(1, 12)]
@@ -411,6 +481,19 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         "variacao_pct":"Variação (%)"
     })
     st.markdown(f"#### Dados municipais · {len(table)} municípios")
+    st.markdown(
+        "Detalha os **exames registrados em setembro e outubro**, a diferença "
+        "absoluta e a variação percentual por município no recorte selecionado."
+    )
+    with st.expander("ℹ️ Como interpretar a tabela municipal", expanded=False):
+        st.markdown(
+            "**Diferença (exames) = outubro − setembro.** "
+            "**Variação (%) = diferença ÷ exames de setembro × 100.** "
+            "Valores positivos representam mais registros em outubro; negativos, "
+            "menos registros. Quando setembro não apresenta base positiva, "
+            "a variação percentual não pode ser calculada. "
+            "Os valores são quantidades de exames, e não pessoas distintas."
+        )
     display_table(table, percent_columns=["Variação (%)"],
                   integer_columns=["Exames em setembro", "Exames em outubro", "Diferença (exames)"])
     st.download_button(
