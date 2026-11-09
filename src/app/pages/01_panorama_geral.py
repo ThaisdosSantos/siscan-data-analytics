@@ -576,58 +576,58 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 st.info("Não há valores calculáveis para esta transição no recorte.")
                 continue
             # Reutiliza o mesmo padrão do ranking individual para cada período.
-                ranking_plot = ranking_var.sort_values("variacao_pct", ascending=True)
-                ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
-                    lambda valor: "Aumento" if valor >= 0 else "Redução"
-                )
-                # Plotly Express divide as barras em traces por categoria de cor.
-                # O rótulo deve ser uma coluna do DataFrame para acompanhar cada
-                # município corretamente, em vez de uma lista aplicada a todos os traces.
-                ranking_plot["rotulo_variacao"] = ranking_plot["variacao_pct"].map(fmt_delta)
-                fig_var = px.bar(
-                    ranking_plot,
-                    x="variacao_pct", y="municipio", orientation="h",
-                    color="cor",
-                    color_discrete_map={"Aumento": positivo, "Redução": negativo},
-                    text="rotulo_variacao",
-                    labels={"variacao_pct": "Variação anual (%)",
-                            "municipio": "Município"},
-                    category_orders={"municipio": ranking_plot["municipio"].tolist()},
-                    custom_data=["quantidade_anterior", "quantidade"],
-                )
-                fig_var.update_traces(
-                    texttemplate="%{text}", textposition="outside",
-                    textfont=dict(size=13, color="#1A3B5C"),
-                    cliponaxis=False,
-                    hovertemplate=(
-                        "<b>%{y}</b><br>" + transicao_atual
-                        + "<br>Variação: %{x:+.2f}%"
-                        + "<br>Anterior: %{customdata[0]:,.0f} exames"
-                        + "<br>Atual: %{customdata[1]:,.0f} exames<extra></extra>"
-                    ),
-                )
-                minimo = min(float(ranking_plot["variacao_pct"].min()), 0)
-                maximo = max(float(ranking_plot["variacao_pct"].max()), 0)
-                margem = max(4, (maximo - minimo) * 0.22)
-                fig_var.update_xaxes(
-                    title="Variação anual (%)",
-                    range=[minimo - margem, maximo + margem],
-                    ticksuffix="%", tickfont=dict(size=12, color="#334E68"),
-                    showgrid=True, gridcolor="#E8F0F6",
-                    zeroline=True, zerolinecolor="#7C8FA0", zerolinewidth=1.5,
-                )
-                fig_var.update_yaxes(
-                    title=None, tickfont=dict(size=13, color="#1A3B5C"),
-                    automargin=True,
-                )
-                fig_var.update_layout(
-                    height=max(440, 41 * len(ranking_plot) + 110),
-                    margin=dict(l=18, r=60, t=28, b=55),
-                    plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
-                    showlegend=False, font=dict(color="#1A3B5C", size=13),
-                    bargap=0.28,
-                )
-                display_chart(fig_var, filename=f"panorama_variacao_{transicao_atual.replace('→', '_')}.png")
+            ranking_plot = ranking_var.sort_values("variacao_pct", ascending=True)
+            ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
+                lambda valor: "Aumento" if valor >= 0 else "Redução"
+            )
+            # Plotly Express divide as barras em traces por categoria de cor.
+            # O rótulo deve ser uma coluna do DataFrame para acompanhar cada
+            # município corretamente, em vez de uma lista aplicada a todos os traces.
+            ranking_plot["rotulo_variacao"] = ranking_plot["variacao_pct"].map(fmt_delta)
+            fig_var = px.bar(
+                ranking_plot,
+                x="variacao_pct", y="municipio", orientation="h",
+                color="cor",
+                color_discrete_map={"Aumento": positivo, "Redução": negativo},
+                text="rotulo_variacao",
+                labels={"variacao_pct": "Variação anual (%)",
+                        "municipio": "Município"},
+                category_orders={"municipio": ranking_plot["municipio"].tolist()},
+                custom_data=["quantidade_anterior", "quantidade"],
+            )
+            fig_var.update_traces(
+                texttemplate="%{text}", textposition="outside",
+                textfont=dict(size=13, color="#1A3B5C"),
+                cliponaxis=False,
+                hovertemplate=(
+                    "<b>%{y}</b><br>" + transicao_atual
+                    + "<br>Variação: %{x:+.2f}%"
+                    + "<br>Anterior: %{customdata[0]:,.0f} exames"
+                    + "<br>Atual: %{customdata[1]:,.0f} exames<extra></extra>"
+                ),
+            )
+            minimo = min(float(ranking_plot["variacao_pct"].min()), 0)
+            maximo = max(float(ranking_plot["variacao_pct"].max()), 0)
+            margem = max(4, (maximo - minimo) * 0.22)
+            fig_var.update_xaxes(
+                title="Variação anual (%)",
+                range=[minimo - margem, maximo + margem],
+                ticksuffix="%", tickfont=dict(size=12, color="#334E68"),
+                showgrid=True, gridcolor="#E8F0F6",
+                zeroline=True, zerolinecolor="#7C8FA0", zerolinewidth=1.5,
+            )
+            fig_var.update_yaxes(
+                title=None, tickfont=dict(size=13, color="#1A3B5C"),
+                automargin=True,
+            )
+            fig_var.update_layout(
+                height=max(440, 41 * len(ranking_plot) + 110),
+                margin=dict(l=18, r=60, t=28, b=55),
+                plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                showlegend=False, font=dict(color="#1A3B5C", size=13),
+                bargap=0.28,
+            )
+            display_chart(fig_var, filename=f"panorama_variacao_{transicao_atual.replace('→', '_')}.png")
 
         with st.expander("Ver dados detalhados da variação anual", expanded=False):
             detalhe_var = var_ano.loc[
