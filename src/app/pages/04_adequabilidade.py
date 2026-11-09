@@ -63,19 +63,15 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
     metric_row([("Amostras avaliadas",fmt_num(tot)),("Satisfatórias",fmt_pct(pct(g.get("Satisfatória",0),tot))),
                 ("Insatisfatórias e rejeitadas",fmt_pct(pct(ruim,tot)))])
 
-    # Definições permanentemente visíveis: principais dúvidas dos usuários.
-    st.markdown(
-        """
+    # As definições ficam disponíveis sob demanda, como nos demais gráficos.
+    with st.expander("ℹ️ Entenda as categorias de adequabilidade", expanded=False):
+        st.markdown(
+            """
         <style>
         .pet-adequacy-guide {
-            margin:22px 0 26px; padding:18px 20px 16px;
-            border:1px solid #D8E5EF; border-left:4px solid #006C9A;
-            border-radius:12px; background:#F5F9FC; color:#1A3B5C;
+            margin:3px 0 0; padding:0; border:0;
+            background:transparent; color:#1A3B5C;
             font-family:Manrope,Arial,sans-serif;
-        }
-        .pet-adequacy-guide h3 {
-            margin:0 0 13px; color:#1A3B5C !important;
-            font:750 1.07rem/1.4 Manrope,Arial,sans-serif;
         }
         .pet-adequacy-guide-grid {
             display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px;
@@ -96,7 +92,6 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
         }
         </style>
         <section class="pet-adequacy-guide" aria-label="Definições de adequabilidade">
-          <h3>Entenda as categorias de adequabilidade</h3>
           <div class="pet-adequacy-guide-grid">
             <div class="pet-adequacy-guide-item">
               <strong>✅ Satisfatória</strong>
@@ -124,9 +119,9 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
           <br><strong>Referência:</strong> INCA/Ministério da Saúde —
           Nomenclatura Brasileira para Laudos Citopatológicos Cervicais.</p>
         </section>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
 
     st.markdown(
         '<h2 class="adequabilidade-section-title">'
