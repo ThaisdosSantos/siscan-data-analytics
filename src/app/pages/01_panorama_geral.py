@@ -12,6 +12,12 @@ apply_custom_css()
 # Mantém a descrição do cabeçalho alinhada ao padrão visual da página Faixa Etária.
 st.markdown("""
 <style>
+/* O tema global usa margem negativa no hero para sobrepor cartões.
+   Nesta página, o primeiro conteúdo é um título de seção, então
+   removemos a sobreposição apenas no Panorama Geral. */
+.pet-hero {
+    margin-bottom: 0 !important;
+}
 .pet-hero .pet-hero-desc {
     font-family: Manrope, Arial, sans-serif !important;
     font-size: 1.15rem !important;
