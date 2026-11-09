@@ -1,4 +1,5 @@
 """Panorama territorial e temporal de exames citopatológicos registrados."""
+from html import escape
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -286,32 +287,94 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             "da comparação."
         )
 
-        def estilo_variacao(v):
-            if pd.isna(v):
-                return "background-color:#F1F5F9;color:#64748B;"
-            if v > 0:
-                return "background-color:#E8F0F6;color:#143650;font-weight:650;"
-            if v < 0:
-                return "background-color:#FDE8E4;color:#A83A20;font-weight:650;"
-            return "background-color:#F4F7FA;color:#334E68;font-weight:650;"
-
-        estilo_matriz = (
-            pivo_var.style
-            .format(fmt_delta, na_rep="—")
-            .map(estilo_variacao)
-            .set_properties(**{"font-size": "14px", "text-align": "center",
-                               "padding": "10px 12px"})
-            .set_table_styles([
-                {"selector": "th", "props": [
-                    ("font-size", "14px"), ("font-weight", "700"),
-                    ("color", "#1A3B5C"), ("background-color", "#EEF5FA"),
-                    ("padding", "10px 12px")]},
-            ])
+        # Mesma linguagem visual de display_table: cabeçalho azul-marinho,
+        # primeira coluna destacada, linhas alternadas e rolagem horizontal.
+        cabecalhos_var = (
+            '<th scope="col">Município</th>'
+            + "".join(
+                f'<th scope="col">{escape(str(col))}</th>'
+                for col in pivo_var.columns
+            )
         )
-        st.dataframe(
-            estilo_matriz,
-            use_container_width=True,
-            height=min(480, 48 + 36 * len(pivo_var)),
+        linhas_var = []
+        for municipio, valores in pivo_var.iterrows():
+            celulas = []
+            for valor in valores:
+                if pd.isna(valor):
+                    classe = "sem-dado"
+                elif valor > 0:
+                    classe = "aumento"
+                elif valor < 0:
+                    classe = "reducao"
+                else:
+                    classe = "estavel"
+                celulas.append(
+                    f'<td class="{classe}">{fmt_delta(valor)}</td>'
+                )
+            linhas_var.append(
+                '<tr><th scope="row">'
+                + escape(str(municipio)) + '</th>'
+                + "".join(celulas) + '</tr>'
+            )
+        tabela_var_html = (
+            '<div class="pet-var-scroller" role="region" tabindex="0" '
+            'aria-label="Matriz de variação anual de exames por município">'
+            '<table class="pet-var-table"><thead><tr>'
+            + cabecalhos_var + '</tr></thead><tbody>'
+            + "".join(linhas_var) + '</tbody></table></div>'
+        )
+        st.markdown(
+            """
+            <style>
+            .pet-var-scroller {
+                width:100%; overflow-x:auto; border-radius:8px;
+                box-shadow:0 2px 7px rgba(26,59,92,.09);
+                margin:12px 0 17px; border:1px solid #E6EBF0;
+            }
+            .pet-var-table {
+                width:100%; min-width:720px; border-collapse:separate;
+                border-spacing:0; background:#FFFFFF; color:#1A3B5C;
+                font:500 .88rem Manrope,Arial,sans-serif;
+            }
+            .pet-var-table thead th {
+                background:#1A3B5C; color:#FFFFFF;
+                padding:15px 14px; text-align:center; white-space:nowrap;
+                font-size:.87rem; font-weight:750;
+                border-right:1px solid rgba(255,255,255,.14);
+                position:sticky; top:0; z-index:2;
+            }
+            .pet-var-table thead th:first-child {
+                text-align:left; left:0; z-index:4; min-width:190px;
+            }
+            .pet-var-table tbody th {
+                position:sticky; left:0; z-index:1;
+                color:#1A3B5C; text-align:left; font-weight:750;
+                padding:13px 14px; white-space:nowrap;
+                background:#FFFFFF; border-bottom:1px solid #E7EBEF;
+                border-right:1px solid #D8E5EF;
+            }
+            .pet-var-table tbody tr:nth-child(even) th {background:#F6F8FA;}
+            .pet-var-table tbody tr:hover th {background:#ECF5FA;}
+            .pet-var-table tbody td {
+                padding:13px 14px; text-align:center; font-weight:700;
+                white-space:nowrap; border-bottom:1px solid #E7EBEF;
+                border-right:1px solid #FFFFFF;
+                font-variant-numeric:tabular-nums;
+            }
+            .pet-var-table td.aumento {background:#E8F0F6;color:#143650;}
+            .pet-var-table td.reducao {background:#FDE8E4;color:#A83A20;}
+            .pet-var-table td.estavel {background:#F4F7FA;color:#334E68;}
+            .pet-var-table td.sem-dado {background:#F1F5F9;color:#64748B;}
+            .pet-var-table tbody tr:hover td {filter:brightness(.97);}
+            @media(max-width:768px){
+                .pet-var-table {font-size:.82rem;min-width:690px;}
+                .pet-var-table thead th,.pet-var-table tbody td,
+                .pet-var-table tbody th {padding:12px 10px;}
+                .pet-var-table thead th:first-child {min-width:165px;}
+            }
+            </style>
+            """ + tabela_var_html,
+            unsafe_allow_html=True,
         )
         st.caption(
             "**Como interpretar as cores:** azul = aumento; vermelho = redução; "
