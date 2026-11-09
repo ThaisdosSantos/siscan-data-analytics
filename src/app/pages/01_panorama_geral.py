@@ -9,9 +9,35 @@ from utils.data_loader import filtered, require, sidebar_filters, MUNICIPIOS, se
 
 st.set_page_config(page_title="Panorama geral | SISCAN", layout="wide")
 apply_custom_css()
+# Mantém a descrição do cabeçalho alinhada ao padrão visual da página Faixa Etária.
+st.markdown("""
+<style>
+.pet-hero .pet-hero-desc {
+    font-family: Manrope, Arial, sans-serif !important;
+    font-size: 1.15rem !important;
+    line-height: 1.65 !important;
+    font-weight: 500 !important;
+    color: #FFFFFF !important;
+    max-width: 920px !important;
+}
+@media (max-width: 768px) {
+    .pet-hero .pet-hero-desc {
+        font-size: 1rem !important;
+        line-height: 1.55 !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
 sidebar_filters()
-page_header("Panorama geral", "Volume de exames por competência e município",
-            "Exames citopatológicos registrados na 10ª CRS do Rio Grande do Sul.")
+page_header(
+    "Panorama geral",
+    "Volume de exames por competência e município",
+    "Apresenta a quantidade de exames citopatológicos registrados na 10ª CRS "
+    "entre 2020 e 2025, sua evolução mensal e anual, a distribuição entre os "
+    "municípios e as variações percentuais de um ano para o seguinte. "
+    "Permite comparar os volumes de exames ao longo do tempo e identificar "
+    "diferenças na produção registrada entre os municípios.",
+)
 
 df = filtered("temporal")
 if require(df, ["municipio", "ano", "mes", "quantidade"]):
