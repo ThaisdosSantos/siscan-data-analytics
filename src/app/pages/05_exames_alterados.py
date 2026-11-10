@@ -956,10 +956,10 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 # os nomes completos e seguem o padrão dos gráficos Q5.
                 grafico_municipal.update_xaxes(
                     tickangle=-90,
-                    tickfont=dict(color=NAVY, size=14, family="Arial"),
+                    tickfont=dict(color=NAVY, size=16, family="Arial"),
                     title_text="Categoria citopatológica",
-                    title_font=dict(color=NAVY, size=14, family="Arial"),
-                    title_standoff=16,
+                    title_font=dict(color=NAVY, size=18, family="Arial"),
+                    title_standoff=35,
                     automargin=True,
                     showgrid=False,
                 )
