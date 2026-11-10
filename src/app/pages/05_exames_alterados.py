@@ -12,6 +12,25 @@ ROYAL_BLUE = "#1757A6"  # 25–64 anos
 st.set_page_config(page_title="Exames alterados | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
+# Legibilidade do texto introdutório, sem afetar os demais cabeçalhos.
+st.markdown("""
+<style>
+.pet-hero .pet-hero-desc {
+    font-family: Manrope, Arial, sans-serif !important;
+    font-size: 1.15rem !important;
+    line-height: 1.65 !important;
+    font-weight: 500 !important;
+    color: #FFFFFF !important;
+    max-width: 900px !important;
+}
+@media (max-width: 768px) {
+    .pet-hero .pet-hero-desc {
+        font-size: 1rem !important;
+        line-height: 1.55 !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
 page_header(
     "Resultados",
     "Exames citopatológicos alterados",
