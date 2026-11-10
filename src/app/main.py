@@ -315,10 +315,10 @@ st.markdown("""
 nav = [
     ("Panorama geral", "Volume por competência e município",
      "pages/01_panorama_geral.py", "exec-nav-panorama"),
-    ("Outubro Rosa", "Produção e sazonalidade dos exames",
-     "pages/02_outubro_rosa.py", "exec-nav-outubro"),
     ("Exames alterados", "Resultados e categorias citopatológicas",
      "pages/05_exames_alterados.py", "exec-nav-alterados"),
+    ("Outubro Rosa", "Produção e sazonalidade dos exames",
+     "pages/02_outubro_rosa.py", "exec-nav-outubro"),
 ]
 st.markdown(
     '<div class="exec-explore-heading">Explore as análises</div>'
