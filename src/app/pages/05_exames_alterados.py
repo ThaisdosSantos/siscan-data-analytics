@@ -807,26 +807,48 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
 
         st.markdown("### Composição dos exames alterados por município e categoria")
         st.markdown(
-            "Compara as **oito categorias citopatológicas entre os municípios "
-            "selecionados**, considerando os anos ativos nos filtros."
+            "Mostra **quantos exames alterados foram registrados em cada categoria** "
+            "e **qual a participação de cada categoria no total de alterados** "
+            "de cada município, conforme os filtros selecionados."
         )
         with st.expander("ℹ️ Como interpretar a composição por município", expanded=False):
             st.markdown(
-                "**Linhas:** municípios. **Colunas:** categorias citopatológicas. "
-                "Na opção **Participação (%)**, cada célula mostra a proporção "
-                "daquela categoria entre os exames classificados como alterados "
-                "no município, calculada pela razão entre as quantidades somadas "
-                "nos anos selecionados. Na opção **Quantidade**, mostra o número "
-                "de registros. **—** indica que o percentual não pôde ser calculado "
-                "por ausência de denominador; não significa 0%. "
-                "As categorias não correspondem a diagnósticos de câncer. "
-                "A composição não é a proporção de exames alterados entre todos "
-                "os exames válidos; esta última é apresentada nos indicadores Q5."
+                "**Como ler:** cada **linha** representa um município e cada "
+                "**coluna**, uma categoria citopatológica. As cores mais escuras "
+                "indicam valores maiores na medida escolhida.\n\n"
+                "**Quantidade de exames:** mostra o número de registros daquela "
+                "categoria no município, somando os anos selecionados. "
+                "Exemplo: **70** significa 70 exames classificados nessa categoria.\n\n"
+                "**Participação (%):** mostra quanto a categoria representa "
+                "**entre todos os exames alterados do mesmo município**. "
+                "É calculada por **exames da categoria ÷ total de exames alterados "
+                "classificados no município × 100**. Exemplo: se 70 dos 100 exames "
+                "alterados forem ASC-US, a célula exibirá **70.00%**. "
+                "As participações das categorias de cada município somam 100% "
+                "quando há registros.\n\n"
+                "**Atenção:** o percentual **não** representa a proporção de "
+                "alterações entre todos os exames válidos nem a porcentagem de "
+                "mulheres com a alteração. **0** ou **0.00%** indica nenhum "
+                "registro da categoria na grade consultada; **—** indica que "
+                "o percentual não pôde ser calculado por falta de denominador. "
+                "Os resultados citopatológicos não equivalem, por si só, "
+                "a diagnósticos de câncer."
             )
         medida_municipal = st.selectbox(
             "Visualizar composição municipal",
             ["Participação (%)", "Quantidade de exames"],
             key="q5_categoria_municipal_visual",
+        )
+        st.caption(
+            "**Leitura atual:** "
+            + (
+                "cada célula apresenta a **participação percentual** da categoria "
+                "entre os exames alterados do município (total da linha = 100%, "
+                "quando há registros)."
+                if medida_municipal == "Participação (%)"
+                else "cada célula apresenta a **quantidade de exames** da categoria "
+                "registrada no município, nos anos selecionados."
+            )
         )
         dados_municipais = cat_anual.dropna(
             subset=["municipio", "categoria", "quantidade_alterados"]
