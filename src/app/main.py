@@ -25,7 +25,8 @@ st.markdown("""
 .exec-title{font-family:Fraunces,Georgia,serif;font-size:clamp(1.7rem,3.2vw,2.9rem);
     font-weight:650;line-height:1.13;margin:10px 0;color:#fff!important;max-width:770px}
 .exec-title em{font-style:italic;color:#c0d9eb;}
-.exec-sub{font-size:1rem;line-height:1.6;color:#e5f0f7;margin:15px 0 17px;max-width:790px;font-weight:400}
+.exec-sub{font-family:Manrope,Arial,sans-serif;font-size:1.15rem;line-height:1.65;color:#FFFFFF;margin:15px 0 17px;max-width:920px;font-weight:500}
+@media(max-width:768px){.exec-sub{font-size:1rem;line-height:1.55}}
 .exec-pill{display:inline-block;border:1px solid #547e9d;border-radius:20px;
     padding:5px 12px;font-size:.7rem;color:#f3f8fb}
 .exec-metric{background:#fff;border:1px solid #dae4ec;border-radius:12px;
