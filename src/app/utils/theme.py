@@ -33,7 +33,21 @@ def apply_custom_css():
         font-size:.71rem;text-transform:uppercase;margin:0 0 13px;}
     .pet-hero-title {color:#fff!important;font-size:clamp(1.8rem,3.4vw,3rem);
         font-weight:760;line-height:1.13;letter-spacing:-.035em;margin:0 0 12px;}
-    .pet-hero-desc {color:#d7e7f4;font-size:.95rem;line-height:1.5;max-width:740px;}
+    /* Descrição dos cabeçalhos: mesmo padrão de Exames Alterados para todas as páginas. */
+    .pet-hero .pet-hero-desc {
+        font-family:Manrope,Arial,sans-serif!important;
+        font-size:1.15rem!important;
+        line-height:1.65!important;
+        font-weight:500!important;
+        color:#FFFFFF!important;
+        max-width:920px!important;
+    }
+    @media(max-width:768px) {
+        .pet-hero .pet-hero-desc {
+            font-size:1rem!important;
+            line-height:1.55!important;
+        }
+    }
     .pet-kicker {color:var(--orange);font-size:.73rem;font-weight:780;
                  letter-spacing:.13em;text-transform:uppercase;}
     .pet-note,.pet-highlight {background:#F4F6F8;border-radius:14px;padding:16px 20px;
