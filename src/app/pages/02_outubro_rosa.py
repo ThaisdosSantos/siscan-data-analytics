@@ -231,7 +231,6 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         '<h2 style="margin:32px 0 17px;padding:9px 0 12px;'
         'border-bottom:2px solid #D8E5EF;color:#1A3B5C;'
         'font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;">'
-        '<span style="color:#006C9A;margin-right:10px;">01</span>'
         'Perfil etário dos registros de setembro a dezembro</h2>',
         unsafe_allow_html=True,
     )
@@ -336,6 +335,19 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                     "necessariamente a data da coleta. "
                     "As diferenças não comprovam efeito da campanha."
                 )
+            # Os rótulos são definidos no DataFrame antes do Plotly
+            # serializar os traces (evita conversões de arrays na exportação).
+            perfil_mes_or["rotulo_png"] = perfil_mes_or.apply(
+                lambda row: (
+                    f"{row['participacao_pct']:.2f}%"
+                    if perfil_percentual_or else f"{row['quantidade_exames']:,.0f}"
+                ) if (
+                    pd.notna(row[valor_perfil_or])
+                    and (not perfil_percentual_or or row[valor_perfil_or] >= 7)
+                    and (perfil_percentual_or or row[valor_perfil_or] > 0)
+                ) else "",
+                axis=1,
+            )
             graf_perfil_or = px.bar(
                 perfil_mes_or,
                 x="mes_nome", y=valor_perfil_or, color="grupo",
@@ -345,6 +357,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                     "grupo": ordem_grupos_or,
                 },
                 custom_data=["quantidade_exames", "participacao_pct"],
+                text="rotulo_png",
                 labels={
                     "mes_nome": "Mês", "grupo": "Grupo etário",
                     "quantidade_exames": "Exames registrados",
@@ -353,6 +366,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             )
             graf_perfil_or.update_traces(
                 marker_line_color="#FFFFFF", marker_line_width=0.8,
+                textposition="none",  # rótulos somente no PNG
                 hovertemplate=(
                     "Mês: %{x}<br>Exames: %{customdata[0]:,.0f}"
                     "<br>Participação: %{customdata[1]:.2f}%"
@@ -377,27 +391,10 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             export_perfil_or = copy.deepcopy(graf_perfil_or)
             # O PNG mantém somente o gráfico, com quantidades/percentuais
             # legíveis nos segmentos; não adiciona tabelas à imagem.
-            perfil_mes_or["rotulo_png"] = [
-                (
-                    f"{row['participacao_pct']:.2f}%"
-                    if perfil_percentual_or else f"{row['quantidade_exames']:,.0f}"
-                ) if (
-                    pd.notna(row[valor_perfil_or])
-                    and (not perfil_percentual_or or row[valor_perfil_or] >= 7)
-                    and (perfil_percentual_or or row[valor_perfil_or] > 0)
-                ) else ""
-                for _, row in perfil_mes_or.iterrows()
-            ]
-            # Rótulos extraídos das próprias linhas por grupo/mês, não dos
-            # arrays internos do Plotly.
-            for tr in export_perfil_or.data:
-                itens = perfil_mes_or.loc[perfil_mes_or["grupo"].eq(tr.name)]
-                rotulos = itens.set_index("mes_nome")["rotulo_png"]
-                tr.update(
-                    text=[rotulos.get(mes, "") for mes in tr.x],
-                    textposition="inside",
-                    textfont=dict(color="#FFFFFF", size=13),
-                )
+            export_perfil_or.update_traces(
+                textposition="inside",
+                textfont=dict(color="#FFFFFF", size=13),
+            )
             export_perfil_or.update_layout(
                 title=dict(
                     text="Perfil etário mensal · " + (
