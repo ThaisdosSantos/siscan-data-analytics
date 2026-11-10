@@ -176,6 +176,175 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         unsafe_allow_html=True,
     )
 
+    # Série anual por município: utiliza as quantidades já existentes na Gold.
+    # Ausências de ano são mantidas como lacunas, nunca convertidas em zero.
+    st.markdown("### Evolução anual de exames alterados por município")
+    st.markdown(
+        "Mostra a **evolução anual do total de exames alterados em cada município**, "
+        "considerando os grupos etários disponíveis no recorte selecionado."
+    )
+    with st.expander("ℹ️ Como interpretar a evolução anual por município", expanded=False):
+        st.markdown(
+            "Cada painel representa um município. No **eixo horizontal** estão "
+            "os anos e no **vertical**, a quantidade anual de exames alterados. "
+            "Linhas ascendentes representam mais exames alterados registrados "
+            "do que no ano anterior; descendentes, menos. "
+            "Os valores são **contagens**, não proporções. "
+            "Municípios com maior volume de exames podem registrar mais alterações "
+            "sem apresentar maior percentual de resultados alterados. "
+            "Anos sem registros aparecem como lacunas, e não como zero. "
+            "Compare as proporções no gráfico etário ou na matriz territorial "
+            "para avaliar diferenças relativas."
+        )
+    if "ano" not in df.columns:
+        st.info("O gráfico anual requer a coluna 'ano' na tabela Gold de exames alterados.")
+    else:
+        yearly = (
+            df.dropna(subset=["ano"])
+            .groupby(["municipio", "ano"], as_index=False)["quantidade_alterados"]
+            .sum(min_count=1)
+        )
+        if not yearly.empty:
+            st.markdown("""
+                <style>
+                /* Somente o seletor de ordenação das facetas de exames alterados. */
+                .st-key-alterados_sort_panel [data-testid="stSelectbox"] label p {
+                    color: #1A3B5C !important;
+                    font-weight: 700 !important;
+                    font-size: 0.88rem !important;
+                }
+                .st-key-alterados_sort_panel [data-baseweb="select"] > div {
+                    background-color: #FFFFFF !important;
+                    border: 1.5px solid #8FAFC5 !important;
+                    border-radius: 9px !important;
+                    min-height: 43px !important;
+                    box-shadow: 0 2px 7px rgba(26,59,92,0.07) !important;
+                }
+                .st-key-alterados_sort_panel [data-baseweb="select"] > div:hover {
+                    border-color: #006C9A !important;
+                }
+                .st-key-alterados_sort_panel [data-baseweb="select"] > div:focus-within {
+                    border-color: #006C9A !important;
+                    box-shadow: 0 0 0 2px rgba(0,108,154,0.18) !important;
+                }
+                .st-key-alterados_sort_panel [data-baseweb="select"] * {
+                    color: #1A3B5C !important;
+                }
+                .st-key-alterados_sort_panel [data-baseweb="select"] svg {
+                    fill: #006C9A !important;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+            with st.container(key="alterados_sort_panel"):
+                sort_mode = st.selectbox(
+                    "Ordenar por",
+                    options=[
+                        "A–Z",
+                        "Maior para menor",
+                    ],
+                    key="sort_facetas_alterados",
+                )
+            # O ranking considera a soma dos exames alterados no recorte filtrado.
+            # Empates mantêm os nomes dos municípios em ordem alfabética.
+            municipalities = sorted(yearly["municipio"].unique())
+            if sort_mode == "Maior para menor":
+                totals_by_city = (
+                    yearly.groupby("municipio")["quantidade_alterados"]
+                    .sum(min_count=1)
+                )
+                municipalities.sort(
+                    key=lambda city: (
+                        -totals_by_city.loc[city] if pd.notna(totals_by_city.loc[city])
+                        else float("inf"),
+                        city.casefold(),
+                    )
+                )
+            available_years = sorted(yearly["ano"].astype(int).unique())
+            # Também exibe lacunas dos anos selecionados, sem criar contagens artificiais.
+            from utils.data_loader import selected_years
+            years = selected_years()
+            axis_years = years if years else available_years
+            idx = pd.MultiIndex.from_product(
+                [municipalities, axis_years], names=["municipio", "ano"]
+            )
+            yearly = (
+                yearly.set_index(["municipio", "ano"])
+                .reindex(idx)
+                .reset_index()
+            )
+            yearly["ano_label"] = yearly["ano"].astype(str)
+            fig_yearly = px.line(
+                yearly,
+                x="ano_label",
+                y="quantidade_alterados",
+                facet_col="municipio",
+                facet_col_wrap=3,
+                facet_col_spacing=0.045,
+                facet_row_spacing=0.085,
+                category_orders={
+                    "municipio": municipalities,
+                    "ano_label": [str(y) for y in axis_years],
+                },
+                markers=True,
+                color_discrete_sequence=[OCEAN],
+                labels={
+                    "ano_label": "Ano",
+                    "quantidade_alterados": "Exames alterados",
+                    "municipio": "Município",
+                },
+            )
+            fig_yearly.for_each_annotation(
+                lambda annotation: annotation.update(
+                    text=annotation.text.split("=", 1)[-1],
+                    font=dict(size=12, color="#1A3B5C"),
+                )
+            )
+            fig_yearly.update_traces(
+                line=dict(width=2.5),
+                marker=dict(size=7),
+                connectgaps=False,
+                hovertemplate="Ano: %{x}<br>Exames alterados: %{y:,.0f}<extra></extra>",
+            )
+            # Preserva a identificação da medida sem repetir o título em cada
+            # subplot, evitando sobreposição com as escalas dos municípios.
+            fig_yearly.update_yaxes(
+                matches=None, showticklabels=True, title_text=None,
+                rangemode="tozero", gridcolor="#E9EDF1", zeroline=False
+            )
+            fig_yearly.add_annotation(
+                x=-0.065, y=0.5, xref="paper", yref="paper",
+                text="Exames alterados", textangle=-90, showarrow=False,
+                font=dict(family="Arial", size=13, color="#1A3B5C"),
+                xanchor="center", yanchor="middle",
+            )
+            fig_yearly.update_xaxes(
+                matches=None, showticklabels=True, title_text=None,
+                type="category", categoryorder="array",
+                categoryarray=[str(y) for y in axis_years]
+            )
+            # Um único título horizontal para todo o conjunto de facetas.
+            fig_yearly.add_annotation(
+                x=0.5, y=-0.025, xref="paper", yref="paper",
+                text="Anos", showarrow=False,
+                font=dict(family="Arial", size=13, color="#1A3B5C"),
+                xanchor="center", yanchor="top",
+            )
+            fig_yearly.update_layout(
+                height=max(480, 285 * ((len(municipalities) + 2) // 3)),
+                showlegend=False,
+                margin=dict(l=95, r=15, t=55, b=105),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="white",
+                font=dict(color="#1A3B5C", size=11),
+            )
+            st.caption("No celular, deslize o gráfico para os lados. No computador, clique com o botão direito para baixar em PNG.")
+            chart_with_right_click_download(
+                fig_yearly, filename="exames_alterados_anuais_municipios.png",
+                height=fig_yearly.layout.height, min_chart_width=820
+            )
+        else:
+            st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
+
     # Evolução anual com linhas independentes para os três grupos etários.
     # Dois municípios por linha (até seis linhas), sem acumular grupos.
     st.markdown("### Evolução anual de exames alterados por município e grupo etário")
@@ -449,175 +618,6 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 min_chart_width=760,
                 export_fig=export_lines,
             )
-
-    # Série anual por município: utiliza as quantidades já existentes na Gold.
-    # Ausências de ano são mantidas como lacunas, nunca convertidas em zero.
-    st.markdown("### Evolução anual de exames alterados por município")
-    st.markdown(
-        "Mostra a **evolução anual do total de exames alterados em cada município**, "
-        "considerando os grupos etários disponíveis no recorte selecionado."
-    )
-    with st.expander("ℹ️ Como interpretar a evolução anual por município", expanded=False):
-        st.markdown(
-            "Cada painel representa um município. No **eixo horizontal** estão "
-            "os anos e no **vertical**, a quantidade anual de exames alterados. "
-            "Linhas ascendentes representam mais exames alterados registrados "
-            "do que no ano anterior; descendentes, menos. "
-            "Os valores são **contagens**, não proporções. "
-            "Municípios com maior volume de exames podem registrar mais alterações "
-            "sem apresentar maior percentual de resultados alterados. "
-            "Anos sem registros aparecem como lacunas, e não como zero. "
-            "Compare as proporções no gráfico etário ou na matriz territorial "
-            "para avaliar diferenças relativas."
-        )
-    if "ano" not in df.columns:
-        st.info("O gráfico anual requer a coluna 'ano' na tabela Gold de exames alterados.")
-    else:
-        yearly = (
-            df.dropna(subset=["ano"])
-            .groupby(["municipio", "ano"], as_index=False)["quantidade_alterados"]
-            .sum(min_count=1)
-        )
-        if not yearly.empty:
-            st.markdown("""
-                <style>
-                /* Somente o seletor de ordenação das facetas de exames alterados. */
-                .st-key-alterados_sort_panel [data-testid="stSelectbox"] label p {
-                    color: #1A3B5C !important;
-                    font-weight: 700 !important;
-                    font-size: 0.88rem !important;
-                }
-                .st-key-alterados_sort_panel [data-baseweb="select"] > div {
-                    background-color: #FFFFFF !important;
-                    border: 1.5px solid #8FAFC5 !important;
-                    border-radius: 9px !important;
-                    min-height: 43px !important;
-                    box-shadow: 0 2px 7px rgba(26,59,92,0.07) !important;
-                }
-                .st-key-alterados_sort_panel [data-baseweb="select"] > div:hover {
-                    border-color: #006C9A !important;
-                }
-                .st-key-alterados_sort_panel [data-baseweb="select"] > div:focus-within {
-                    border-color: #006C9A !important;
-                    box-shadow: 0 0 0 2px rgba(0,108,154,0.18) !important;
-                }
-                .st-key-alterados_sort_panel [data-baseweb="select"] * {
-                    color: #1A3B5C !important;
-                }
-                .st-key-alterados_sort_panel [data-baseweb="select"] svg {
-                    fill: #006C9A !important;
-                }
-                </style>
-            """, unsafe_allow_html=True)
-            with st.container(key="alterados_sort_panel"):
-                sort_mode = st.selectbox(
-                    "Ordenar por",
-                    options=[
-                        "A–Z",
-                        "Maior para menor",
-                    ],
-                    key="sort_facetas_alterados",
-                )
-            # O ranking considera a soma dos exames alterados no recorte filtrado.
-            # Empates mantêm os nomes dos municípios em ordem alfabética.
-            municipalities = sorted(yearly["municipio"].unique())
-            if sort_mode == "Maior para menor":
-                totals_by_city = (
-                    yearly.groupby("municipio")["quantidade_alterados"]
-                    .sum(min_count=1)
-                )
-                municipalities.sort(
-                    key=lambda city: (
-                        -totals_by_city.loc[city] if pd.notna(totals_by_city.loc[city])
-                        else float("inf"),
-                        city.casefold(),
-                    )
-                )
-            available_years = sorted(yearly["ano"].astype(int).unique())
-            # Também exibe lacunas dos anos selecionados, sem criar contagens artificiais.
-            from utils.data_loader import selected_years
-            years = selected_years()
-            axis_years = years if years else available_years
-            idx = pd.MultiIndex.from_product(
-                [municipalities, axis_years], names=["municipio", "ano"]
-            )
-            yearly = (
-                yearly.set_index(["municipio", "ano"])
-                .reindex(idx)
-                .reset_index()
-            )
-            yearly["ano_label"] = yearly["ano"].astype(str)
-            fig_yearly = px.line(
-                yearly,
-                x="ano_label",
-                y="quantidade_alterados",
-                facet_col="municipio",
-                facet_col_wrap=3,
-                facet_col_spacing=0.045,
-                facet_row_spacing=0.085,
-                category_orders={
-                    "municipio": municipalities,
-                    "ano_label": [str(y) for y in axis_years],
-                },
-                markers=True,
-                color_discrete_sequence=[OCEAN],
-                labels={
-                    "ano_label": "Ano",
-                    "quantidade_alterados": "Exames alterados",
-                    "municipio": "Município",
-                },
-            )
-            fig_yearly.for_each_annotation(
-                lambda annotation: annotation.update(
-                    text=annotation.text.split("=", 1)[-1],
-                    font=dict(size=12, color="#1A3B5C"),
-                )
-            )
-            fig_yearly.update_traces(
-                line=dict(width=2.5),
-                marker=dict(size=7),
-                connectgaps=False,
-                hovertemplate="Ano: %{x}<br>Exames alterados: %{y:,.0f}<extra></extra>",
-            )
-            # Preserva a identificação da medida sem repetir o título em cada
-            # subplot, evitando sobreposição com as escalas dos municípios.
-            fig_yearly.update_yaxes(
-                matches=None, showticklabels=True, title_text=None,
-                rangemode="tozero", gridcolor="#E9EDF1", zeroline=False
-            )
-            fig_yearly.add_annotation(
-                x=-0.065, y=0.5, xref="paper", yref="paper",
-                text="Exames alterados", textangle=-90, showarrow=False,
-                font=dict(family="Arial", size=13, color="#1A3B5C"),
-                xanchor="center", yanchor="middle",
-            )
-            fig_yearly.update_xaxes(
-                matches=None, showticklabels=True, title_text=None,
-                type="category", categoryorder="array",
-                categoryarray=[str(y) for y in axis_years]
-            )
-            # Um único título horizontal para todo o conjunto de facetas.
-            fig_yearly.add_annotation(
-                x=0.5, y=-0.025, xref="paper", yref="paper",
-                text="Anos", showarrow=False,
-                font=dict(family="Arial", size=13, color="#1A3B5C"),
-                xanchor="center", yanchor="top",
-            )
-            fig_yearly.update_layout(
-                height=max(480, 285 * ((len(municipalities) + 2) // 3)),
-                showlegend=False,
-                margin=dict(l=95, r=15, t=55, b=105),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="white",
-                font=dict(color="#1A3B5C", size=11),
-            )
-            st.caption("No celular, deslize o gráfico para os lados. No computador, clique com o botão direito para baixar em PNG.")
-            chart_with_right_click_download(
-                fig_yearly, filename="exames_alterados_anuais_municipios.png",
-                height=fig_yearly.layout.height, min_chart_width=820
-            )
-        else:
-            st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
 
     st.markdown(
         '<h2 class="q5-section-title"><span class="q5-section-index">03</span>'
