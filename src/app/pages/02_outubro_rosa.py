@@ -341,21 +341,24 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 "participacao_pct" if perfil_percentual_or else "quantidade_exames"
             )
             st.markdown(
-                "Compara a **quantidade de exames** ou a **participação de cada "
-                "grupo etário no total do próprio mês**."
+                "Mostra como os **exames registrados de setembro a dezembro** "
+                "se distribuem entre os três grupos etários, em quantidade ou percentual."
             )
             with st.expander("ℹ️ Como interpretar o perfil etário mensal", expanded=False):
                 st.markdown(
-                    "**Eixo horizontal:** setembro, outubro, novembro e dezembro. "
-                    "**Cores:** <25 anos, 25–64 anos e ≥65 anos. "
-                    "Em **Quantidade**, cada segmento mostra o número de exames "
-                    "registrados no grupo e mês. Em **Participação (%)**, cada "
-                    "barra representa 100% dos exames daquele mês, distribuídos "
-                    "pelos três grupos. Os percentuais utilizam a razão entre "
-                    "quantidades somadas, não a média de percentuais. "
-                    "O mês é a competência registrada no SISCAN, não "
-                    "necessariamente a data da coleta. "
-                    "As diferenças não comprovam efeito da campanha."
+                    "**Como ler:** cada barra representa um mês. As cores mostram "
+                    "os grupos **<25 anos (verde)**, **25–64 anos (azul)** e "
+                    "**≥65 anos (laranja)**.\n\n"
+                    "**Quantidade de exames:** a altura dos segmentos indica "
+                    "quantos exames foram registrados em cada grupo etário. "
+                    "A altura total da barra é a soma dos três grupos naquele mês.\n\n"
+                    "**Participação (%):** cada barra totaliza 100% e mostra "
+                    "a parcela de exames de cada grupo etário naquele mês. "
+                    "Por exemplo, 80% significa que 80 de cada 100 exames "
+                    "registrados foram daquele grupo.\n\n"
+                    "**Atenção:** o mês corresponde ao registro no SISCAN, "
+                    "não necessariamente à coleta. A comparação não demonstra "
+                    "que as mudanças foram causadas pela campanha Outubro Rosa."
                 )
             # Os rótulos são definidos no DataFrame antes do Plotly
             # serializar os traces (evita conversões de arrays na exportação).
