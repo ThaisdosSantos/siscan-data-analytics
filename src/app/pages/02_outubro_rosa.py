@@ -299,6 +299,9 @@ if require(dados, NECESSARIAS):
                 variacao_muni["situacao"] = variacao_muni[
                     "variacao_pct"
                 ].apply(lambda valor: "Redução" if valor < 0 else "Aumento ou estabilidade")
+                variacao_muni["variacao_formatada"] = variacao_muni[
+                    "variacao_pct"
+                ].map(lambda valor: f"{valor:+.2f}%")
                 fig_variacao = px.bar(
                     variacao_muni,
                     x="variacao_pct", y="municipio",
@@ -307,7 +310,7 @@ if require(dados, NECESSARIAS):
                         "Redução": "#B53A27",
                         "Aumento ou estabilidade": "#218B65",
                     },
-                    custom_data=["setembro", "outubro"],
+                    custom_data=["setembro", "outubro", "variacao_formatada"],
                     labels={
                         "variacao_pct": "Variação (%)",
                         "municipio": "Município",
@@ -330,7 +333,7 @@ if require(dados, NECESSARIAS):
                     hovertemplate=(
                         "%{y}<br>Setembro: %{customdata[0]:,.0f}"
                         "<br>Outubro: %{customdata[1]:,.0f}"
-                        "<br>Variação: %{x:+.2f}%<extra></extra>"
+                        "<br>Variação: %{customdata[2]}<extra></extra>"
                     ),
                 )
                 fig_variacao.update_layout(
