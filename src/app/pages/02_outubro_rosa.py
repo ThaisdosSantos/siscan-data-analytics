@@ -322,7 +322,7 @@ if require(dados, NECESSARIAS):
                     tickfont=dict(size=13, color=NAVY),
                 )
                 fig_variacao.update_xaxes(
-                    ticksuffix="%", tickformat=".0f",
+                    ticksuffix="%", tickformat=".2f",
                     zeroline=True, zerolinecolor=NAVY,
                     zerolinewidth=2,
                 )
