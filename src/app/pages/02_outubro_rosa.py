@@ -919,7 +919,10 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         "exames_mes":"Exames em outubro",
         "diferenca_exames":"Diferença (exames)",
         "variacao_pct":"Variação (%)"
-    })
+    })[
+        ["Município", "Exames em setembro", "Exames em outubro",
+         "Diferença (exames)", "Variação (%)"]
+    ]
     st.markdown(f"#### Dados municipais · {len(table)} municípios")
     st.markdown(
         "Detalha os **exames registrados em setembro e outubro**, a diferença "
