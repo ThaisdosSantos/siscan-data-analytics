@@ -10,6 +10,25 @@ from utils.data_loader import filtered, require, sidebar_filters, years_label, M
 st.set_page_config(page_title="Outubro Rosa | SISCAN", layout="wide")
 apply_custom_css()
 sidebar_filters()
+# Seções numeradas no padrão de Faixa Etária e Panorama Geral.
+# Como a primeira seção é um título, o cabeçalho não deve sobrepô-la.
+st.markdown("""
+<style>
+.pet-hero {margin-bottom:0!important;}
+.or-section-title {
+    margin:30px 0 17px;
+    padding:9px 0 12px;
+    border-bottom:2px solid #D8E5EF;
+    font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
+    color:#1A3B5C;
+}
+.or-section-index {color:#006C9A;margin-right:10px;}
+@media(max-width:768px) {
+    .or-section-title {margin:24px 0 13px;font-size:21px;}
+}
+</style>
+""",unsafe_allow_html=True)
+
 page_header(
     "Campanha · Outubro Rosa",
     "Outubro em destaque: o que muda nos registros?",
@@ -38,6 +57,11 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         st.info("Não há registros de outubro para os filtros selecionados.")
         st.stop()
 
+    st.markdown(
+        '<h2 class="or-section-title"><span class="or-section-index">01</span>'
+        'Produção e variação mensal dos exames</h2>',
+        unsafe_allow_html=True,
+    )
     sept = octdf["exames_referencia_setembro"].sum(min_count=1)
     octval = octdf["exames_mes"].sum(min_count=1)
     diff = octval - sept
@@ -228,9 +252,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
     # Nunca somar quantidade_grupo ou total_exames_muni_competencia:
     # ambas as colunas repetem valores nas 15 faixas da grade.
     st.markdown(
-        '<h2 style="margin:32px 0 17px;padding:9px 0 12px;'
-        'border-bottom:2px solid #D8E5EF;color:#1A3B5C;'
-        'font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;">'
+        '<h2 class="or-section-title"><span class="or-section-index">02</span>'
         'Perfil etário dos registros de setembro a dezembro</h2>',
         unsafe_allow_html=True,
     )
@@ -553,6 +575,11 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                     detalhamento_or, integer_columns=["Exames registrados"]
                 )
 
+    st.markdown(
+        '<h2 class="or-section-title"><span class="or-section-index">03</span>'
+        'Sazonalidade regional e municipal</h2>',
+        unsafe_allow_html=True,
+    )
     # Índice sazonal (base = média das competências disponíveis).
     # A fonte permanece a fato_exames_temporais_territoriais da Gold.
     # Não preencher competências ausentes com zero.
@@ -881,6 +908,11 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         else:
             st.info("Não há competências disponíveis para a tabela sazonal neste recorte.")
 
+    st.markdown(
+        '<h2 class="or-section-title"><span class="or-section-index">04</span>'
+        'Detalhamento municipal da comparação setembro × outubro</h2>',
+        unsafe_allow_html=True,
+    )
     table = city.rename(columns={
         "municipio":"Município",
         "exames_referencia_setembro":"Exames em setembro",
