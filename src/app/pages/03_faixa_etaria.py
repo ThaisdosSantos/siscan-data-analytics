@@ -97,24 +97,29 @@ page_header(
     "Apresenta a distribuição dos exames por faixa etária, as diferenças entre municípios e a evolução da produção, incluindo indicadores que relacionam o volume de exames à população feminina de 25 a 64 anos.",
 )
 
-# Fontes globais em destaque, sem repetição nos rodapés de cada gráfico/tabela.
+# Fontes resumidas no topo; detalhes técnicos acessíveis sob demanda.
 st.markdown(
-    '<div style="margin:14px 0 20px;padding:12px 16px;'
+    '<div style="margin:12px 0 8px;padding:10px 15px;'
     'background:#EEF5FA;border-left:4px solid #006C9A;'
     'border-radius:8px;color:#1A3B5C;font-family:Manrope,Arial,sans-serif;'
-    'font-size:16px;line-height:1.55;">'
-    '<strong>Fontes dos dados:</strong> '
-    '<strong>Exames citopatológicos:</strong> SISCAN/DATASUS '
-    '&nbsp;·&nbsp; <strong>População feminina de 25 a 64 anos:</strong> '
-    'Censo Demográfico IBGE 2022 (denominador fixo em todos os anos, '
-    'por ser o censo mais recente).'
-    '<br><strong>Referência técnica:</strong> indicador 1.5 do IDSS/ANS '
-    '(ano-base 2023); o parâmetro de 33 exames por 100 mulheres/ano '
-    'é adaptado aqui à produção municipal do SISCAN, sem desduplicação '
-    'das pacientes, e não corresponde à taxa oficial de beneficiárias da ANS.'
+    'font-size:14px;line-height:1.5;">'
+    '<strong>Fontes:</strong> exames — SISCAN/DATASUS '
+    '&nbsp;·&nbsp; população feminina (25–64 anos) — IBGE, Censo 2022.'
     '</div>',
     unsafe_allow_html=True,
 )
+with st.expander("ℹ️ Fontes e critérios de cálculo", expanded=False):
+    st.markdown(
+        "**Exames citopatológicos:** SISCAN/DATASUS. "
+        "**População feminina de 25 a 64 anos:** Censo Demográfico IBGE 2022, "
+        "utilizado como denominador fixo em todos os anos por ser o censo "
+        "mais recente.\n\n"
+        "**Referência técnica:** indicador 1.5 do IDSS/ANS (ano-base 2023). "
+        "O parâmetro de 33 exames por 100 mulheres/ano foi adaptado à "
+        "produção municipal do SISCAN, sem desduplicação das pacientes. "
+        "Portanto, a medida apresentada não corresponde à taxa oficial "
+        "de beneficiárias da ANS."
+    )
 
 st.markdown("""
 <style>
