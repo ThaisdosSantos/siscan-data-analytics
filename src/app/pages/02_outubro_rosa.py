@@ -94,9 +94,9 @@ st.markdown(
     'line-height:1.6;font-size:.91rem;">'
     '<strong>Fonte:</strong> SISCAN/DATASUS · Gold '
     '<code>fato_outubro_rosa_campanha_anual</code>. '
-    'A análise da campanha utiliza a base <strong>anual</strong>. '
-    'A comparação de setembro a dezembro utiliza uma <strong>fonte mensal '
-    'distinta</strong>, exibida somente como contexto histórico.'
+    '<strong>Base principal:</strong> Gold '
+    '<code>fato_outubro_rosa_campanha_anual</code>, consolidada por ano. '
+    'A série mensal da base geral aparece separadamente ao final.'
     '</div>',
     unsafe_allow_html=True,
 )
@@ -137,7 +137,7 @@ if require(dados, NECESSARIAS):
     anos = sorted(dados["ano"].unique().tolist())
     periodo = years_label()
 
-    section("01", "Panorama dos registros da campanha")
+    section("01", "Panorama e perfil dos exames")
     k1, k2, k3 = st.columns(3)
     k1.metric("Exames registrados", fmt_num(total))
     k2.metric("Exames de 25–64 anos", fmt_num(alvo))
@@ -146,131 +146,10 @@ if require(dados, NECESSARIAS):
     ))
     st.caption(
         f"Recorte: {periodo} · {cidades} município(s). "
-        "Os indicadores somam uma única observação representativa "
-        "por município, ano e faixa etária."
-    )
-    with st.expander("ℹ️ Como interpretar os indicadores", expanded=False):
-        st.markdown(
-            "**Exames registrados:** total do recorte anual de Outubro Rosa "
-            "presente na Gold. **Exames de 25–64 anos:** quantidade no grupo "
-            "etário de referência. **Participação de 25–64 anos:** "
-            "exames desse grupo ÷ total de exames do recorte × 100. "
-            "Os registros não representam mulheres distintas."
-        )
-
-    section("02", "Evolução anual dos exames")
-    st.markdown(
-        "Acompanha **quantos exames foram registrados em cada ano** do recorte "
-        "e como se distribuem entre os grupos etários."
-    )
-    anual = (
-        dados.groupby(["ano", "grupo"], as_index=False)["quantidade_exames"]
-        .sum(min_count=1)
-    )
-    somas_ano = anual.groupby("ano")["quantidade_exames"].sum()
-    anual["participacao_pct"] = (
-        anual["quantidade_exames"]
-        .div(anual["ano"].map(somas_ano).where(
-            anual["ano"].map(somas_ano) > 0
-        )).mul(100)
-    )
-    with st.expander("ℹ️ Como interpretar a evolução anual", expanded=False):
-        st.markdown(
-            "**Eixo horizontal:** anos selecionados. **Eixo vertical:** "
-            "quantidade de exames. Cada cor identifica um grupo etário. "
-            "A altura da barra é o total anual; passe o mouse sobre um "
-            "segmento para consultar sua quantidade e participação. "
-            "Não é possível deduzir a produção de cada mês a partir "
-            "desta tabela anual."
-        )
-    grafico_anual = px.bar(
-        anual, x="ano", y="quantidade_exames", color="grupo",
-        barmode="stack", color_discrete_map=CORES,
-        category_orders={"grupo": ORDEM, "ano": anos},
-        custom_data=["participacao_pct"],
-        labels={"ano": "Ano", "quantidade_exames": "Exames",
-                "grupo": "Grupo etário"},
-    )
-    grafico_anual.update_xaxes(type="category")
-    grafico_anual.update_traces(
-        hovertemplate="Ano: %{x}<br>Exames: %{y:,.0f}"
-        "<br>Participação no ano: %{customdata[0]:.2f}%"
-        "<extra>%{fullData.name}</extra>",
-    )
-    download_plot(
-        grafico_anual, "outubro_rosa_evolucao_anual.png", altura=470,
+        "Dados consolidados por município, ano e faixa etária."
     )
 
-    section("03", "Produção mensal de setembro a dezembro")
-    st.markdown(
-        "Compara os **exames registrados em setembro, outubro, novembro e "
-        "dezembro** de cada ano selecionado, considerando os municípios filtrados."
-    )
-    st.caption(
-        "Fonte desta visualização: Gold `fato_exames_temporais_territoriais` "
-        "(base geral mensal). Os valores **não** são somados aos indicadores "
-        "anuais da campanha e não representam uma decomposição mensal "
-        "da tabela `fato_outubro_rosa_campanha_anual`."
-    )
-    with st.expander("ℹ️ Como interpretar a produção mensal", expanded=False):
-        st.markdown(
-            "**Cada grupo de barras** representa um ano. As quatro cores "
-            "identificam setembro, outubro, novembro e dezembro. "
-            "**Eixo vertical:** quantidade de exames registrados. "
-            "Compare as barras do mesmo ano para identificar diferenças "
-            "entre meses, sem atribuir essas mudanças automaticamente à campanha. "
-            "Este gráfico usa a base mensal geral do SISCAN, enquanto os "
-            "indicadores da campanha usam outra extração, consolidada por ano."
-        )
-    mensal = filtered("temporal")
-    colunas_mensal = {"ano", "mes", "quantidade"}
-    if mensal.empty or not colunas_mensal.issubset(mensal.columns):
-        st.info("A série mensal da base geral não está disponível neste recorte.")
-    else:
-        mensal = mensal.loc[:, ["ano", "mes", "quantidade"]].copy()
-        for coluna_m in ["ano", "mes", "quantidade"]:
-            mensal[coluna_m] = pd.to_numeric(mensal[coluna_m], errors="coerce")
-        mensal = mensal.dropna(subset=["ano", "mes", "quantidade"])
-        mensal = mensal.loc[mensal["mes"].isin([9, 10, 11, 12])]
-        if mensal.empty:
-            st.info("Não há registros mensais para setembro a dezembro no recorte.")
-        else:
-            nomes_meses = {
-                9: "Setembro", 10: "Outubro",
-                11: "Novembro", 12: "Dezembro",
-            }
-            cores_meses = {
-                "Setembro": "#419AD1",
-                "Outubro": "#E85D2A",
-                "Novembro": "#218B65",
-                "Dezembro": "#1A3B5C",
-            }
-            mensal["ano"] = mensal["ano"].astype(int)
-            mensal["mes_nome"] = mensal["mes"].map(nomes_meses)
-            producao_mensal = (
-                mensal.groupby(["ano", "mes_nome"], as_index=False)["quantidade"]
-                .sum(min_count=1)
-            )
-            fig_mensal = px.bar(
-                producao_mensal, x="ano", y="quantidade", color="mes_nome",
-                barmode="group", color_discrete_map=cores_meses,
-                category_orders={
-                    "mes_nome": list(nomes_meses.values()),
-                    "ano": sorted(producao_mensal["ano"].unique()),
-                },
-                labels={"ano": "Ano", "quantidade": "Exames registrados"},
-            )
-            fig_mensal.update_xaxes(type="category")
-            fig_mensal.update_traces(
-                hovertemplate="Ano: %{x}<br>Exames registrados: %{y:,.0f}"
-                "<extra>%{fullData.name}</extra>"
-            )
-            download_plot(
-                fig_mensal, "outubro_rosa_setembro_dezembro_por_ano.png",
-                altura=490, largura=1550,
-            )
-
-    section("04", "Composição etária da campanha")
+    st.markdown("### Distribuição dos exames por grupo etário")
     st.markdown(
         "Mostra a **participação de cada grupo etário no total da campanha** "
         "para os anos e municípios selecionados, com destaque para 25–64 anos."
@@ -320,7 +199,50 @@ if require(dados, NECESSARIAS):
         height=480, min_chart_width=790, export_fig=export_rosca,
     )
 
-    section("05", "Comparação entre municípios")
+    st.markdown("### Evolução anual dos registros")
+    st.markdown(
+        "Acompanha **quantos exames foram registrados em cada ano** do recorte "
+        "e como se distribuem entre os grupos etários."
+    )
+    anual = (
+        dados.groupby(["ano", "grupo"], as_index=False)["quantidade_exames"]
+        .sum(min_count=1)
+    )
+    somas_ano = anual.groupby("ano")["quantidade_exames"].sum()
+    anual["participacao_pct"] = (
+        anual["quantidade_exames"]
+        .div(anual["ano"].map(somas_ano).where(
+            anual["ano"].map(somas_ano) > 0
+        )).mul(100)
+    )
+    with st.expander("ℹ️ Como interpretar a evolução anual", expanded=False):
+        st.markdown(
+            "**Eixo horizontal:** anos selecionados. **Eixo vertical:** "
+            "quantidade de exames. Cada cor identifica um grupo etário. "
+            "A altura da barra é o total anual; passe o mouse sobre um "
+            "segmento para consultar sua quantidade e participação. "
+            "Não é possível deduzir a produção de cada mês a partir "
+            "desta tabela anual."
+        )
+    grafico_anual = px.bar(
+        anual, x="ano", y="quantidade_exames", color="grupo",
+        barmode="stack", color_discrete_map=CORES,
+        category_orders={"grupo": ORDEM, "ano": anos},
+        custom_data=["participacao_pct"],
+        labels={"ano": "Ano", "quantidade_exames": "Exames",
+                "grupo": "Grupo etário"},
+    )
+    grafico_anual.update_xaxes(type="category")
+    grafico_anual.update_traces(
+        hovertemplate="Ano: %{x}<br>Exames: %{y:,.0f}"
+        "<br>Participação no ano: %{customdata[0]:.2f}%"
+        "<extra>%{fullData.name}</extra>",
+    )
+    download_plot(
+        grafico_anual, "outubro_rosa_evolucao_anual.png", altura=470,
+    )
+
+    section("02", "Comparação entre municípios")
     st.markdown(
         "Compara o **volume de exames registrados** por município nos anos "
         "selecionados. A participação de 25–64 anos também é apresentada "
@@ -416,7 +338,76 @@ if require(dados, NECESSARIAS):
     download_plot(distrib_mun, "outubro_rosa_distribuicao_etaria_municipal.png",
                   altura=650, largura=1650)
 
-    section("06", "Dados detalhados da campanha")
+    section("03", "Contexto mensal: setembro a dezembro")
+    st.markdown(
+        "Compara os **exames registrados em setembro, outubro, novembro e "
+        "dezembro** de cada ano selecionado, considerando os municípios filtrados."
+    )
+    st.caption(
+        "Fonte desta visualização: Gold `fato_exames_temporais_territoriais` "
+        "(base geral mensal). Os valores **não** são somados aos indicadores "
+        "anuais da campanha e não representam uma decomposição mensal "
+        "da tabela `fato_outubro_rosa_campanha_anual`."
+    )
+    with st.expander("ℹ️ Como interpretar a produção mensal", expanded=False):
+        st.markdown(
+            "**Cada grupo de barras** representa um ano. As quatro cores "
+            "identificam setembro, outubro, novembro e dezembro. "
+            "**Eixo vertical:** quantidade de exames registrados. "
+            "Compare as barras do mesmo ano para identificar diferenças "
+            "entre meses, sem atribuir essas mudanças automaticamente à campanha. "
+            "Este gráfico usa a base mensal geral do SISCAN, enquanto os "
+            "indicadores da campanha usam outra extração, consolidada por ano."
+        )
+    mensal = filtered("temporal")
+    colunas_mensal = {"ano", "mes", "quantidade"}
+    if mensal.empty or not colunas_mensal.issubset(mensal.columns):
+        st.info("A série mensal da base geral não está disponível neste recorte.")
+    else:
+        mensal = mensal.loc[:, ["ano", "mes", "quantidade"]].copy()
+        for coluna_m in ["ano", "mes", "quantidade"]:
+            mensal[coluna_m] = pd.to_numeric(mensal[coluna_m], errors="coerce")
+        mensal = mensal.dropna(subset=["ano", "mes", "quantidade"])
+        mensal = mensal.loc[mensal["mes"].isin([9, 10, 11, 12])]
+        if mensal.empty:
+            st.info("Não há registros mensais para setembro a dezembro no recorte.")
+        else:
+            nomes_meses = {
+                9: "Setembro", 10: "Outubro",
+                11: "Novembro", 12: "Dezembro",
+            }
+            cores_meses = {
+                "Setembro": "#419AD1",
+                "Outubro": "#E85D2A",
+                "Novembro": "#218B65",
+                "Dezembro": "#1A3B5C",
+            }
+            mensal["ano"] = mensal["ano"].astype(int)
+            mensal["mes_nome"] = mensal["mes"].map(nomes_meses)
+            producao_mensal = (
+                mensal.groupby(["ano", "mes_nome"], as_index=False)["quantidade"]
+                .sum(min_count=1)
+            )
+            fig_mensal = px.bar(
+                producao_mensal, x="ano", y="quantidade", color="mes_nome",
+                barmode="group", color_discrete_map=cores_meses,
+                category_orders={
+                    "mes_nome": list(nomes_meses.values()),
+                    "ano": sorted(producao_mensal["ano"].unique()),
+                },
+                labels={"ano": "Ano", "quantidade": "Exames registrados"},
+            )
+            fig_mensal.update_xaxes(type="category")
+            fig_mensal.update_traces(
+                hovertemplate="Ano: %{x}<br>Exames registrados: %{y:,.0f}"
+                "<extra>%{fullData.name}</extra>"
+            )
+            download_plot(
+                fig_mensal, "outubro_rosa_setembro_dezembro_por_ano.png",
+                altura=490, largura=1550,
+            )
+
+    st.markdown("### Dados detalhados")
     st.markdown(
         "Consulte os registros que compõem as visualizações, por **município, "
         "ano e faixa etária**, incluindo a competência do arquivo representativo "
