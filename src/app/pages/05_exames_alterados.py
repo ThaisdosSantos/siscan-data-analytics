@@ -15,10 +15,9 @@ sidebar_filters()
 page_header(
     "Resultados",
     "Exames citopatológicos alterados",
-    "Reúne quantidade, proporção e evolução anual dos exames alterados, "
-    "com comparações entre municípios, faixas etárias e categorias "
-    "citopatológicas no recorte selecionado. Os dados representam exames, "
-    "não mulheres distintas.",
+    "Apresenta a quantidade, a proporção e a evolução anual dos exames "
+    "citopatológicos alterados, permitindo comparar municípios, faixas etárias "
+    "e categorias de resultados no período selecionado.",
 )
 df=filtered("alterados")
 if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados","total_exames_validos"]):
