@@ -34,6 +34,10 @@ st.markdown("""
 # Seções numeradas no mesmo padrão de Panorama Geral e Faixa Etária.
 st.markdown("""
 <style>
+/* O cabeçalho não deve sobrepor o primeiro título de seção. */
+.pet-hero {
+    margin-bottom: 0 !important;
+}
 .q5-section-title {
     margin: 30px 0 17px;
     padding: 9px 0 12px;
