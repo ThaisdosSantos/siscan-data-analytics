@@ -1116,20 +1116,20 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             for nome in categorias_presentes
                         ],
                         tickangle=-90,
-                        tickfont=dict(size=11, color=NAVY),
+                        tickfont=dict(size=16, color=NAVY, family="Arial"),
                         title_text="Categoria citopatológica", automargin=True,
                     )
                     fig_faixas.update_layout(
-                        height=570, bargap=0.27,
+                        height=710, bargap=0.24,
                         plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
                         font=dict(color=NAVY),
                         legend=dict(
                             title_text="", orientation="v",
                             x=1.02, xanchor="left", y=1, yanchor="top",
-                            font=dict(size=12, color=NAVY),
+                            font=dict(size=14, color=NAVY),
                             bgcolor="rgba(255,255,255,0)",
                         ),
-                        margin=dict(l=75, r=125, t=55, b=210),
+                        margin=dict(l=85, r=135, t=60, b=300),
                     )
                     # O próprio Plotly Express preserva a relação entre cada
                     # percentual, categoria e grupo, sem conversão de arrays.
@@ -1145,13 +1145,13 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             text="Composição etária por categoria (2020–2025)",
                             x=0.5, font=dict(size=21, color=NAVY),
                         ),
-                        width=1600, height=760,
-                        margin=dict(l=100, r=185, t=125, b=260),
+                        width=1650, height=870,
+                        margin=dict(l=110, r=200, t=130, b=325),
                         uniformtext=dict(mode="hide", minsize=12),
                     )
                     chart_with_right_click_download(
                         fig_faixas, filename="alterados_categorias_faixas.png",
-                        height=570, min_chart_width=970, export_fig=img_faixas,
+                        height=710, min_chart_width=1450, export_fig=img_faixas,
                     )
                     with st.expander("Ver dados de categorias por faixa etária"):
                         export_table(
