@@ -964,10 +964,10 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     showgrid=False,
                 )
                 grafico_municipal.update_yaxes(
-                    tickfont=dict(color=NAVY, size=15, family="Arial"),
+                    tickfont=dict(color=NAVY, size=17, family="Arial"),
                     title_text="Municípios",
-                    title_font=dict(color=NAVY, size=14, family="Arial"),
-                    title_standoff=16,
+                    title_font=dict(color=NAVY, size=18, family="Arial"),
+                    title_standoff=20,
                     automargin=True,
                     showgrid=False,
                 )
