@@ -272,8 +272,8 @@ if require(dados, NECESSARIAS):
 
     section("04", "Composição etária da campanha")
     st.markdown(
-        "Compara a **participação dos grupos etários** nos registros anuais, "
-        "com destaque para a faixa de 25–64 anos."
+        "Mostra a **participação de cada grupo etário no total da campanha** "
+        "para os anos e municípios selecionados, com destaque para 25–64 anos."
     )
     with st.expander("ℹ️ Como interpretar a composição etária", expanded=False):
         st.markdown(
