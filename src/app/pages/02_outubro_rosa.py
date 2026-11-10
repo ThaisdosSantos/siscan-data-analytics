@@ -14,6 +14,7 @@ from utils.theme import (
     apply_custom_css, page_header, display_table, fmt_num, NAVY,
 )
 from utils.chart_download import chart_with_right_click_download
+from utils import data_loader
 from utils.data_loader import (
     filtered, require, sidebar_filters, years_label,
 )
@@ -99,6 +100,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Registra a tabela também no módulo em memória: evita falha de chave
+# durante a transição de versões no Streamlit Cloud.
+data_loader.TABLES["outubro_anual"] = "fato_outubro_rosa_campanha_anual"
 dados = filtered("outubro_anual")
 NECESSARIAS = [
     "municipio", "ano", "faixa_etaria", "grupo_etario_3",
