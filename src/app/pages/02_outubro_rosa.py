@@ -223,6 +223,339 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         "Verde: aumento · Vermelho: redução · Linha vertical: 0% (sem variação)."
     )
 
+    # Cruzamento mensal exato Outubro Rosa × faixa etária, disponível na
+    # fato_outubro_rosa_faixa_etaria (município × ano × mês × faixa).
+    # Nunca somar quantidade_grupo ou total_exames_muni_competencia:
+    # ambas as colunas repetem valores nas 15 faixas da grade.
+    st.markdown(
+        '<h2 style="margin:32px 0 17px;padding:9px 0 12px;'
+        'border-bottom:2px solid #D8E5EF;color:#1A3B5C;'
+        'font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;">'
+        '<span style="color:#006C9A;margin-right:10px;">01</span>'
+        'Perfil etário dos registros de setembro a dezembro</h2>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "Analisa os **exames registrados de setembro a dezembro por grupo etário**, "
+        "considerando os municípios e os anos selecionados. "
+        "O cruzamento é mensal e utiliza a nova tabela Gold de Outubro Rosa por idade."
+    )
+    outubro_faixas = filtered("outubro_faixa")
+    campos_faixa = {
+        "municipio", "ano", "mes", "faixa_etaria",
+        "grupo_etario_3", "quantidade_exames",
+    }
+    if outubro_faixas.empty:
+        st.info("Não há dados de Outubro Rosa por faixa etária neste recorte.")
+    elif not campos_faixa.issubset(outubro_faixas.columns):
+        st.warning(
+            "A Gold de Outubro Rosa por faixa etária não contém os campos "
+            "necessários para o cruzamento: "
+            + ", ".join(sorted(campos_faixa - set(outubro_faixas.columns)))
+        )
+    else:
+        meses_or = {9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
+        grupos_or = {
+            "<= 24 anos": "<25 anos",
+            "25 a 64 anos": "25–64 anos",
+            ">= 65 anos": "≥65 anos",
+        }
+        ordem_grupos_or = list(grupos_or.values())
+        cores_grupos_or = {
+            "<25 anos": "#169B62",
+            "25–64 anos": "#1757A6",
+            "≥65 anos": "#E85D2A",
+        }
+        idade_or = outubro_faixas.copy()
+        idade_or["mes"] = pd.to_numeric(idade_or["mes"], errors="coerce")
+        idade_or["ano"] = pd.to_numeric(idade_or["ano"], errors="coerce")
+        idade_or["quantidade_exames"] = pd.to_numeric(
+            idade_or["quantidade_exames"], errors="coerce"
+        )
+        idade_or["grupo"] = idade_or["grupo_etario_3"].astype(str).str.strip().map(grupos_or)
+        idade_or = idade_or.loc[
+            idade_or["mes"].isin(meses_or)
+            & idade_or["grupo"].notna()
+            & idade_or["quantidade_exames"].notna()
+        ].copy()
+        if idade_or.empty:
+            st.info("Nenhum registro com grupo etário válido foi encontrado.")
+        else:
+            anos_faixa = sorted(int(x) for x in idade_or["ano"].dropna().unique())
+            opcoes_ano_or = ["Consolidado dos anos selecionados"] + [
+                str(ano) for ano in anos_faixa
+            ]
+            col_ano_or, col_medida_or = st.columns(2)
+            with col_ano_or:
+                ano_perfil_or = st.selectbox(
+                    "Período do perfil etário",
+                    opcoes_ano_or, key="outubro_faixa_periodo",
+                )
+            with col_medida_or:
+                tipo_perfil_or = st.selectbox(
+                    "Visualizar perfil etário",
+                    ["Quantidade de exames", "Participação (%)"],
+                    key="outubro_faixa_medida",
+                )
+            perfil_or = (
+                idade_or if ano_perfil_or == opcoes_ano_or[0]
+                else idade_or.loc[idade_or["ano"] == int(ano_perfil_or)]
+            )
+            perfil_mes_or = (
+                perfil_or.groupby(["mes", "grupo"], as_index=False)[
+                    "quantidade_exames"
+                ].sum(min_count=1)
+            )
+            perfil_mes_or["mes_nome"] = perfil_mes_or["mes"].map(meses_or)
+            total_mes_or = perfil_mes_or.groupby("mes")[
+                "quantidade_exames"
+            ].transform("sum")
+            perfil_mes_or["participacao_pct"] = (
+                perfil_mes_or["quantidade_exames"]
+                .div(total_mes_or.where(total_mes_or > 0))
+                .mul(100)
+            )
+            perfil_percentual_or = tipo_perfil_or == "Participação (%)"
+            valor_perfil_or = (
+                "participacao_pct" if perfil_percentual_or else "quantidade_exames"
+            )
+            st.markdown(
+                "Compara a **quantidade de exames** ou a **participação de cada "
+                "grupo etário no total do próprio mês**."
+            )
+            with st.expander("ℹ️ Como interpretar o perfil etário mensal", expanded=False):
+                st.markdown(
+                    "**Eixo horizontal:** setembro, outubro, novembro e dezembro. "
+                    "**Cores:** <25 anos, 25–64 anos e ≥65 anos. "
+                    "Em **Quantidade**, cada segmento mostra o número de exames "
+                    "registrados no grupo e mês. Em **Participação (%)**, cada "
+                    "barra representa 100% dos exames daquele mês, distribuídos "
+                    "pelos três grupos. Os percentuais utilizam a razão entre "
+                    "quantidades somadas, não a média de percentuais. "
+                    "O mês é a competência registrada no SISCAN, não "
+                    "necessariamente a data da coleta. "
+                    "As diferenças não comprovam efeito da campanha."
+                )
+            graf_perfil_or = px.bar(
+                perfil_mes_or,
+                x="mes_nome", y=valor_perfil_or, color="grupo",
+                barmode="stack", color_discrete_map=cores_grupos_or,
+                category_orders={
+                    "mes_nome": list(meses_or.values()),
+                    "grupo": ordem_grupos_or,
+                },
+                custom_data=["quantidade_exames", "participacao_pct"],
+                labels={
+                    "mes_nome": "Mês", "grupo": "Grupo etário",
+                    "quantidade_exames": "Exames registrados",
+                    "participacao_pct": "Participação (%)",
+                },
+            )
+            graf_perfil_or.update_traces(
+                marker_line_color="#FFFFFF", marker_line_width=0.8,
+                hovertemplate=(
+                    "Mês: %{x}<br>Exames: %{customdata[0]:,.0f}"
+                    "<br>Participação: %{customdata[1]:.2f}%"
+                    "<extra>%{fullData.name}</extra>"
+                ),
+            )
+            graf_perfil_or.update_yaxes(
+                rangemode="tozero", gridcolor="#E4EBF1",
+                range=[0, 100] if perfil_percentual_or else None,
+                ticksuffix="%" if perfil_percentual_or else "",
+                tickformat=".0f" if perfil_percentual_or else ",d",
+            )
+            graf_perfil_or.update_layout(
+                height=455, plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#FFFFFF", font=dict(color=NAVY),
+                legend=dict(
+                    orientation="v", title_text="", x=1.02, xanchor="left",
+                    y=1, yanchor="top", font=dict(size=13, color=NAVY),
+                ),
+                margin=dict(l=80, r=145, t=35, b=65),
+            )
+            export_perfil_or = copy.deepcopy(graf_perfil_or)
+            # O PNG mantém somente o gráfico, com quantidades/percentuais
+            # legíveis nos segmentos; não adiciona tabelas à imagem.
+            perfil_mes_or["rotulo_png"] = [
+                (
+                    f"{row['participacao_pct']:.2f}%"
+                    if perfil_percentual_or else f"{row['quantidade_exames']:,.0f}"
+                ) if (
+                    pd.notna(row[valor_perfil_or])
+                    and (not perfil_percentual_or or row[valor_perfil_or] >= 7)
+                    and (perfil_percentual_or or row[valor_perfil_or] > 0)
+                ) else ""
+                for _, row in perfil_mes_or.iterrows()
+            ]
+            # Rótulos extraídos das próprias linhas por grupo/mês, não dos
+            # arrays internos do Plotly.
+            for tr in export_perfil_or.data:
+                itens = perfil_mes_or.loc[perfil_mes_or["grupo"].eq(tr.name)]
+                rotulos = itens.set_index("mes_nome")["rotulo_png"]
+                tr.update(
+                    text=[rotulos.get(mes, "") for mes in tr.x],
+                    textposition="inside",
+                    textfont=dict(color="#FFFFFF", size=13),
+                )
+            export_perfil_or.update_layout(
+                title=dict(
+                    text="Perfil etário mensal · " + (
+                        period if ano_perfil_or == opcoes_ano_or[0]
+                        else ano_perfil_or
+                    ),
+                    x=0.5, font=dict(size=21, color=NAVY),
+                ),
+                width=1500, height=650,
+                margin=dict(l=105, r=185, t=110, b=90),
+            )
+            chart_with_right_click_download(
+                graf_perfil_or, filename="outubro_rosa_perfil_etario_mensal.png",
+                height=455, export_fig=export_perfil_or,
+            )
+
+            st.markdown("### Variação de outubro × setembro por município e grupo etário")
+            st.markdown(
+                "Compara a **variação percentual de setembro para outubro** "
+                "nos três grupos etários de cada município, com base nos anos "
+                "e municípios selecionados."
+            )
+            with st.expander("ℹ️ Como interpretar o cruzamento municipal por idade", expanded=False):
+                st.markdown(
+                    "**Linhas:** municípios. **Colunas:** grupos etários. "
+                    "Cada célula apresenta a variação percentual das quantidades "
+                    "de exames de outubro em relação a setembro no mesmo grupo. "
+                    "**Variação (%) = (outubro − setembro) ÷ setembro × 100.** "
+                    "Se vários anos forem selecionados, somamos os registros de "
+                    "cada mês antes de calcular a variação. "
+                    "**Valores positivos** indicam aumento; **negativos**, redução. "
+                    "**—** significa que não havia exames em setembro para "
+                    "calcular a taxa; não significa estabilidade. "
+                    "A competência reflete os registros do SISCAN e não "
+                    "comprova que as coletas ocorreram no mês exibido."
+                )
+            municipio_mes_or = (
+                idade_or.loc[idade_or["mes"].isin([9, 10])]
+                .groupby(["municipio", "grupo", "mes"], as_index=False)[
+                    "quantidade_exames"
+                ].sum(min_count=1)
+            )
+            municipio_grupo_or = municipio_mes_or.pivot_table(
+                index=["municipio", "grupo"], columns="mes",
+                values="quantidade_exames", aggfunc="sum",
+            ).reindex(columns=[9, 10])
+            municipio_grupo_or = municipio_grupo_or.rename(columns={
+                9: "setembro", 10: "outubro",
+            })
+            municipio_grupo_or["variacao_pct"] = (
+                (municipio_grupo_or["outubro"] - municipio_grupo_or["setembro"])
+                .div(municipio_grupo_or["setembro"].where(
+                    municipio_grupo_or["setembro"] > 0
+                )).mul(100)
+            )
+            matriz_or = municipio_grupo_or["variacao_pct"].unstack("grupo")
+            matriz_or = matriz_or.reindex(
+                index=sorted(matriz_or.index, key=str.casefold),
+                columns=ordem_grupos_or,
+            )
+            if matriz_or.notna().any().any():
+                # Duas direções com origem em 0: vermelho para redução,
+                # verde para aumento, sem distorcer a leitura do sinal.
+                max_abs_or = float(matriz_or.abs().max().max())
+                max_abs_or = max(max_abs_or, 1.0)
+                graf_var_or = px.imshow(
+                    matriz_or, aspect="auto",
+                    zmin=-max_abs_or, zmax=max_abs_or,
+                    color_continuous_scale=[
+                        [0, "#A83A20"], [0.5, "#F6F8FA"], [1, "#218B65"]
+                    ],
+                    labels={
+                        "x": "Grupo etário", "y": "Município",
+                        "color": "Variação (%)",
+                    },
+                )
+                graf_var_or.update_traces(
+                    xgap=3, ygap=3,
+                    hovertemplate=(
+                        "Município: %{y}<br>Grupo: %{x}"
+                        "<br>Variação: %{z:+.2f}%<extra></extra>"
+                    ),
+                )
+                for municipio in matriz_or.index:
+                    for grupo in matriz_or.columns:
+                        valor = matriz_or.at[municipio, grupo]
+                        valido = pd.notna(valor)
+                        texto = f"{valor:+.2f}%" if valido else "—"
+                        cor = (
+                            "#FFFFFF" if valido
+                            and abs(float(valor)) >= max_abs_or * 0.55
+                            else NAVY
+                        )
+                        graf_var_or.add_annotation(
+                            x=grupo, y=municipio, text=texto,
+                            showarrow=False,
+                            font=dict(size=12, color=cor),
+                        )
+                graf_var_or.update_coloraxes(
+                    colorbar_tickformat=".0f", colorbar_ticksuffix="%"
+                )
+                graf_var_or.update_xaxes(
+                    tickfont=dict(size=14, color=NAVY),
+                    title_text="Grupo etário",
+                )
+                graf_var_or.update_yaxes(
+                    tickfont=dict(size=13, color=NAVY),
+                    title_text="Municípios", automargin=True,
+                )
+                graf_var_or.update_layout(
+                    height=max(560, 44 * len(matriz_or.index) + 150),
+                    plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                    font=dict(color=NAVY),
+                    margin=dict(l=65, r=55, t=40, b=80),
+                )
+                export_var_or = copy.deepcopy(graf_var_or)
+                export_var_or.update_layout(
+                    title=dict(
+                        text="Variação outubro × setembro por grupo etário",
+                        x=0.5, font=dict(size=21, color=NAVY),
+                    ),
+                    width=1500,
+                    margin=dict(l=210, r=115, t=110, b=95),
+                )
+                chart_with_right_click_download(
+                    graf_var_or,
+                    filename="outubro_rosa_variacao_municipio_faixa.png",
+                    height=graf_var_or.layout.height,
+                    min_chart_width=780, export_fig=export_var_or,
+                )
+            else:
+                st.info("Não há base de setembro suficiente para a matriz de variação.")
+
+            with st.expander("Ver dados de Outubro Rosa por faixa etária", expanded=False):
+                detalhamento_or = idade_or[[
+                    "municipio", "ano", "mes", "faixa_etaria",
+                    "grupo", "quantidade_exames",
+                ]].rename(columns={
+                    "municipio": "Município", "ano": "Ano",
+                    "mes": "Mês", "faixa_etaria": "Faixa etária",
+                    "grupo": "Grupo etário",
+                    "quantidade_exames": "Exames registrados",
+                }).sort_values(
+                    ["Município", "Ano", "Mês", "Faixa etária"]
+                )
+                st.download_button(
+                    "⬇ Exportar CSV detalhado",
+                    detalhamento_or.to_csv(
+                        index=False, sep=";", decimal=","
+                    ).encode("utf-8-sig"),
+                    file_name="siscan_outubro_rosa_faixa_etaria.csv",
+                    mime="text/csv",
+                    key="outubro_faixa_csv",
+                )
+                display_table(
+                    detalhamento_or, integer_columns=["Exames registrados"]
+                )
+
     # Índice sazonal (base = média das competências disponíveis).
     # A fonte permanece a fato_exames_temporais_territoriais da Gold.
     # Não preencher competências ausentes com zero.
