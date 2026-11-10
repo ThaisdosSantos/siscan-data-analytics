@@ -184,13 +184,6 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             zeroline=True, zerolinecolor="#1A3B5C", zerolinewidth=2,
         )
         fig.add_vline(x=0, line_width=2, line_color="#1A3B5C")
-        fig.add_annotation(
-            x=0, y=1.035, xref="x", yref="paper",
-            text="<b>0% — sem variação</b>", showarrow=False,
-            font=dict(size=12, color="#1A3B5C"),
-            bgcolor="#FFFFFF", bordercolor="#D8E5EF", borderwidth=1,
-            borderpad=4, yanchor="bottom",
-        )
         fig.update_layout(showlegend=False, margin=dict(t=90))
         # Exportação: rótulos numéricos no PNG (o tooltip não existe em imagem).
         # Mantém o gráfico interativo sem rótulos para não poluir a tela.
