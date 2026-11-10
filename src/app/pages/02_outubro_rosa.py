@@ -303,7 +303,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
             st.info("Nenhum registro com grupo etário válido foi encontrado.")
         else:
             anos_faixa = sorted(int(x) for x in idade_or["ano"].dropna().unique())
-            opcoes_ano_or = ["Consolidado dos anos selecionados"] + [
+            opcoes_ano_or = ["Todos os anos"] + [
                 str(ano) for ano in anos_faixa
             ]
             col_ano_or, col_medida_or = st.columns(2)
