@@ -25,7 +25,7 @@ st.markdown("""
 .exec-title{font-family:Fraunces,Georgia,serif;font-size:clamp(1.7rem,3.2vw,2.9rem);
     font-weight:650;line-height:1.13;margin:10px 0;color:#fff!important;max-width:770px}
 .exec-title em{font-style:italic;color:#c0d9eb;}
-.exec-sub{font-size:.82rem;color:#d8e7ef;margin:12px 0 17px}
+.exec-sub{font-size:1rem;line-height:1.6;color:#e5f0f7;margin:15px 0 17px;max-width:790px;font-weight:400}
 .exec-pill{display:inline-block;border:1px solid #547e9d;border-radius:20px;
     padding:5px 12px;font-size:.7rem;color:#f3f8fb}
 .exec-metric{background:#fff;border:1px solid #dae4ec;border-radius:12px;
@@ -99,7 +99,7 @@ st.markdown(
   <div class="exec-kicker">VISÃO EXECUTIVA · 10ª CRS · RS</div>
   <h1 class="exec-title">Rastreamento do câncer do colo do útero,
   <em>território a território.</em></h1>
-  <div class="exec-sub">Exames citopatológicos do colo do útero · 2020–2025 · SISCAN/DATASUS</div>
+  <div class="exec-sub">Apresenta um panorama dos exames citopatológicos registrados nos municípios da 10ª CRS, com indicadores de volume, distribuição territorial, evolução mensal e proporção de resultados alterados. Os dados acompanham os anos e municípios selecionados nos filtros.</div>
 """ + active_scope_html() + "</div>",
     unsafe_allow_html=True,
 )
