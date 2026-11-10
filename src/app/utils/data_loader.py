@@ -12,6 +12,7 @@ TABLES = {
  "temporal":"fato_exames_temporais_territoriais",
  "outubro":"fato_analise_outubro_rosa",
  "outubro_faixa":"fato_outubro_rosa_faixa_etaria",
+ "outubro_anual":"fato_outubro_rosa_campanha_anual",
  "etaria":"fato_conformidade_faixa_etaria",
  "adequabilidade":"fato_adequabilidade_amostras",
  "alterados":"fato_exames_alterados",
