@@ -860,6 +860,11 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 index=nomes_municipios, columns=categorias_municipais
             )
             if quadro_municipal.notna().any().any():
+                st.caption(
+                    "Para facilitar a leitura, a matriz utiliza células maiores. "
+                    "Em telas menores, deslize horizontalmente para ver todas "
+                    "as categorias; no PNG, todos os valores ficam visíveis."
+                )
                 grafico_municipal = px.imshow(
                     quadro_municipal,
                     aspect="auto",
@@ -876,7 +881,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     title=None,
                 )
                 grafico_municipal.update_traces(
-                    xgap=3, ygap=3,
+                    xgap=4, ygap=4,
                     hovertemplate=(
                         "Município: %{y}<br>Categoria: %{x}<br>"
                         + (
@@ -911,7 +916,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             x=categoria, y=municipio,
                             text=rotulo, showarrow=False,
                             font=dict(
-                                size=12, family="Arial",
+                                size=15, family="Arial",
                                 color="#FFFFFF" if texto_claro else NAVY,
                             ),
                             xanchor="center", yanchor="middle",
@@ -929,7 +934,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 # os nomes completos e seguem o padrão dos gráficos Q5.
                 grafico_municipal.update_xaxes(
                     tickangle=-90,
-                    tickfont=dict(color=NAVY, size=12, family="Arial"),
+                    tickfont=dict(color=NAVY, size=14, family="Arial"),
                     title_text="Categoria citopatológica",
                     title_font=dict(color=NAVY, size=14, family="Arial"),
                     title_standoff=16,
@@ -937,7 +942,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                     showgrid=False,
                 )
                 grafico_municipal.update_yaxes(
-                    tickfont=dict(color=NAVY, size=12, family="Arial"),
+                    tickfont=dict(color=NAVY, size=15, family="Arial"),
                     title_text="Municípios",
                     title_font=dict(color=NAVY, size=14, family="Arial"),
                     title_standoff=16,
@@ -946,11 +951,11 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 )
                 grafico_municipal.update_layout(
                     template="plotly_white",
-                    height=max(640, 44 * len(nomes_municipios) + 195),
+                    height=max(825, 51 * len(nomes_municipios) + 255),
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="#FFFFFF",
                     font=dict(color=NAVY, family="Arial"),
-                    margin=dict(l=45, r=35, t=35, b=220),
+                    margin=dict(l=65, r=65, t=35, b=245),
                 )
                 export_municipal = copy.deepcopy(grafico_municipal)
                 export_municipal.update_layout(
@@ -959,14 +964,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         x=0.5, font=dict(size=22, color=NAVY),
                     ),
                     width=1750,
-                    height=max(850, 44 * len(nomes_municipios) + 350),
-                    margin=dict(l=125, r=110, t=105, b=265),
+                    height=max(960, 51 * len(nomes_municipios) + 375),
+                    margin=dict(l=160, r=110, t=105, b=290),
                 )
                 chart_with_right_click_download(
                     grafico_municipal,
                     filename="alterados_composicao_municipio_categoria.png",
                     height=grafico_municipal.layout.height,
-                    min_chart_width=970,
+                    min_chart_width=1450,
                     export_fig=export_municipal,
                 )
             else:
