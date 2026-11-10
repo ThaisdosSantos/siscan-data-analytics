@@ -31,6 +31,26 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+# Seções numeradas no mesmo padrão de Panorama Geral e Faixa Etária.
+st.markdown("""
+<style>
+.q5-section-title {
+    margin: 30px 0 17px;
+    padding: 9px 0 12px;
+    border-bottom: 2px solid #D8E5EF;
+    font: 750 clamp(21px, 2vw, 26px)/1.35 Manrope, Arial, sans-serif;
+    color: #1A3B5C;
+}
+.q5-section-title .q5-section-index {
+    color: #006C9A;
+    margin-right: 10px;
+}
+@media (max-width: 768px) {
+    .q5-section-title {margin: 24px 0 13px; font-size: 21px;}
+}
+</style>
+""", unsafe_allow_html=True)
+
 page_header(
     "Resultados",
     "Exames citopatológicos alterados",
@@ -62,6 +82,11 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         st.stop()
     num=df.quantidade_alterados.sum(min_count=1)
     den=df.total_exames_validos.sum(min_count=1)
+    st.markdown(
+        '<h2 class="q5-section-title"><span class="q5-section-index">01</span>'
+        'Panorama dos exames alterados</h2>',
+        unsafe_allow_html=True,
+    )
     metric_row([("Exames alterados",fmt_num(num)),("Proporção operacional",fmt_pct(pct(num,den))),
                 ("Exames no denominador disponível",fmt_num(den) if pd.notna(den) else "N/D")])
     st.markdown("### Proporção de exames alterados por grupo etário")
@@ -140,6 +165,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 macro_fig, filename="exames_alterados_grupos_etarios.png",
                 height=410, export_fig=macro_export,
             )
+
+    st.markdown(
+        '<h2 class="q5-section-title"><span class="q5-section-index">02</span>'
+        'Evolução temporal dos exames alterados</h2>',
+        unsafe_allow_html=True,
+    )
 
     # Evolução anual com linhas independentes para os três grupos etários.
     # Dois municípios por linha (até seis linhas), sem acumular grupos.
@@ -584,6 +615,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         else:
             st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
 
+    st.markdown(
+        '<h2 class="q5-section-title"><span class="q5-section-index">03</span>'
+        'Comparação territorial das alterações</h2>',
+        unsafe_allow_html=True,
+    )
+
     # Matriz com as três categorias já classificadas na Gold.
     # A taxa de cada célula é ponderada pelos exames válidos; nunca é
     # a média simples das taxas das faixas quinquenais.
@@ -673,6 +710,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         )
     with st.expander("Ver dados detalhados de exames alterados", expanded=False):
         export_table(matrix, "siscan_exames_alterados.csv")
+
+    st.markdown(
+        '<h2 class="q5-section-title"><span class="q5-section-index">04</span>'
+        'Composição dos resultados citopatológicos</h2>',
+        unsafe_allow_html=True,
+    )
 
     # Novas métricas Q5: fatos de composição da Gold, separados do indicador canônico.
     st.markdown("### Composição dos exames alterados por categoria e ano")
