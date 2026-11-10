@@ -149,11 +149,11 @@ if require(dados, NECESSARIAS):
         "da tabela `fato_outubro_rosa_campanha_anual`."
     )
     mensal = filtered("temporal")
-    colunas_mensal = {"ano", "mes", "quantidade"}
+    colunas_mensal = {"ano", "mes", "municipio", "quantidade"}
     if mensal.empty or not colunas_mensal.issubset(mensal.columns):
         st.info("A série mensal da base geral não está disponível neste recorte.")
     else:
-        mensal = mensal.loc[:, ["ano", "mes", "quantidade"]].copy()
+        mensal = mensal.loc[:, ["ano", "mes", "municipio", "quantidade"]].copy()
         for coluna_m in ["ano", "mes", "quantidade"]:
             mensal[coluna_m] = pd.to_numeric(mensal[coluna_m], errors="coerce")
         mensal = mensal.dropna(subset=["ano", "mes", "quantidade"])
@@ -241,6 +241,116 @@ if require(dados, NECESSARIAS):
                 fig_mensal, "outubro_rosa_setembro_dezembro_por_ano.png",
                 altura=490, largura=1550,
             )
+
+            st.markdown("### Variação de outubro × setembro por município")
+            st.markdown(
+                "Mostra o **aumento ou a redução percentual dos exames "
+                "registrados em outubro em relação a setembro** para cada "
+                "município, considerando os anos e municípios selecionados."
+            )
+            with st.expander(
+                "ℹ️ Como interpretar a variação municipal", expanded=False
+            ):
+                st.markdown(
+                    "**Cada barra** representa um município. "
+                    "**Verde:** mais exames registrados em outubro. "
+                    "**Vermelho:** menos exames em outubro. "
+                    "A linha vertical em **0%** indica ausência de mudança. "
+                    "**Cálculo:** (outubro − setembro) ÷ setembro × 100. "
+                    "Quando vários anos estão selecionados, os exames de "
+                    "cada mês são somados antes de calcular a variação. "
+                    "Se não houver exames em setembro, a variação não pode "
+                    "ser calculada; isso não equivale a 0%. "
+                    "As diferenças nos registros não comprovam efeito da campanha."
+                )
+            # Agregação da mesma fonte dos indicadores e do gráfico mensal.
+            # Não utilizar a Gold anual da campanha como se fosse mensal.
+            comparacao_muni = (
+                mensal.loc[mensal["mes"].isin([9, 10])]
+                .groupby(["municipio", "mes"], as_index=False)["quantidade"]
+                .sum(min_count=1)
+            )
+            comparacao_muni = comparacao_muni.pivot(
+                index="municipio", columns="mes", values="quantidade"
+            ).reindex(columns=[9, 10]).rename(
+                columns={9: "setembro", 10: "outubro"}
+            )
+            # Mês sem dados deve permanecer ausente, nunca virar zero.
+            comparacao_muni["variacao_pct"] = (
+                (comparacao_muni["outubro"] - comparacao_muni["setembro"])
+                .div(comparacao_muni["setembro"].where(
+                    comparacao_muni["setembro"] > 0
+                ))
+                .mul(100)
+            )
+            comparacao_muni = comparacao_muni.reset_index()
+            sem_referencia = comparacao_muni.loc[
+                comparacao_muni["variacao_pct"].isna(), "municipio"
+            ].tolist()
+            variacao_muni = comparacao_muni.dropna(
+                subset=["variacao_pct"]
+            ).sort_values("variacao_pct", ascending=False).copy()
+            if variacao_muni.empty:
+                st.info(
+                    "Nenhum município possui dados suficientes de setembro "
+                    "e outubro para calcular a variação neste recorte."
+                )
+            else:
+                variacao_muni["situacao"] = variacao_muni[
+                    "variacao_pct"
+                ].apply(lambda valor: "Redução" if valor < 0 else "Aumento ou estabilidade")
+                fig_variacao = px.bar(
+                    variacao_muni,
+                    x="variacao_pct", y="municipio",
+                    orientation="h", color="situacao",
+                    color_discrete_map={
+                        "Redução": "#B53A27",
+                        "Aumento ou estabilidade": "#218B65",
+                    },
+                    custom_data=["setembro", "outubro"],
+                    labels={
+                        "variacao_pct": "Variação (%)",
+                        "municipio": "Município",
+                    },
+                )
+                fig_variacao.update_yaxes(
+                    categoryorder="array",
+                    categoryarray=list(reversed(
+                        variacao_muni["municipio"].tolist()
+                    )),
+                    automargin=True,
+                    tickfont=dict(size=13, color=NAVY),
+                )
+                fig_variacao.update_xaxes(
+                    ticksuffix="%", tickformat=".0f",
+                    zeroline=True, zerolinecolor=NAVY,
+                    zerolinewidth=2,
+                )
+                fig_variacao.update_traces(
+                    hovertemplate=(
+                        "%{y}<br>Setembro: %{customdata[0]:,.0f}"
+                        "<br>Outubro: %{customdata[1]:,.0f}"
+                        "<br>Variação: %{x:+.2f}%<extra></extra>"
+                    ),
+                )
+                fig_variacao.update_layout(
+                    showlegend=False,
+                    margin=dict(l=100, r=90, t=35, b=65),
+                )
+                download_plot(
+                    fig_variacao,
+                    "outubro_rosa_variacao_setembro_outubro_municipios.png",
+                    altura=max(510, 42 * len(variacao_muni) + 120),
+                    largura=1550,
+                )
+                st.caption(
+                    "Verde: aumento · Vermelho: redução · Linha vertical: 0%."
+                )
+            if sem_referencia:
+                st.caption(
+                    "Sem percentual calculável (setembro ausente ou zero): "
+                    + ", ".join(sorted(sem_referencia)) + "."
+                )
 
     section("02", "Panorama e perfil dos exames")
     k1, k2, k3 = st.columns(3)
