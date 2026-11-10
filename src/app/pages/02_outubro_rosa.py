@@ -148,16 +148,6 @@ if require(dados, NECESSARIAS):
         "anuais da campanha e não representam uma decomposição mensal "
         "da tabela `fato_outubro_rosa_campanha_anual`."
     )
-    with st.expander("ℹ️ Como interpretar a produção mensal", expanded=False):
-        st.markdown(
-            "**Cada grupo de barras** representa um ano. As quatro cores "
-            "identificam setembro, outubro, novembro e dezembro. "
-            "**Eixo vertical:** quantidade de exames registrados. "
-            "Compare as barras do mesmo ano para identificar diferenças "
-            "entre meses, sem atribuir essas mudanças automaticamente à campanha. "
-            "Este gráfico usa a base mensal geral do SISCAN, enquanto os "
-            "indicadores da campanha usam outra extração, consolidada por ano."
-        )
     mensal = filtered("temporal")
     colunas_mensal = {"ano", "mes", "quantidade"}
     if mensal.empty or not colunas_mensal.issubset(mensal.columns):
@@ -181,6 +171,52 @@ if require(dados, NECESSARIAS):
                 "Novembro": "#218B65",
                 "Dezembro": "#1A3B5C",
             }
+            # Indicadores da mesma fonte mensal usada no gráfico:
+            # setembro e outubro são somados uma única vez no recorte filtrado.
+            exames_setembro = float(
+                mensal.loc[mensal["mes"] == 9, "quantidade"].sum()
+            )
+            exames_outubro = float(
+                mensal.loc[mensal["mes"] == 10, "quantidade"].sum()
+            )
+            diferenca = exames_outubro - exames_setembro
+            variacao = (
+                diferenca / exames_setembro * 100
+                if exames_setembro > 0 else float("nan")
+            )
+            c_set, c_out, c_var = st.columns(3)
+            c_set.metric("Exames em setembro", fmt_num(exames_setembro))
+            c_out.metric("Exames em outubro", fmt_num(exames_outubro))
+            c_var.metric(
+                "Variação setembro → outubro",
+                f"{variacao:+.2f}%" if pd.notna(variacao) else "N/D",
+                delta=(
+                    f"{diferenca:+,.0f} exames".replace(",", ".")
+                    if pd.notna(variacao) else None
+                ),
+                help=(
+                    "Variação (%) = (exames de outubro − exames de setembro) "
+                    "÷ exames de setembro × 100. Os valores somam os anos "
+                    "e municípios selecionados nos filtros."
+                ),
+            )
+            st.caption(
+                "Indicadores calculados sobre a base mensal geral e sobre o "
+                "recorte ativo. Valor positivo indica aumento; negativo, redução. "
+                "Não representam o efeito causal da campanha."
+            )
+            with st.expander("ℹ️ Como interpretar a produção mensal", expanded=False):
+                st.markdown(
+                    "**Indicadores:** setembro e outubro mostram as quantidades "
+                    "de exames dos meses selecionados; a variação compara "
+                    "outubro com setembro. O valor abaixo do percentual "
+                    "é a diferença em número de exames. "
+                    "**Gráfico:** cada grupo de barras representa um ano, "
+                    "e as cores identificam setembro, outubro, novembro e dezembro. "
+                    "Compare as barras dentro de cada ano. "
+                    "Os valores são da base geral mensal do SISCAN e "
+                    "não comprovam efeito da campanha."
+                )
             mensal["ano"] = mensal["ano"].astype(int)
             mensal["mes_nome"] = mensal["mes"].map(nomes_meses)
             producao_mensal = (
