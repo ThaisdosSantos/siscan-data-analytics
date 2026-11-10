@@ -862,63 +862,95 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             if quadro_municipal.notna().any().any():
                 grafico_municipal = px.imshow(
                     quadro_municipal,
-                    aspect="auto", color_continuous_scale="Blues",
+                    aspect="auto",
+                    color_continuous_scale="Blues",
                     labels={
                         "x": "Categoria citopatológica",
                         "y": "Município",
-                        "color": ("Participação (%)"
-                                  if coluna_municipal == "participacao_pct"
-                                  else "Exames alterados"),
+                        "color": (
+                            "Participação (%)"
+                            if coluna_municipal == "participacao_pct"
+                            else "Exames alterados"
+                        ),
                     },
+                    title=None,
                 )
                 grafico_municipal.update_traces(
                     xgap=3, ygap=3,
                     hovertemplate=(
                         "Município: %{y}<br>Categoria: %{x}<br>"
-                        + ("Participação: %{z:.2f}%"
-                           if coluna_municipal == "participacao_pct"
-                           else "Exames: %{z:,.0f}")
+                        + (
+                            "Participação: %{z:.2f}%"
+                            if coluna_municipal == "participacao_pct"
+                            else "Exames: %{z:,.0f}"
+                        )
                         + "<extra></extra>"
                     ),
                 )
                 maior_valor = quadro_municipal.max().max()
+                # Mesmo padrão da matriz territorial Q5: valores no centro
+                # das células, contraste automático e rótulo — para N/D.
                 for municipio in nomes_municipios:
                     for categoria in categorias_municipais:
                         valor = quadro_municipal.at[municipio, categoria]
-                        if pd.notna(valor):
-                            rotulo = (
-                                f"{valor:.2f}%" if coluna_municipal == "participacao_pct"
+                        valido = pd.notna(valor)
+                        rotulo = (
+                            (
+                                f"{valor:.2f}%"
+                                if coluna_municipal == "participacao_pct"
                                 else f"{valor:,.0f}"
                             )
-                            texto_claro = (
-                                pd.notna(maior_valor) and maior_valor > 0
-                                and float(valor) / float(maior_valor) >= 0.60
-                            )
-                        else:
-                            rotulo, texto_claro = "—", False
+                            if valido else "—"
+                        )
+                        texto_claro = (
+                            valido and pd.notna(maior_valor)
+                            and float(maior_valor) > 0
+                            and float(valor) / float(maior_valor) >= 0.55
+                        )
                         grafico_municipal.add_annotation(
                             x=categoria, y=municipio,
                             text=rotulo, showarrow=False,
-                            font=dict(size=10, color=(
-                                "#FFFFFF" if texto_claro else NAVY
-                            )),
+                            font=dict(
+                                size=12, family="Arial",
+                                color="#FFFFFF" if texto_claro else NAVY,
+                            ),
+                            xanchor="center", yanchor="middle",
                         )
                 if coluna_municipal == "participacao_pct":
                     grafico_municipal.update_coloraxes(
-                        colorbar_ticksuffix="%", colorbar_tickformat=".2f"
+                        colorbar_tickformat=".2f",
+                        colorbar_ticksuffix="%",
                     )
+                else:
+                    grafico_municipal.update_coloraxes(
+                        colorbar_tickformat=",.0f",
+                    )
+                # As categorias são longas: rótulos verticais preservam
+                # os nomes completos e seguem o padrão dos gráficos Q5.
                 grafico_municipal.update_xaxes(
-                    tickangle=-45, automargin=True,
+                    tickangle=-90,
+                    tickfont=dict(color=NAVY, size=12, family="Arial"),
                     title_text="Categoria citopatológica",
+                    title_font=dict(color=NAVY, size=14, family="Arial"),
+                    title_standoff=16,
+                    automargin=True,
+                    showgrid=False,
                 )
                 grafico_municipal.update_yaxes(
-                    automargin=True, title_text=None,
+                    tickfont=dict(color=NAVY, size=12, family="Arial"),
+                    title_text="Municípios",
+                    title_font=dict(color=NAVY, size=14, family="Arial"),
+                    title_standoff=16,
+                    automargin=True,
+                    showgrid=False,
                 )
                 grafico_municipal.update_layout(
-                    height=max(570, 45 * len(nomes_municipios) + 155),
-                    paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
-                    font=dict(color=NAVY),
-                    margin=dict(l=160, r=65, t=35, b=180),
+                    template="plotly_white",
+                    height=max(640, 44 * len(nomes_municipios) + 195),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="#FFFFFF",
+                    font=dict(color=NAVY, family="Arial"),
+                    margin=dict(l=45, r=35, t=35, b=220),
                 )
                 export_municipal = copy.deepcopy(grafico_municipal)
                 export_municipal.update_layout(
@@ -927,13 +959,14 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         x=0.5, font=dict(size=22, color=NAVY),
                     ),
                     width=1750,
-                    margin=dict(l=260, r=115, t=110, b=220),
+                    height=max(850, 44 * len(nomes_municipios) + 350),
+                    margin=dict(l=125, r=110, t=105, b=265),
                 )
                 chart_with_right_click_download(
                     grafico_municipal,
                     filename="alterados_composicao_municipio_categoria.png",
                     height=grafico_municipal.layout.height,
-                    min_chart_width=980,
+                    min_chart_width=970,
                     export_fig=export_municipal,
                 )
             else:
