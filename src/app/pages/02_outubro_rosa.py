@@ -94,8 +94,9 @@ st.markdown(
     'line-height:1.6;font-size:.91rem;">'
     '<strong>Fonte:</strong> SISCAN/DATASUS · Gold '
     '<code>fato_outubro_rosa_campanha_anual</code>. '
-    'A fonte é consolidada por <strong>ano</strong>, sem informações '
-    'mensais independentes que permitam comparar setembro e outubro.'
+    'A análise da campanha utiliza a base <strong>anual</strong>. '
+    'A comparação de setembro a dezembro utiliza uma <strong>fonte mensal '
+    'distinta</strong>, exibida somente como contexto histórico.'
     '</div>',
     unsafe_allow_html=True,
 )
@@ -200,47 +201,126 @@ if require(dados, NECESSARIAS):
         grafico_anual, "outubro_rosa_evolucao_anual.png", altura=470,
     )
 
-    section("03", "Composição etária da campanha")
+    section("03", "Produção mensal de setembro a dezembro")
+    st.markdown(
+        "Compara os **exames registrados em setembro, outubro, novembro e "
+        "dezembro** de cada ano selecionado, considerando os municípios filtrados."
+    )
+    st.caption(
+        "Fonte desta visualização: Gold `fato_exames_temporais_territoriais` "
+        "(base geral mensal). Os valores **não** são somados aos indicadores "
+        "anuais da campanha e não representam uma decomposição mensal "
+        "da tabela `fato_outubro_rosa_campanha_anual`."
+    )
+    with st.expander("ℹ️ Como interpretar a produção mensal", expanded=False):
+        st.markdown(
+            "**Cada grupo de barras** representa um ano. As quatro cores "
+            "identificam setembro, outubro, novembro e dezembro. "
+            "**Eixo vertical:** quantidade de exames registrados. "
+            "Compare as barras do mesmo ano para identificar diferenças "
+            "entre meses, sem atribuir essas mudanças automaticamente à campanha. "
+            "Este gráfico usa a base mensal geral do SISCAN, enquanto os "
+            "indicadores da campanha usam outra extração, consolidada por ano."
+        )
+    mensal = filtered("temporal")
+    colunas_mensal = {"ano", "mes", "quantidade"}
+    if mensal.empty or not colunas_mensal.issubset(mensal.columns):
+        st.info("A série mensal da base geral não está disponível neste recorte.")
+    else:
+        mensal = mensal.loc[:, ["ano", "mes", "quantidade"]].copy()
+        for coluna_m in ["ano", "mes", "quantidade"]:
+            mensal[coluna_m] = pd.to_numeric(mensal[coluna_m], errors="coerce")
+        mensal = mensal.dropna(subset=["ano", "mes", "quantidade"])
+        mensal = mensal.loc[mensal["mes"].isin([9, 10, 11, 12])]
+        if mensal.empty:
+            st.info("Não há registros mensais para setembro a dezembro no recorte.")
+        else:
+            nomes_meses = {
+                9: "Setembro", 10: "Outubro",
+                11: "Novembro", 12: "Dezembro",
+            }
+            cores_meses = {
+                "Setembro": "#419AD1",
+                "Outubro": "#E85D2A",
+                "Novembro": "#218B65",
+                "Dezembro": "#1A3B5C",
+            }
+            mensal["ano"] = mensal["ano"].astype(int)
+            mensal["mes_nome"] = mensal["mes"].map(nomes_meses)
+            producao_mensal = (
+                mensal.groupby(["ano", "mes_nome"], as_index=False)["quantidade"]
+                .sum(min_count=1)
+            )
+            fig_mensal = px.bar(
+                producao_mensal, x="ano", y="quantidade", color="mes_nome",
+                barmode="group", color_discrete_map=cores_meses,
+                category_orders={
+                    "mes_nome": list(nomes_meses.values()),
+                    "ano": sorted(producao_mensal["ano"].unique()),
+                },
+                labels={"ano": "Ano", "quantidade": "Exames registrados"},
+            )
+            fig_mensal.update_xaxes(type="category")
+            fig_mensal.update_traces(
+                hovertemplate="Ano: %{x}<br>Exames registrados: %{y:,.0f}"
+                "<extra>%{fullData.name}</extra>"
+            )
+            download_plot(
+                fig_mensal, "outubro_rosa_setembro_dezembro_por_ano.png",
+                altura=490, largura=1550,
+            )
+
+    section("04", "Composição etária da campanha")
     st.markdown(
         "Compara a **participação dos grupos etários** nos registros anuais, "
         "com destaque para a faixa de 25–64 anos."
     )
-    tipo = st.selectbox(
-        "Visualizar distribuição etária",
-        ["Participação (%)", "Quantidade de exames"],
-        key="outubro_anual_medida_etaria",
-    )
-    percentual = tipo == "Participação (%)"
-    coluna = "participacao_pct" if percentual else "quantidade_exames"
     with st.expander("ℹ️ Como interpretar a composição etária", expanded=False):
         st.markdown(
-            "**Participação (%):** cada barra representa 100% dos exames do ano. "
-            "Os segmentos mostram a parcela de cada grupo etário; por exemplo, "
-            "80% significa 80 em cada 100 exames registrados. "
-            "**Quantidade:** mostra o número absoluto de exames de cada grupo. "
-            "As proporções são calculadas sobre o total de cada ano, "
-            "não pela média de percentuais municipais."
+            "O gráfico de rosca mostra a **distribuição dos exames da campanha** "
+            "entre os grupos <25 anos, 25–64 anos e ≥65 anos, considerando "
+            "todo o recorte de anos e municípios. "
+            "O percentual corresponde aos exames do grupo divididos "
+            "pelo total de exames do recorte, não à proporção da população."
         )
-    composicao = px.bar(
-        anual, x="ano", y=coluna, color="grupo", barmode="stack",
-        color_discrete_map=CORES,
-        category_orders={"grupo": ORDEM, "ano": anos},
-        custom_data=["quantidade_exames", "participacao_pct"],
-        labels={"ano": "Ano", "grupo": "Grupo etário",
-                "participacao_pct": "Participação (%)",
-                "quantidade_exames": "Exames"},
+    rosca_etaria = pd.DataFrame({
+        "Grupo etário": ORDEM,
+        "Exames": [float(por_grupo.get(grupo, 0)) for grupo in ORDEM],
+    })
+    fig_rosca = px.pie(
+        rosca_etaria, names="Grupo etário", values="Exames", hole=0.60,
+        color="Grupo etário", color_discrete_map=CORES,
+        category_orders={"Grupo etário": ORDEM},
     )
-    composicao.update_xaxes(type="category")
-    composicao.update_traces(
-        hovertemplate="Ano: %{x}<br>Exames: %{customdata[0]:,.0f}"
-        "<br>Participação: %{customdata[1]:.2f}%"
-        "<extra>%{fullData.name}</extra>"
+    fig_rosca.update_traces(
+        textposition="inside", textinfo="percent",
+        textfont=dict(size=15, color="#FFFFFF"),
+        hovertemplate="%{label}<br>Exames: %{value:,.0f}"
+        "<br>Participação: %{percent}<extra></extra>",
     )
-    if percentual:
-        composicao.update_yaxes(range=[0, 100], ticksuffix="%", tickformat=".0f")
-    download_plot(composicao, "outubro_rosa_composicao_etaria_anual.png", altura=470)
+    fig_rosca.update_layout(
+        template="plotly_white", height=480,
+        font=dict(family="Arial", color=NAVY, size=14),
+        paper_bgcolor="#FFFFFF", margin=dict(l=35, r=155, t=30, b=30),
+        legend=dict(title_text="", orientation="v", x=1.02, y=0.85),
+        annotations=[
+            dict(text="Perfil etário", x=0.5, y=0.5,
+                 font=dict(size=17, color=NAVY), showarrow=False)
+        ],
+    )
+    export_rosca = copy.deepcopy(fig_rosca)
+    export_rosca.update_layout(
+        width=1350, height=670,
+        title=dict(text="Composição etária da campanha", x=0.5,
+                   font=dict(size=22, color=NAVY)),
+        margin=dict(l=75, r=220, t=95, b=70),
+    )
+    chart_with_right_click_download(
+        fig_rosca, filename="outubro_rosa_composicao_etaria.png",
+        height=480, min_chart_width=790, export_fig=export_rosca,
+    )
 
-    section("04", "Comparação entre municípios")
+    section("05", "Comparação entre municípios")
     st.markdown(
         "Compara o **volume de exames registrados** por município nos anos "
         "selecionados. A participação de 25–64 anos também é apresentada "
@@ -336,7 +416,7 @@ if require(dados, NECESSARIAS):
     download_plot(distrib_mun, "outubro_rosa_distribuicao_etaria_municipal.png",
                   altura=650, largura=1650)
 
-    section("05", "Dados detalhados da campanha")
+    section("06", "Dados detalhados da campanha")
     st.markdown(
         "Consulte os registros que compõem as visualizações, por **município, "
         "ano e faixa etária**, incluindo a competência do arquivo representativo "
