@@ -231,7 +231,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
         st.subheader("Índice Sazonal Regional por Mês")
         st.markdown(
             "Compara a **produção média de cada mês** à média mensal dos "
-            "municípios selecionados. A linha de referência **100** representa "
+            "municípios selecionados. O valor **100** representa "
             "a média do recorte."
         )
         with st.expander("ℹ️ Como interpretar o índice sazonal regional", expanded=False):
@@ -239,7 +239,7 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 "**Índice sazonal = média de exames do mês ÷ média mensal geral "
                 "do recorte × 100.** Um índice de **120** indica volume médio "
                 "**20% acima** da média; **80** indica **20% abaixo**. "
-                "A linha tracejada marca a referência 100. "
+                "O valor 100 é a referência da média mensal. "
                 "As cores indicam **janelas temporais fixas** descritas na análise "
                 "histórica do notebook Gold: maio–setembro (janela fraca), "
                 "janeiro–abril e outubro (neutros) e novembro–dezembro (pico). "
@@ -362,11 +362,6 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 bargap=0.12,
                 margin=dict(l=70, r=195, t=30, b=60),
                 font=dict(color=NAVY),
-            )
-            # Linha base sem anotação sobreposta às barras.
-            fig_sazonal.add_hline(
-                y=100, line_dash="dash", line_color=NAVY,
-                line_width=1.5,
             )
             export_sazonal = copy.deepcopy(fig_sazonal)
             export_sazonal.update_traces(
