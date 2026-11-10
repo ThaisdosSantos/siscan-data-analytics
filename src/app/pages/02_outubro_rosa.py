@@ -242,7 +242,7 @@ if require(dados, NECESSARIAS):
                 altura=490, largura=1550,
             )
 
-            st.markdown("### Variação de outubro × setembro por município")
+            st.markdown("### Variação de setembro × outubro por município")
             st.markdown(
                 "Mostra o **aumento ou a redução percentual dos exames "
                 "registrados em outubro em relação a setembro** para cada "
