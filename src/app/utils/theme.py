@@ -86,7 +86,7 @@ def apply_custom_css():
 
     [data-testid="stSidebarNav"] {display:none!important;}
     [data-testid="stAppViewContainer"] {background:#f8fafb!important;}
-    [data-testid="stSidebar"] {width:300px!important;min-width:300px!important;}
+    [data-testid="stSidebar"][aria-expanded="true"] {width:300px!important;min-width:300px!important;}
     .lovable-brand {display:flex;align-items:center;gap:12px;padding:14px 6px 22px;}
     .lovable-mark {
       display:grid;place-items:center;flex:0 0 46px;
@@ -121,7 +121,7 @@ def apply_custom_css():
     .pet-table-scroller,.q3-matrix-scroll {max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
     @media (max-width:1100px) {
       .block-container {padding:1.1rem 1.2rem 2rem;}
-      [data-testid="stSidebar"] {width:min(300px,85vw)!important;min-width:0!important;}
+      [data-testid="stSidebar"][aria-expanded="true"] {width:min(300px,85vw)!important;min-width:0!important;}
     }
     @media (max-width:768px) {
       .block-container {padding:0.85rem 0.8rem 2rem;}
@@ -138,7 +138,7 @@ def apply_custom_css():
       .block-container {padding:0.65rem 0.55rem 2rem;}
       .pet-hero {padding:18px 15px 28px;}
       .pet-hero-title {font-size:1.55rem;}
-      [data-testid="stSidebar"] {width:min(300px,92vw)!important;}
+      [data-testid="stSidebar"][aria-expanded="true"] {width:min(300px,92vw)!important;}
       [data-testid="stSidebar"] [data-testid="stButton"] button {min-height:42px;}
       [data-testid="stPageLink"] a {overflow-wrap:anywhere;}
     }
@@ -860,7 +860,7 @@ def apply_custom_css():
       [data-testid="stMainBlockContainer"], .block-container {
         padding:0.9rem 0.9rem 2.5rem!important;
       }
-      [data-testid="stSidebar"] {
+      [data-testid="stSidebar"][aria-expanded="true"] {
         width:min(300px,86vw)!important;
         min-width:0!important;max-width:86vw!important;
       }
