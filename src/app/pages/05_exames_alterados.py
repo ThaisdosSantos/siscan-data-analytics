@@ -1118,6 +1118,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         tickangle=-90,
                         tickfont=dict(size=16, color=NAVY, family="Arial"),
                         title_text="Categoria citopatológica",
+                        title_font=dict(size=18, color=NAVY, family="Arial"),
                         title_standoff=35, automargin=True,
                     )
                     fig_faixas.update_layout(
