@@ -442,19 +442,27 @@ if require(df, ["ano", "mes", "municipio", "exames_mes", "exames_referencia_sete
                 "nos três grupos etários de cada município, com base nos anos "
                 "e municípios selecionados."
             )
-            with st.expander("ℹ️ Como interpretar o cruzamento municipal por idade", expanded=False):
+            with st.expander("ℹ️ Como interpretar a variação por município e idade", expanded=False):
                 st.markdown(
-                    "**Linhas:** municípios. **Colunas:** grupos etários. "
-                    "Cada célula apresenta a variação percentual das quantidades "
-                    "de exames de outubro em relação a setembro no mesmo grupo. "
-                    "**Variação (%) = (outubro − setembro) ÷ setembro × 100.** "
-                    "Se vários anos forem selecionados, somamos os registros de "
-                    "cada mês antes de calcular a variação. "
-                    "**Valores positivos** indicam aumento; **negativos**, redução. "
-                    "**—** significa que não havia exames em setembro para "
-                    "calcular a taxa; não significa estabilidade. "
-                    "A competência reflete os registros do SISCAN e não "
-                    "comprova que as coletas ocorreram no mês exibido."
+                    "**Como ler:** cada **linha** representa um município e cada "
+                    "**coluna**, um grupo etário. O valor mostra quanto os exames "
+                    "registrados em outubro aumentaram ou diminuíram em relação "
+                    "a setembro no mesmo grupo.\n\n"
+                    "**Cores:** **verde** indica aumento; **vermelho**, redução. "
+                    "Quanto mais intensa a cor, maior a mudança percentual. "
+                    "**0%** indica que as quantidades foram iguais.\n\n"
+                    "**Exemplo:** **+30%** significa que, se setembro teve 100 "
+                    "exames, outubro teve 130. Já **−20%** significa que, "
+                    "de 100 exames em setembro, outubro teve 80. "
+                    "Percentuais altos também podem resultar de poucos exames.\n\n"
+                    "**Cálculo:** (exames de outubro − exames de setembro) "
+                    "÷ exames de setembro × 100. Com vários anos selecionados, "
+                    "as quantidades de cada mês são somadas antes do cálculo. "
+                    "**—** indica que não foi possível calcular a variação "
+                    "por falta de uma base positiva em setembro.\n\n"
+                    "**Importante:** os meses correspondem aos registros do "
+                    "SISCAN, não necessariamente à data da coleta. "
+                    "O gráfico não comprova efeito da campanha."
                 )
             municipio_mes_or = (
                 idade_or.loc[idade_or["mes"].isin([9, 10])]
