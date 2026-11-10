@@ -674,7 +674,7 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         )
     cat_anual = filtered("categoria_anual")
     if not cat_anual.empty and {
-        "ano", "categoria", "quantidade_alterados"
+        "ano", "municipio", "categoria", "quantidade_alterados"
     }.issubset(cat_anual.columns):
         cat_anual["quantidade_alterados"] = pd.to_numeric(
             cat_anual["quantidade_alterados"], errors="coerce"
@@ -708,8 +708,17 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 .div(total_por_ano.where(total_por_ano > 0))
                 .mul(100)
             )
-            # Rótulos preparados na origem: cada texto acompanha sua barra
-            # sem precisar interpretar arrays internos do Plotly.
+            visual_anual = st.selectbox(
+                "Visualizar composição anual",
+                ["Quantidade de exames", "Participação por categoria (%)"],
+                key="q5_categoria_anual_visual",
+            )
+            percentual_anual = visual_anual == "Participação por categoria (%)"
+            coluna_grafico_anual = (
+                "participacao_pct" if percentual_anual else "quantidade_alterados"
+            )
+            # Mantém os percentuais calculados a partir dos registros filtrados,
+            # sem somar os totais repetidos em cada linha da tabela Gold.
             por_cat_ano["rotulo_exportacao"] = por_cat_ano[
                 "participacao_pct"
             ].map(
@@ -717,19 +726,23 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 if pd.notna(valor) and valor >= 6 else ""
             )
             fig_cat = px.bar(
-                por_cat_ano, x="ano", y="quantidade_alterados",
+                por_cat_ano, x="ano", y=coluna_grafico_anual,
                 color="categoria", barmode="stack",
                 text="rotulo_exportacao",
-                custom_data=["participacao_pct"],
+                custom_data=["quantidade_alterados", "participacao_pct"],
                 color_discrete_map=mapa_cores,
                 category_orders={"categoria": categorias_ordenadas},
-                labels={"ano": "Ano", "quantidade_alterados": "Exames por categoria",
-                        "categoria": "Categoria citopatológica"},
+                labels={
+                    "ano": "Ano",
+                    "quantidade_alterados": "Exames por categoria",
+                    "participacao_pct": "Participação (%)",
+                    "categoria": "Categoria citopatológica",
+                },
             )
             fig_cat.update_traces(
                 hovertemplate=(
-                    "Ano: %{x}<br>Exames: %{y:,.0f}"
-                    "<br>Participação: %{customdata[0]:.2f}%"
+                    "Ano: %{x}<br>Exames: %{customdata[0]:,.0f}"
+                    "<br>Participação: %{customdata[1]:.2f}%"
                     "<extra>%{fullData.name}</extra>"
                 ),
                 marker_line_color="#FFFFFF",
@@ -738,7 +751,11 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             )
             fig_cat.update_xaxes(type="category", showgrid=False)
             fig_cat.update_yaxes(
-                rangemode="tozero", tickformat=",d", gridcolor="#E4EBF1"
+                rangemode="tozero",
+                tickformat=".0f" if percentual_anual else ",d",
+                ticksuffix="%" if percentual_anual else "",
+                range=[0, 100] if percentual_anual else None,
+                gridcolor="#E4EBF1",
             )
             fig_cat.update_layout(
                 height=500, plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
@@ -762,7 +779,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
             # PNG contém apenas o gráfico. Segmentos pequenos continuam
             # consultáveis no tooltip do site e na exportação CSV.
             export_cat.update_layout(
-                title=dict(text="Exames alterados por categoria e ano", x=0.5),
+                title=dict(
+                    text=("Composição percentual por categoria e ano"
+                          if percentual_anual
+                          else "Exames alterados por categoria e ano"),
+                    x=0.5,
+                ),
                 height=650, width=1600,
                 margin=dict(l=90, r=265, t=110, b=90),
                 uniformtext=dict(mode="hide", minsize=12),
@@ -782,6 +804,155 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 export_table(tabela_cat, "siscan_categoria_anual.csv")
         else:
             st.info("Não há registros por categoria nos filtros selecionados.")
+
+        st.markdown("### Composição dos exames alterados por município e categoria")
+        st.markdown(
+            "Compara as **oito categorias citopatológicas entre os municípios "
+            "selecionados**, considerando os anos ativos nos filtros."
+        )
+        with st.expander("ℹ️ Como interpretar a composição por município", expanded=False):
+            st.markdown(
+                "**Linhas:** municípios. **Colunas:** categorias citopatológicas. "
+                "Na opção **Participação (%)**, cada célula mostra a proporção "
+                "daquela categoria entre os exames classificados como alterados "
+                "no município, calculada pela razão entre as quantidades somadas "
+                "nos anos selecionados. Na opção **Quantidade**, mostra o número "
+                "de registros. **—** indica que o percentual não pôde ser calculado "
+                "por ausência de denominador; não significa 0%. "
+                "As categorias não correspondem a diagnósticos de câncer. "
+                "A composição não é a proporção de exames alterados entre todos "
+                "os exames válidos; esta última é apresentada nos indicadores Q5."
+            )
+        medida_municipal = st.selectbox(
+            "Visualizar composição municipal",
+            ["Participação (%)", "Quantidade de exames"],
+            key="q5_categoria_municipal_visual",
+        )
+        dados_municipais = cat_anual.dropna(
+            subset=["municipio", "categoria", "quantidade_alterados"]
+        ).groupby(["municipio", "categoria"], as_index=False)[
+            "quantidade_alterados"
+        ].sum(min_count=1)
+        if not dados_municipais.empty:
+            denominador_municipio = dados_municipais.groupby("municipio")[
+                "quantidade_alterados"
+            ].transform("sum")
+            dados_municipais["participacao_pct"] = (
+                dados_municipais["quantidade_alterados"]
+                .div(denominador_municipio.where(denominador_municipio > 0))
+                .mul(100)
+            )
+            coluna_municipal = (
+                "participacao_pct"
+                if medida_municipal == "Participação (%)"
+                else "quantidade_alterados"
+            )
+            nomes_municipios = sorted(
+                dados_municipais["municipio"].unique(), key=str.casefold
+            )
+            categorias_municipais = sorted(
+                dados_municipais["categoria"].unique(), key=str.casefold
+            )
+            quadro_municipal = dados_municipais.pivot(
+                index="municipio", columns="categoria",
+                values=coluna_municipal,
+            ).reindex(
+                index=nomes_municipios, columns=categorias_municipais
+            )
+            if quadro_municipal.notna().any().any():
+                grafico_municipal = px.imshow(
+                    quadro_municipal,
+                    aspect="auto", color_continuous_scale="Blues",
+                    labels={
+                        "x": "Categoria citopatológica",
+                        "y": "Município",
+                        "color": ("Participação (%)"
+                                  if coluna_municipal == "participacao_pct"
+                                  else "Exames alterados"),
+                    },
+                )
+                grafico_municipal.update_traces(
+                    xgap=3, ygap=3,
+                    hovertemplate=(
+                        "Município: %{y}<br>Categoria: %{x}<br>"
+                        + ("Participação: %{z:.2f}%"
+                           if coluna_municipal == "participacao_pct"
+                           else "Exames: %{z:,.0f}")
+                        + "<extra></extra>"
+                    ),
+                )
+                maior_valor = quadro_municipal.max().max()
+                for municipio in nomes_municipios:
+                    for categoria in categorias_municipais:
+                        valor = quadro_municipal.at[municipio, categoria]
+                        if pd.notna(valor):
+                            rotulo = (
+                                f"{valor:.2f}%" if coluna_municipal == "participacao_pct"
+                                else f"{valor:,.0f}"
+                            )
+                            texto_claro = (
+                                pd.notna(maior_valor) and maior_valor > 0
+                                and float(valor) / float(maior_valor) >= 0.60
+                            )
+                        else:
+                            rotulo, texto_claro = "—", False
+                        grafico_municipal.add_annotation(
+                            x=categoria, y=municipio,
+                            text=rotulo, showarrow=False,
+                            font=dict(size=10, color=(
+                                "#FFFFFF" if texto_claro else NAVY
+                            )),
+                        )
+                if coluna_municipal == "participacao_pct":
+                    grafico_municipal.update_coloraxes(
+                        colorbar_ticksuffix="%", colorbar_tickformat=".2f"
+                    )
+                grafico_municipal.update_xaxes(
+                    tickangle=-45, automargin=True,
+                    title_text="Categoria citopatológica",
+                )
+                grafico_municipal.update_yaxes(
+                    automargin=True, title_text=None,
+                )
+                grafico_municipal.update_layout(
+                    height=max(570, 45 * len(nomes_municipios) + 155),
+                    paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+                    font=dict(color=NAVY),
+                    margin=dict(l=160, r=65, t=35, b=180),
+                )
+                export_municipal = copy.deepcopy(grafico_municipal)
+                export_municipal.update_layout(
+                    title=dict(
+                        text="Composição de exames alterados por município",
+                        x=0.5, font=dict(size=22, color=NAVY),
+                    ),
+                    width=1750,
+                    margin=dict(l=260, r=115, t=110, b=220),
+                )
+                chart_with_right_click_download(
+                    grafico_municipal,
+                    filename="alterados_composicao_municipio_categoria.png",
+                    height=grafico_municipal.layout.height,
+                    min_chart_width=980,
+                    export_fig=export_municipal,
+                )
+            else:
+                st.info("Não há valores calculáveis para a composição municipal.")
+            with st.expander(
+                "Ver dados por município e categoria", expanded=False
+            ):
+                detalhe_municipal = dados_municipais.rename(columns={
+                    "municipio": "Município",
+                    "categoria": "Categoria citopatológica",
+                    "quantidade_alterados": "Exames na categoria",
+                    "participacao_pct": "Participação (%)",
+                }).sort_values(["Município", "Categoria citopatológica"])
+                export_table(
+                    detalhe_municipal,
+                    "siscan_composicao_municipio_categoria.csv",
+                )
+        else:
+            st.info("Não há registros por município e categoria neste recorte.")
     else:
         st.info("A tabela Gold de categorias anuais está vazia ou incompleta.")
 
