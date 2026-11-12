@@ -27,6 +27,26 @@ st.markdown("""
     color:#1A3B5C;
 }
 .or-section-index {color:#006C9A;margin-right:10px}
+/* Painel de interpretação: mesma leitura e hierarquia da página Faixa Etária. */
+.st-key-outubro_variacao_explicacao [data-testid="stExpander"] summary {
+    font-family:Manrope,Arial,sans-serif!important;
+    font-size:0.92rem!important;
+    font-weight:700!important;
+    color:#1A3B5C!important;
+}
+.st-key-outubro_variacao_explicacao [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+    font-family:Manrope,Arial,sans-serif!important;
+    font-size:0.95rem!important;
+    line-height:1.65!important;
+    font-weight:500!important;
+    color:#1A3B5C!important;
+}
+@media(max-width:768px) {
+    .st-key-outubro_variacao_explicacao [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+        font-size:0.9rem!important;
+        line-height:1.55!important;
+    }
+}
 @media(max-width:768px) {
     .or-section-title {margin:24px 0 13px;font-size:21px}
 }
@@ -233,11 +253,8 @@ else:
 
 section("03", "Variação acumulada de setembro para outubro por município (%)")
 st.markdown(
-    "Compara o **total de exames registrados em setembro** com o "
-    "**total de outubro** em cada município, considerando os anos "
-    "selecionados. Somamos os exames de cada mês e calculamos "
-    "a variação percentual entre os dois totais — **não é uma média anual**. "
-    "Entram no cálculo somente os anos com **ambos os meses registrados**."
+    "Variação percentual entre os totais acumulados de setembro e outubro "
+    "nos anos selecionados, por município."
 )
 
 # Primeiro formar os pares setembro–outubro de CADA município e ano.
@@ -294,25 +311,23 @@ else:
         kind="stable",
     )
 
-with st.expander("ℹ️ Como interpretar a comparação entre municípios", expanded=False):
-    st.markdown(
-        "**O que significa cada barra?** A diferença percentual entre o "
-        "total de exames de **outubro** e o total de **setembro**, para um "
-        "mesmo município, nos anos selecionados.\n\n"
-        "**Como calculamos?** (Soma dos exames de outubro − soma dos exames "
-        "de setembro) ÷ soma dos exames de setembro × 100. "
-        "**Não calculamos a média dos percentuais anuais.**\n\n"
-        "**Exemplo ilustrativo:** se setembro somou 1.000 exames e outubro "
-        "somou 1.300 nos mesmos anos, o resultado é **+30.00%**, "
-        "ou **300 exames a mais**. Uma barra negativa indica menos exames "
-        "em outubro; uma positiva indica mais.\n\n"
-        "**Regra de comparação:** cada ano só participa quando existem "
-        "registros de setembro **e** outubro daquele município. "
-        "Anos sem um dos meses não entram em nenhuma das duas somas. "
-        "Se o total de setembro for zero, o percentual não é calculado. "
-        "A variação descreve os registros da rotina do SISCAN e "
-        "**não comprova efeito da campanha Outubro Rosa**."
-    )
+# Mesmo padrão da página Faixa Etária: descrição curta acima e
+# explicação metodológica única no painel recolhível.
+with st.container(key="outubro_variacao_explicacao"):
+    with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
+        st.markdown(
+            "**Cada barra** mostra a variação percentual dos exames de "
+            "outubro em relação a setembro para um município. "
+            "**Cálculo:** (total de outubro − total de setembro) ÷ "
+            "total de setembro × 100. Primeiro somamos os exames "
+            "dos anos selecionados; **não calculamos a média anual**. "
+            "Apenas anos com registros nos dois meses entram nas somas. "
+            "**Exemplo:** setembro = 1.000 e outubro = 1.300 exames "
+            "resultam em **+30.00% (300 exames a mais)**. "
+            "Valores negativos indicam redução. "
+            "O gráfico descreve a produção registrada e "
+            "**não comprova efeito da campanha Outubro Rosa**."
+        )
 if municipios_validos.empty:
     st.info("Não há pares setembro–outubro com setembro maior que zero "
             "para os filtros selecionados.")
