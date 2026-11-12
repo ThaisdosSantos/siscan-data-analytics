@@ -479,23 +479,54 @@ else:
             "comparação. Trata-se do total da rotina mensal, não do volume "
             "exclusivo ou do efeito da campanha."
         )
+    # Padrão das demais páginas: barras horizontais, maior legibilidade
+    # dos municípios e paleta PET-Saúde fixa por ano (inclusive com filtros).
+    cores_anos = {
+        "2020": "#006C9A",
+        "2021": "#E85D2A",
+        "2022": "#218B65",
+        "2023": "#6B5FB5",
+        "2024": "#D49B22",
+        "2025": "#1A3B5C",
+    }
     fig_volume = px.bar(
         producao_ano.assign(Ano=producao_ano["Ano"].astype(str)),
-        x="Município", y="Exames", color="Ano",
-        barmode="group",
-        category_orders={"Município": pivot_producao.index.tolist(),
-                         "Ano": [str(a) for a in ano_cols]},
+        x="Exames", y="Município", color="Ano",
+        orientation="h", barmode="group",
+        color_discrete_map=cores_anos,
+        category_orders={
+            "Município": pivot_producao.index.tolist(),
+            "Ano": [str(a) for a in ano_cols],
+        },
         labels={"Exames": "Exames registrados (set–dez)"},
     )
-    fig_volume.update_xaxes(tickangle=-55, automargin=True)
-    fig_volume.update_traces(
-        hovertemplate="Município: %{x}<br>Exames: %{y:,.0f}"
-        "<extra>Ano %{fullData.name}</extra>"
+    fig_volume.update_yaxes(
+        categoryorder="array",
+        categoryarray=list(reversed(pivot_producao.index.tolist())),
+        automargin=True,
+        tickfont=dict(size=12, color=NAVY),
     )
-    fig_volume.update_layout(margin=dict(l=75, r=130, t=40, b=170))
+    fig_volume.update_xaxes(
+        tickformat=",d", rangemode="tozero",
+        title_text="Exames registrados (set–dez)",
+    )
+    fig_volume.update_traces(
+        marker_line_width=0,
+        hovertemplate="Município: %{y}<br>Exames: %{x:,.0f}"
+        "<extra>Ano %{fullData.name}</extra>",
+    )
+    fig_volume.update_layout(
+        legend=dict(
+            title_text="Ano", orientation="h", x=0, y=1.035,
+            yanchor="bottom",
+        ),
+        bargap=0.25, bargroupgap=0.08,
+        margin=dict(l=145, r=55, t=82, b=65),
+    )
     download_plot(
         fig_volume, "outubro_rosa_volume_set_dez_municipio_ano.png",
-        altura=570, largura=1800
+        altura=max(650, 64 * len(pivot_producao) + 175),
+        largura=1600,
     )
     with st.expander("Tabela dinâmica — município × ano", expanded=False):
         display_table(pivot_producao.reset_index())
