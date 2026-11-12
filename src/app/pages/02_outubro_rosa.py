@@ -231,32 +231,58 @@ else:
     )
     download_plot(fig_ano, "outubro_rosa_variacao_anual_setembro_outubro.png", altura=420)
 
-section("03", "Comparação entre municípios")
+section("03", "Variação acumulada de setembro para outubro por município (%)")
 st.markdown(
-    "Examina a **variação de setembro para outubro por município**. "
-    "Ordene os municípios alfabeticamente ou pela maior variação percentual."
+    "Compara o **total de exames registrados em setembro** com o "
+    "**total de outubro** em cada município, considerando os anos "
+    "selecionados. Somamos os exames de cada mês e calculamos "
+    "a variação percentual entre os dois totais — **não é uma média anual**. "
+    "Entram no cálculo somente os anos com **ambos os meses registrados**."
 )
-pares_municipais = (
+
+# Primeiro formar os pares setembro–outubro de CADA município e ano.
+# Somar os meses antes de parear incluiria anos presentes em apenas um
+# dos meses e distorceria a comparação acumulada.
+pares_ano_municipio = (
     dados.loc[dados["mes"].isin([9, 10])]
-    .groupby(["municipio", "mes"])["quantidade"].sum(min_count=1)
+    .groupby(["municipio", "ano", "mes"])["quantidade"]
+    .sum(min_count=1)
     .unstack("mes")
     .reindex(columns=[9, 10])
     .rename(columns={9: "Setembro", 10: "Outubro"})
+)
+pares_completos = pares_ano_municipio.dropna(
+    subset=["Setembro", "Outubro"]
+).reset_index()
+pares_municipais = (
+    pares_completos.groupby("municipio", as_index=False)
+    .agg(
+        Setembro=("Setembro", "sum"),
+        Outubro=("Outubro", "sum"),
+        Anos_pareados=("ano", "nunique"),
+    )
+    .rename(columns={
+        "municipio": "Município",
+        "Anos_pareados": "Anos pareados",
+    })
+)
+pares_municipais["Diferença absoluta"] = (
+    pares_municipais["Outubro"] - pares_municipais["Setembro"]
 )
 pares_municipais["Variação (%)"] = [
     variacao_percentual(row["Outubro"], row["Setembro"])
     for _, row in pares_municipais.iterrows()
 ]
-pares_municipais = pares_municipais.reset_index().rename(
-    columns={"municipio": "Município"}
-)
 with st.container(key="outubro_variacao_sort_panel"):
     ordenacao = st.selectbox(
         "Ordenar por", ["A–Z", "Maior para menor"],
         index=0, key="outubro_rosa_ordenacao",
-        help="Maior para menor considera a variação percentual de setembro para outubro.",
+        help="Maior para menor considera a variação percentual acumulada "
+             "de outubro em relação a setembro.",
     )
-municipios_validos = pares_municipais.dropna(subset=["Variação (%)"]).copy()
+municipios_validos = pares_municipais.dropna(
+    subset=["Variação (%)"]
+).copy()
 if ordenacao == "Maior para menor":
     municipios_validos = municipios_validos.sort_values(
         ["Variação (%)", "Município"], ascending=[False, True],
@@ -267,22 +293,57 @@ else:
         "Município", key=lambda nomes: nomes.str.casefold(),
         kind="stable",
     )
+
+with st.expander("ℹ️ Como interpretar a comparação entre municípios", expanded=False):
+    st.markdown(
+        "**O que significa cada barra?** A diferença percentual entre o "
+        "total de exames de **outubro** e o total de **setembro**, para um "
+        "mesmo município, nos anos selecionados.\n\n"
+        "**Como calculamos?** (Soma dos exames de outubro − soma dos exames "
+        "de setembro) ÷ soma dos exames de setembro × 100. "
+        "**Não calculamos a média dos percentuais anuais.**\n\n"
+        "**Exemplo ilustrativo:** se setembro somou 1.000 exames e outubro "
+        "somou 1.300 nos mesmos anos, o resultado é **+30.00%**, "
+        "ou **300 exames a mais**. Uma barra negativa indica menos exames "
+        "em outubro; uma positiva indica mais.\n\n"
+        "**Regra de comparação:** cada ano só participa quando existem "
+        "registros de setembro **e** outubro daquele município. "
+        "Anos sem um dos meses não entram em nenhuma das duas somas. "
+        "Se o total de setembro for zero, o percentual não é calculado. "
+        "A variação descreve os registros da rotina do SISCAN e "
+        "**não comprova efeito da campanha Outubro Rosa**."
+    )
 if municipios_validos.empty:
-    st.info("Nenhum município possui dados completos para essa comparação.")
+    st.info("Não há pares setembro–outubro com setembro maior que zero "
+            "para os filtros selecionados.")
 else:
     municipios_validos["Situação"] = municipios_validos["Variação (%)"].map(
-        lambda v: "Redução" if v < 0 else "Aumento ou estabilidade"
+        lambda valor: "Redução" if valor < 0 else "Aumento ou estabilidade"
     )
     municipios_validos["Variação formatada"] = municipios_validos[
         "Variação (%)"
-    ].map(lambda v: f"{v:+.2f}%")
+    ].map(lambda valor: f"{valor:+.2f}%")
+    municipios_validos["Diferença formatada"] = municipios_validos[
+        "Diferença absoluta"
+    ].map(lambda valor: f"{valor:+,.0f}".replace(",", "."))
+    municipios_validos["Setembro formatado"] = municipios_validos[
+        "Setembro"
+    ].map(lambda valor: f"{valor:,.0f}".replace(",", "."))
+    municipios_validos["Outubro formatado"] = municipios_validos[
+        "Outubro"
+    ].map(lambda valor: f"{valor:,.0f}".replace(",", "."))
+
     fig_mun = px.bar(
         municipios_validos, x="Variação (%)", y="Município",
         color="Situação", orientation="h",
         color_discrete_map={
-            "Redução": "#B53A27", "Aumento ou estabilidade": "#218B65",
+            "Redução": "#B53A27",
+            "Aumento ou estabilidade": "#218B65",
         },
-        custom_data=["Setembro", "Outubro", "Variação formatada"],
+        custom_data=[
+            "Setembro formatado", "Outubro formatado",
+            "Diferença formatada", "Variação formatada", "Anos pareados",
+        ],
     )
     fig_mun.update_yaxes(
         categoryorder="array",
@@ -290,32 +351,42 @@ else:
         automargin=True,
     )
     fig_mun.update_xaxes(
-        ticksuffix="%", tickformat=".2f", zeroline=True,
-        zerolinecolor=NAVY, zerolinewidth=2,
+        ticksuffix="%", tickformat=".2f",
+        zeroline=True, zerolinecolor=NAVY, zerolinewidth=2,
     )
     fig_mun.update_traces(
-        hovertemplate="%{y}<br>Setembro: %{customdata[0]:,.0f}"
-        "<br>Outubro: %{customdata[1]:,.0f}"
-        "<br>Variação: %{customdata[2]}<extra></extra>"
+        hovertemplate="<b>%{y}</b>"
+        "<br>Setembro (acumulado): %{customdata[0]} exames"
+        "<br>Outubro (acumulado): %{customdata[1]} exames"
+        "<br>Diferença absoluta: %{customdata[2]} exames"
+        "<br>Variação acumulada: %{customdata[3]}"
+        "<br>Anos com ambos os meses: %{customdata[4]}"
+        "<extra></extra>"
     )
     fig_mun.update_layout(showlegend=False)
-    chart_help(
-        "Cada barra representa um município. Valores positivos indicam "
-        "aumento dos registros em outubro; valores negativos, redução. "
-        "O cálculo soma os meses nos anos selecionados **antes** de "
-        "calcular a variação. Sem setembro válido, o percentual fica ausente."
-    )
     download_plot(
-        fig_mun, "outubro_rosa_variacao_por_municipio.png",
-        altura=max(500, 43 * len(municipios_validos) + 130), largura=1600,
+        fig_mun, "outubro_rosa_variacao_acumulada_pares_completos.png",
+        altura=max(500, 43 * len(municipios_validos) + 130),
+        largura=1600,
     )
-sem_base = pares_municipais.loc[
-    pares_municipais["Variação (%)"].isna(), "Município"
-].tolist()
+
+municipios_ativos = set(dados["municipio"].unique())
+municipios_validos_set = set(municipios_validos["Município"])
+sem_base = sorted(municipios_ativos - municipios_validos_set)
 if sem_base:
     st.caption(
-        "Sem variação calculável (mês ausente ou setembro igual a zero): "
-        + ", ".join(sorted(sem_base)) + "."
+        "Sem percentual calculável (pares ausentes ou setembro acumulado "
+        "igual a zero): " + ", ".join(sem_base) + "."
+    )
+anos_selecionados = len(data_loader.selected_years())
+menos_anos = pares_municipais.loc[
+    pares_municipais["Anos pareados"] < anos_selecionados
+]
+if not menos_anos.empty:
+    st.caption(
+        "Disponibilidade: para alguns municípios, o cálculo utiliza "
+        "menos anos que os selecionados porque faltam registros em "
+        "setembro ou outubro. Confira a quantidade de anos no tooltip."
     )
 
 section("04", "Matriz de produção: município × mês")
