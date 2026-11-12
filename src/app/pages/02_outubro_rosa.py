@@ -165,6 +165,12 @@ st.markdown(
     "Compara a **quantidade de exames registrados** nos quatro meses. "
     "Os totais consideram os anos e municípios selecionados."
 )
+chart_help(
+    "**Variação (%) = (Outubro − Setembro) ÷ Setembro × 100.** "
+    "Ao selecionar vários anos, o indicador combina os registros de "
+    "setembro e outubro dos anos selecionados. Se setembro for zero "
+    "ou algum dos meses estiver ausente, o percentual não é calculável."
+)
 totais_mes = (
     mensal.groupby("mes")["quantidade"].sum().reindex(MESES.keys())
 )
@@ -184,12 +190,6 @@ st.caption(
     f"Recorte ativo: {periodo} · {cidades} município(s). "
     "A variação usa as somas dos meses disponíveis; não indica causalidade."
 )
-chart_help(
-    "**Variação (%) = (Outubro − Setembro) ÷ Setembro × 100.** "
-    "Ao selecionar vários anos, o indicador combina os registros de "
-    "setembro e outubro dos anos selecionados. Se setembro for zero "
-    "ou algum dos meses estiver ausente, o percentual não é calculável."
-)
 fig = px.bar(
     mensal, x="ano_texto", y="quantidade", color="Mês",
     barmode="group", color_discrete_map=CORES_MESES,
@@ -205,6 +205,12 @@ section("02", "Comparação anual: setembro × outubro")
 st.markdown(
     "Evolução da **variação percentual de setembro para outubro** em cada ano, "
     "sem misturar os totais de anos distintos."
+)
+chart_help(
+    "Cada barra representa a diferença percentual entre outubro "
+    "e setembro **do mesmo ano**. Verde: aumento ou estabilidade; "
+    "vermelho: redução. Anos com meses ausentes ou setembro igual "
+    "a zero não recebem percentual."
 )
 por_ano = (
     mensal.loc[mensal["mes"].isin([9, 10])]
@@ -243,12 +249,6 @@ else:
         zeroline=True, zerolinecolor=NAVY, zerolinewidth=2,
     )
     fig_ano.update_layout(showlegend=False)
-    chart_help(
-        "Cada barra representa a diferença percentual entre outubro "
-        "e setembro **do mesmo ano**. Verde: aumento ou estabilidade; "
-        "vermelho: redução. Anos com meses ausentes ou setembro igual "
-        "a zero não recebem percentual."
-    )
     download_plot(fig_ano, "outubro_rosa_variacao_anual_setembro_outubro.png", altura=420)
 
 section("03", "Variação acumulada de setembro para outubro por município (%)")
@@ -410,6 +410,11 @@ st.markdown(
     "Visualize a quantidade de exames em cada município nos meses de "
     "setembro a dezembro, somando apenas os anos selecionados."
 )
+chart_help(
+    "Cada célula é a soma dos exames de um município em um mês "
+    "considerando os anos selecionados. Células sem dados permanecem "
+    "em branco — não são interpretadas como zero."
+)
 matriz = (
     dados.groupby(["municipio", "mes"])["quantidade"].sum(min_count=1)
     .unstack("mes")
@@ -459,11 +464,6 @@ else:
         autorange="reversed", automargin=True,
     )
     fig_heatmap.update_layout(margin=dict(l=115, r=100, t=45, b=80))
-    chart_help(
-        "Cada célula é a soma dos exames de um município em um mês "
-        "considerando os anos selecionados. Células sem dados permanecem "
-        "em branco — não são interpretadas como zero."
-    )
     download_plot(
         fig_heatmap, "outubro_rosa_matriz_municipio_mes.png",
         altura=max(490, 37 * len(matriz) + 120), largura=1550,
@@ -536,6 +536,17 @@ else:
         ).reindex(columns=ano_cols)
     )
     pivot_producao.index.name = "Município"
+    with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
+        st.markdown(
+            "**Cada painel representa um município**, com a quantidade de "
+            "exames registrados entre setembro e dezembro em cada ano. "
+            "**Eixo X:** anos selecionados. **Eixo Y:** exames registrados "
+            "naquele município, com escala própria para facilitar a leitura "
+            "dos municípios menores. Os anos sem quatro competências "
+            "disponíveis permanecem como lacunas, sem inventar zeros. "
+            "Os volumes representam a rotina mensal geral do SISCAN, "
+            "**não o volume exclusivo nem o efeito da campanha Outubro Rosa**."
+        )
     with st.container(key="outubro_volume_sort_panel"):
         ordem_volume = st.selectbox(
             "Ordenar por", ["A–Z", "Maior para menor"],
@@ -557,17 +568,6 @@ else:
     else:
         pivot_producao = pivot_producao.sort_index(
             key=lambda nomes: nomes.str.casefold()
-        )
-    with st.expander("ℹ️ Como interpretar a evolução por município × ano", expanded=False):
-        st.markdown(
-            "**Cada painel representa um município**, com a quantidade de "
-            "exames registrados entre setembro e dezembro em cada ano. "
-            "**Eixo X:** anos selecionados. **Eixo Y:** exames registrados "
-            "naquele município, com escala própria para facilitar a leitura "
-            "dos municípios menores. Os anos sem quatro competências "
-            "disponíveis permanecem como lacunas, sem inventar zeros. "
-            "Os volumes representam a rotina mensal geral do SISCAN, "
-            "**não o volume exclusivo nem o efeito da campanha Outubro Rosa**."
         )
     # Facetas de linhas como no Panorama Geral, mas com 2 colunas para
     # preservar a leitura em telas menores e um painel amplo por município.
