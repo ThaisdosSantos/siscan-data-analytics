@@ -234,7 +234,7 @@ else:
 section("03", "Comparação entre municípios")
 st.markdown(
     "Examina a **variação de setembro para outubro por município**. "
-    "A ordenação pode seguir a maior variação ou a ordem alfabética."
+    "Ordene os municípios alfabeticamente ou pela maior variação percentual."
 )
 pares_municipais = (
     dados.loc[dados["mes"].isin([9, 10])]
@@ -250,18 +250,22 @@ pares_municipais["Variação (%)"] = [
 pares_municipais = pares_municipais.reset_index().rename(
     columns={"municipio": "Município"}
 )
-ordenacao = st.selectbox(
-    "Ordenar municípios", ["Maior variação", "A–Z"],
-    key="outubro_rosa_ordenacao",
-)
+with st.container(key="outubro_variacao_sort_panel"):
+    ordenacao = st.selectbox(
+        "Ordenar por", ["A–Z", "Maior para menor"],
+        index=0, key="outubro_rosa_ordenacao",
+        help="Maior para menor considera a variação percentual de setembro para outubro.",
+    )
 municipios_validos = pares_municipais.dropna(subset=["Variação (%)"]).copy()
-if ordenacao == "Maior variação":
+if ordenacao == "Maior para menor":
     municipios_validos = municipios_validos.sort_values(
-        "Variação (%)", ascending=False
+        ["Variação (%)", "Município"], ascending=[False, True],
+        kind="stable",
     )
 else:
     municipios_validos = municipios_validos.sort_values(
-        "Município", key=lambda s: s.str.casefold()
+        "Município", key=lambda nomes: nomes.str.casefold(),
+        kind="stable",
     )
 if municipios_validos.empty:
     st.info("Nenhum município possui dados completos para essa comparação.")
@@ -326,7 +330,26 @@ matriz = (
     .rename(columns=MESES)
 )
 matriz.index.name = "Município"
-matriz = matriz.sort_index(key=lambda s: s.str.casefold())
+with st.container(key="outubro_matriz_sort_panel"):
+    ordem_matriz = st.selectbox(
+        "Ordenar por", ["A–Z", "Maior para menor"],
+        index=0, key="outubro_rosa_ordenacao_matriz",
+        help="Maior para menor usa a soma de exames de setembro a dezembro no recorte.",
+    )
+if ordem_matriz == "Maior para menor":
+    # min_count=1 preserva ausência de dados, sem converter em zero.
+    totais_matriz = matriz.sum(axis=1, min_count=1)
+    ordem_matriz_nomes = sorted(
+        matriz.index,
+        key=lambda nome: (
+            -float(totais_matriz.loc[nome])
+            if pd.notna(totais_matriz.loc[nome]) else float("inf"),
+            nome.casefold(),
+        ),
+    )
+    matriz = matriz.reindex(ordem_matriz_nomes)
+else:
+    matriz = matriz.sort_index(key=lambda nomes: nomes.str.casefold())
 if matriz.empty:
     st.info("Não há dados para a matriz municipal.")
 else:
@@ -426,9 +449,28 @@ else:
         ).reindex(columns=ano_cols)
     )
     pivot_producao.index.name = "Município"
-    pivot_producao = pivot_producao.sort_index(
-        key=lambda idx: idx.str.casefold()
-    )
+    with st.container(key="outubro_volume_sort_panel"):
+        ordem_volume = st.selectbox(
+            "Ordenar por", ["A–Z", "Maior para menor"],
+            index=0, key="outubro_rosa_ordenacao_volume",
+            help="Maior para menor usa a soma de exames de setembro a dezembro "
+                 "nos anos selecionados.",
+        )
+    if ordem_volume == "Maior para menor":
+        totais_volume = pivot_producao.sum(axis=1, min_count=1)
+        municipios_volume = sorted(
+            pivot_producao.index,
+            key=lambda nome: (
+                -float(totais_volume.loc[nome])
+                if pd.notna(totais_volume.loc[nome]) else float("inf"),
+                nome.casefold(),
+            ),
+        )
+        pivot_producao = pivot_producao.reindex(municipios_volume)
+    else:
+        pivot_producao = pivot_producao.sort_index(
+            key=lambda nomes: nomes.str.casefold()
+        )
     with st.expander("ℹ️ Como interpretar o volume por município × ano", expanded=False):
         st.markdown(
             "Cada barra agrupa os exames registrados **de setembro a dezembro "
@@ -528,11 +570,35 @@ else:
             perfil_mun["quantidade_exames"] /
             total_mun.where(total_mun > 0) * 100
         )
+        with st.container(key="outubro_etaria_sort_panel"):
+            ordem_etaria = st.selectbox(
+                "Ordenar por", ["A–Z", "Maior para menor"],
+                index=0, key="outubro_rosa_ordenacao_etaria",
+                help="Maior para menor considera o total geral de exames "
+                     "dos três grupos etários de cada município.",
+            )
+        totais_perfil = perfil_mun.groupby("municipio")[
+            "quantidade_exames"
+        ].sum(min_count=1)
+        municipios_perfil = sorted(
+            totais_perfil.index, key=lambda nome: nome.casefold()
+        )
+        if ordem_etaria == "Maior para menor":
+            municipios_perfil.sort(
+                key=lambda nome: (
+                    -float(totais_perfil.loc[nome])
+                    if pd.notna(totais_perfil.loc[nome])
+                    else float("inf"),
+                    nome.casefold(),
+                )
+            )
         fig_etario_mun = px.bar(
             perfil_mun, x="municipio", y="Participação (%)",
             color="Grupo", barmode="stack",
             color_discrete_map=cores_grupos,
-            category_orders={"Grupo": ordem_grupos},
+            category_orders={
+                "Grupo": ordem_grupos, "municipio": municipios_perfil,
+            },
             custom_data=["quantidade_exames"],
             labels={"municipio": "Município"},
         )
