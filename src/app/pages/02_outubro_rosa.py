@@ -290,6 +290,24 @@ pares_municipais["Variação (%)"] = [
     variacao_percentual(row["Outubro"], row["Setembro"])
     for _, row in pares_municipais.iterrows()
 ]
+# Mesmo padrão da página Faixa Etária: descrição curta acima e
+# explicação metodológica única no painel recolhível.
+with st.container(key="outubro_variacao_explicacao"):
+    with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
+        st.markdown(
+            "**Cada barra** mostra a variação percentual dos exames de "
+            "outubro em relação a setembro para um município. "
+            "**Cálculo:** (total de outubro − total de setembro) ÷ "
+            "total de setembro × 100. Primeiro somamos os exames "
+            "dos anos selecionados; **não calculamos a média anual**. "
+            "Apenas anos com registros nos dois meses entram nas somas. "
+            "**Exemplo:** setembro = 1.000 e outubro = 1.300 exames "
+            "resultam em **+30.00% (300 exames a mais)**. "
+            "Valores negativos indicam redução. "
+            "O gráfico descreve a produção registrada e "
+            "**não comprova efeito da campanha Outubro Rosa**."
+        )
+
 with st.container(key="outubro_variacao_sort_panel"):
     ordenacao = st.selectbox(
         "Ordenar por", ["A–Z", "Maior para menor"],
@@ -311,23 +329,6 @@ else:
         kind="stable",
     )
 
-# Mesmo padrão da página Faixa Etária: descrição curta acima e
-# explicação metodológica única no painel recolhível.
-with st.container(key="outubro_variacao_explicacao"):
-    with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
-        st.markdown(
-            "**Cada barra** mostra a variação percentual dos exames de "
-            "outubro em relação a setembro para um município. "
-            "**Cálculo:** (total de outubro − total de setembro) ÷ "
-            "total de setembro × 100. Primeiro somamos os exames "
-            "dos anos selecionados; **não calculamos a média anual**. "
-            "Apenas anos com registros nos dois meses entram nas somas. "
-            "**Exemplo:** setembro = 1.000 e outubro = 1.300 exames "
-            "resultam em **+30.00% (300 exames a mais)**. "
-            "Valores negativos indicam redução. "
-            "O gráfico descreve a produção registrada e "
-            "**não comprova efeito da campanha Outubro Rosa**."
-        )
 if municipios_validos.empty:
     st.info("Não há pares setembro–outubro com setembro maior que zero "
             "para os filtros selecionados.")
