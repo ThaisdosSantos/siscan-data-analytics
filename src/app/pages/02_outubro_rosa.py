@@ -564,10 +564,12 @@ else:
         mime="text/csv", key="outubro_rosa_volume_municipio_ano_csv",
     )
 
-section("06", "Perfil etário de setembro a dezembro — indisponível")
-st.warning("O cruzamento município × grupo etário de setembro a dezembro não está disponível com confiabilidade. A Q3 é anual (janeiro a dezembro), e os meses dos CSVs dedicados Q02 não foram validados. O gráfico anual foi retirado para evitar interpretações incorretas.")
-with st.expander("ℹ️ Requisitos para publicar este gráfico", expanded=False):
-    st.markdown("É necessária uma Gold validada com **município × ano × mês × grupo etário**, com meses de setembro a dezembro comprovados na extração original. O perfil anual permanece disponível em **Faixa Etária**.")
+section("06", "Município × grupo etário — gráfico pendente")
+st.info(
+    "Gráfico ainda não disponível. É necessário validar os dados por "
+    "município, mês e faixa etária especificamente para setembro a "
+    "dezembro de 2020–2025. Esta visualização será definida posteriormente."
+)
 
 section("07", "Dados mensais detalhados")
 st.markdown(
