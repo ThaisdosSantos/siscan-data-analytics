@@ -471,62 +471,87 @@ else:
         pivot_producao = pivot_producao.sort_index(
             key=lambda nomes: nomes.str.casefold()
         )
-    with st.expander("ℹ️ Como interpretar o volume por município × ano", expanded=False):
+    with st.expander("ℹ️ Como interpretar a evolução por município × ano", expanded=False):
         st.markdown(
-            "Cada barra agrupa os exames registrados **de setembro a dezembro "
-            "do mesmo ano** no município. Competências ausentes não são "
-            "substituídas por zero: anos incompletos são omitidos dessa "
-            "comparação. Trata-se do total da rotina mensal, não do volume "
-            "exclusivo ou do efeito da campanha."
+            "**Cada painel representa um município**, com a quantidade de "
+            "exames registrados entre setembro e dezembro em cada ano. "
+            "**Eixo X:** anos selecionados. **Eixo Y:** exames registrados "
+            "naquele município, com escala própria para facilitar a leitura "
+            "dos municípios menores. Os anos sem quatro competências "
+            "disponíveis permanecem como lacunas, sem inventar zeros. "
+            "Os volumes representam a rotina mensal geral do SISCAN, "
+            "**não o volume exclusivo nem o efeito da campanha Outubro Rosa**."
         )
-    # Padrão das demais páginas: barras horizontais, maior legibilidade
-    # dos municípios e paleta PET-Saúde fixa por ano (inclusive com filtros).
-    cores_anos = {
-        "2020": "#006C9A",
-        "2021": "#E85D2A",
-        "2022": "#218B65",
-        "2023": "#6B5FB5",
-        "2024": "#D49B22",
-        "2025": "#1A3B5C",
-    }
-    fig_volume = px.bar(
-        producao_ano.assign(Ano=producao_ano["Ano"].astype(str)),
-        x="Exames", y="Município", color="Ano",
-        orientation="h", barmode="group",
-        color_discrete_map=cores_anos,
+    # Facetas de linhas como no Panorama Geral, mas com 2 colunas para
+    # preservar a leitura em telas menores e um painel amplo por município.
+    municipios_eixo = pivot_producao.index.tolist()
+    anos_eixo = sorted(data_loader.selected_years())
+    grade_anual = pd.MultiIndex.from_product(
+        [municipios_eixo, anos_eixo], names=["Município", "Ano"]
+    )
+    grafico_linhas = (
+        producao_ano.set_index(["Município", "Ano"])
+        .reindex(grade_anual).reset_index()
+    )
+    grafico_linhas["Ano (rótulo)"] = grafico_linhas["Ano"].astype(str)
+    fig_volume = px.line(
+        grafico_linhas, x="Ano (rótulo)", y="Exames",
+        facet_col="Município", facet_col_wrap=2,
+        facet_col_spacing=0.075, facet_row_spacing=0.085,
         category_orders={
-            "Município": pivot_producao.index.tolist(),
-            "Ano": [str(a) for a in ano_cols],
+            "Município": municipios_eixo,
+            "Ano (rótulo)": [str(ano) for ano in anos_eixo],
         },
-        labels={"Exames": "Exames registrados (set–dez)"},
+        markers=True,
+        color_discrete_sequence=["#006C9A"],
+        labels={
+            "Ano (rótulo)": "Ano",
+            "Exames": "Exames registrados (set–dez)",
+        },
     )
-    fig_volume.update_yaxes(
-        categoryorder="array",
-        categoryarray=list(reversed(pivot_producao.index.tolist())),
-        automargin=True,
-        tickfont=dict(size=12, color=NAVY),
-    )
-    fig_volume.update_xaxes(
-        tickformat=",d", rangemode="tozero",
-        title_text="Exames registrados (set–dez)",
+    fig_volume.for_each_annotation(
+        lambda anotacao: anotacao.update(
+            text=anotacao.text.split("=", 1)[-1],
+            font=dict(size=13, color=NAVY),
+        )
     )
     fig_volume.update_traces(
-        marker_line_width=0,
-        hovertemplate="Município: %{y}<br>Exames: %{x:,.0f}"
-        "<extra>Ano %{fullData.name}</extra>",
+        line=dict(width=3),
+        marker=dict(size=8),
+        connectgaps=False,
+        hovertemplate="Ano: %{x}<br>Exames registrados (set–dez): "
+        "%{y:,.0f}<extra></extra>",
+    )
+    fig_volume.update_xaxes(
+        matches=None, showticklabels=True, title_text=None,
+        type="category", categoryorder="array",
+        categoryarray=[str(ano) for ano in anos_eixo],
+        gridcolor="#E9EDF1",
+    )
+    fig_volume.update_yaxes(
+        matches=None, showticklabels=True, title_text=None,
+        rangemode="tozero", tickformat=",d",
+        gridcolor="#E9EDF1", zeroline=False,
     )
     fig_volume.update_layout(
-        legend=dict(
-            title_text="Ano", orientation="h", x=0, y=1.035,
-            yanchor="bottom",
-        ),
-        bargap=0.25, bargroupgap=0.08,
-        margin=dict(l=145, r=55, t=82, b=65),
+        showlegend=False,
+        margin=dict(l=100, r=35, t=70, b=95),
     )
+    fig_volume.add_annotation(
+        x=-0.065, y=0.5, xref="paper", yref="paper",
+        text="Exames registrados (set–dez)",
+        textangle=-90, showarrow=False,
+        font=dict(size=13, color=NAVY),
+    )
+    fig_volume.add_annotation(
+        x=0.5, y=-0.03, xref="paper", yref="paper",
+        text="Anos", showarrow=False,
+        font=dict(size=13, color=NAVY),
+    )
+    altura_volume = max(650, 320 * ((len(municipios_eixo) + 1) // 2))
     download_plot(
-        fig_volume, "outubro_rosa_volume_set_dez_municipio_ano.png",
-        altura=max(650, 64 * len(pivot_producao) + 175),
-        largura=1600,
+        fig_volume, "outubro_rosa_evolucao_set_dez_por_municipio.png",
+        altura=altura_volume, largura=1700,
     )
     with st.expander("Tabela dinâmica — município × ano", expanded=False):
         display_table(pivot_producao.reset_index())
