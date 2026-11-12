@@ -359,7 +359,252 @@ else:
         altura=max(490, 37 * len(matriz) + 120), largura=1550,
     )
 
-section("05", "Dados mensais detalhados")
+# Cruzamentos Gold adicionais: caso as tabelas novas ainda não tenham sido
+# materializadas, a página calcula o mesmo agregado a partir de fatos Gold
+# já existentes. Nenhuma fonte Q02 com meses ambíguos é utilizada.
+def gold_nova_ou_vazia(chave):
+    try:
+        bruto = data_loader.load_table(chave, data_loader.selected_source())
+    except data_loader.GoldConsultaIndisponivel:
+        return pd.DataFrame()
+    if bruto.empty:
+        return bruto
+    if "ano" in bruto:
+        bruto = bruto[bruto["ano"].isin(data_loader.selected_years())]
+    if "municipio" in bruto:
+        cidades_ativas = st.session_state.get(
+            "city_preference", list(data_loader.MUNICIPIOS.values())
+        )
+        bruto = bruto[bruto["municipio"].isin(cidades_ativas)]
+    return bruto.copy()
+
+section("05", "Volume de setembro a dezembro por município × ano")
+st.markdown(
+    "Acompanhe a **produção registrada entre setembro e dezembro**, "
+    "por município e ano. Esses registros abrangem a rotina geral do "
+    "SISCAN; **não representam exclusivamente atendimentos da campanha**."
+)
+producao_gold = gold_nova_ou_vazia("outubro_producao_anual")
+if not producao_gold.empty and {
+    "municipio", "ano", "exames_set_dez", "meses_observados"
+}.issubset(producao_gold.columns):
+    producao_gold["exames_set_dez"] = pd.to_numeric(
+        producao_gold["exames_set_dez"], errors="coerce"
+    )
+    producao_gold["meses_observados"] = pd.to_numeric(
+        producao_gold["meses_observados"], errors="coerce"
+    )
+    producao_ano = producao_gold.loc[
+        producao_gold["meses_observados"] == 4,
+        ["municipio", "ano", "exames_set_dez"],
+    ].rename(columns={
+        "municipio": "Município", "ano": "Ano",
+        "exames_set_dez": "Exames",
+    })
+else:
+    # Mesmo cálculo, obtido da Gold mensal já consultada pela página.
+    qt_meses = (dados.groupby(["municipio", "ano"], as_index=False)
+                .agg(meses_observados=("mes", "nunique"),
+                     total=("quantidade", "sum")))
+    producao_ano = (
+        qt_meses.loc[qt_meses["meses_observados"] == 4]
+        .rename(columns={
+            "municipio": "Município", "ano": "Ano", "total": "Exames"
+        })[["Município", "Ano", "Exames"]]
+    )
+if producao_ano.empty:
+    st.info("Não há anos com os quatro meses disponíveis para esse cruzamento.")
+else:
+    producao_ano["Ano"] = pd.to_numeric(
+        producao_ano["Ano"], errors="coerce"
+    ).astype(int)
+    ano_cols = sorted(producao_ano["Ano"].unique().tolist())
+    pivot_producao = (
+        producao_ano.pivot_table(
+            index="Município", columns="Ano",
+            values="Exames", aggfunc="sum"
+        ).reindex(columns=ano_cols)
+    )
+    pivot_producao.index.name = "Município"
+    pivot_producao = pivot_producao.sort_index(
+        key=lambda idx: idx.str.casefold()
+    )
+    with st.expander("ℹ️ Como interpretar o volume por município × ano", expanded=False):
+        st.markdown(
+            "Cada barra agrupa os exames registrados **de setembro a dezembro "
+            "do mesmo ano** no município. Competências ausentes não são "
+            "substituídas por zero: anos incompletos são omitidos dessa "
+            "comparação. Trata-se do total da rotina mensal, não do volume "
+            "exclusivo ou do efeito da campanha."
+        )
+    fig_volume = px.bar(
+        producao_ano.assign(Ano=producao_ano["Ano"].astype(str)),
+        x="Município", y="Exames", color="Ano",
+        barmode="group",
+        category_orders={"Município": pivot_producao.index.tolist(),
+                         "Ano": [str(a) for a in ano_cols]},
+        labels={"Exames": "Exames registrados (set–dez)"},
+    )
+    fig_volume.update_xaxes(tickangle=-55, automargin=True)
+    fig_volume.update_traces(
+        hovertemplate="Município: %{x}<br>Exames: %{y:,.0f}"
+        "<extra>Ano %{fullData.name}</extra>"
+    )
+    fig_volume.update_layout(margin=dict(l=75, r=130, t=40, b=170))
+    download_plot(
+        fig_volume, "outubro_rosa_volume_set_dez_municipio_ano.png",
+        altura=570, largura=1800
+    )
+    with st.expander("Tabela dinâmica — município × ano", expanded=False):
+        display_table(pivot_producao.reset_index())
+    st.download_button(
+        "⬇️ Exportar volume por município e ano",
+        pivot_producao.reset_index().to_csv(
+            index=False, sep=";", decimal=","
+        ).encode("utf-8-sig"),
+        file_name="siscan_set_dez_municipio_ano.csv",
+        mime="text/csv", key="outubro_rosa_volume_municipio_ano_csv",
+    )
+
+section("06", "Perfil etário geral — contexto anual (Q3)")
+st.markdown(
+    "O cruzamento **município × grupo etário** e a evolução da participação "
+    "de **25–64 anos** são calculados com a Gold **Q3 anual geral**. "
+    "**Não** representam o perfil etário exclusivo de setembro–dezembro "
+    "ou da campanha Outubro Rosa."
+)
+perfil = gold_nova_ou_vazia("perfil_etario_geral_anual")
+if not perfil.empty and {
+    "municipio", "ano", "grupo_etario_diretriz", "quantidade_exames"
+}.issubset(perfil.columns):
+    perfil = perfil[[
+        "municipio", "ano", "grupo_etario_diretriz", "quantidade_exames"
+    ]].copy()
+else:
+    # Fonte anual geral Q3 já publicada na Gold.
+    perfil = filtered("etaria")
+    if not perfil.empty and {
+        "municipio", "ano", "grupo_etario_diretriz", "quantidade_exames"
+    }.issubset(perfil.columns):
+        perfil = perfil[[
+            "municipio", "ano", "grupo_etario_diretriz", "quantidade_exames"
+        ]].copy()
+    else:
+        perfil = pd.DataFrame()
+if perfil.empty:
+    st.info("Perfil etário geral indisponível no recorte.")
+else:
+    perfil["quantidade_exames"] = pd.to_numeric(
+        perfil["quantidade_exames"], errors="coerce"
+    )
+    perfil["ano"] = pd.to_numeric(perfil["ano"], errors="coerce")
+    perfil["Grupo"] = perfil["grupo_etario_diretriz"].map({
+        "<25 anos (Sobrerrastreamento)": "<25 anos",
+        "25 a 64 anos (População-Alvo)": "25–64 anos",
+        "65 anos ou mais (Sub-rastreamento)": "≥65 anos",
+    })
+    perfil = perfil.dropna(
+        subset=["municipio", "ano", "Grupo", "quantidade_exames"]
+    )
+    perfil["ano"] = perfil["ano"].astype(int)
+    ordem_grupos = ["<25 anos", "25–64 anos", "≥65 anos"]
+    cores_grupos = {
+        "<25 anos": "#169B62", "25–64 anos": "#1757A6",
+        "≥65 anos": "#E85D2A",
+    }
+    if perfil.empty:
+        st.info("Não há grupos etários classificáveis na fonte Q3.")
+    else:
+        st.markdown("### Município × grupo etário")
+        perfil_mun = (
+            perfil.groupby(["municipio", "Grupo"], as_index=False)[
+                "quantidade_exames"
+            ].sum(min_count=1)
+        )
+        total_mun = perfil_mun.groupby("municipio")[
+            "quantidade_exames"
+        ].transform("sum")
+        perfil_mun["Participação (%)"] = (
+            perfil_mun["quantidade_exames"] /
+            total_mun.where(total_mun > 0) * 100
+        )
+        fig_etario_mun = px.bar(
+            perfil_mun, x="municipio", y="Participação (%)",
+            color="Grupo", barmode="stack",
+            color_discrete_map=cores_grupos,
+            category_orders={"Grupo": ordem_grupos},
+            custom_data=["quantidade_exames"],
+            labels={"municipio": "Município"},
+        )
+        fig_etario_mun.update_traces(
+            hovertemplate="%{x}<br>Exames: %{customdata[0]:,.0f}"
+            "<br>Participação: %{y:.2f}%"
+            "<extra>%{fullData.name}</extra>"
+        )
+        fig_etario_mun.update_xaxes(tickangle=-55, automargin=True)
+        fig_etario_mun.update_yaxes(range=[0, 100], ticksuffix="%")
+        fig_etario_mun.update_layout(margin=dict(l=70, r=125, t=40, b=170))
+        download_plot(
+            fig_etario_mun, "outubro_rosa_contexto_q3_municipio_grupo.png",
+            altura=585, largura=1700,
+        )
+
+        st.markdown("### Evolução anual da participação de 25–64 anos")
+        por_ano_etario = (
+            perfil.groupby(["ano", "Grupo"], as_index=False)[
+                "quantidade_exames"
+            ].sum(min_count=1)
+        )
+        total_ano_etario = (
+            por_ano_etario.groupby("ano")["quantidade_exames"].sum()
+        )
+        alvo_ano = por_ano_etario.loc[
+            por_ano_etario["Grupo"] == "25–64 anos"
+        ].copy()
+        alvo_ano["Participação (%)"] = (
+            alvo_ano["quantidade_exames"] /
+            alvo_ano["ano"].map(total_ano_etario).where(
+                alvo_ano["ano"].map(total_ano_etario) > 0
+            ) * 100
+        )
+        alvo_ano["Ano"] = alvo_ano["ano"].astype(str)
+        with st.expander("ℹ️ Como interpretar a evolução do percentual-alvo", expanded=False):
+            st.markdown(
+                "O percentual anual é a **razão entre a soma dos exames "
+                "de 25–64 anos e a soma de todos os exames com idade "
+                "classificável no mesmo ano**. Não é média dos percentuais "
+                "dos municípios. Esta tendência corresponde à Q3 anual "
+                "geral: **não permite concluir se a campanha Outubro Rosa "
+                "ficou mais focada na população-alvo**."
+            )
+        fig_alvo = px.line(
+            alvo_ano.sort_values("ano"), x="Ano",
+            y="Participação (%)", markers=True,
+            color_discrete_sequence=["#1757A6"],
+            custom_data=["quantidade_exames"],
+        )
+        fig_alvo.update_traces(
+            hovertemplate="Ano: %{x}<br>25–64 anos: %{customdata[0]:,.0f}"
+            "<br>Participação: %{y:.2f}%<extra></extra>"
+        )
+        fig_alvo.update_yaxes(ticksuffix="%", tickformat=".2f")
+        download_plot(
+            fig_alvo, "outubro_rosa_contexto_q3_alvo_por_ano.png",
+            altura=420, largura=1500,
+        )
+        alvo_tabela = alvo_ano[[
+            "ano", "quantidade_exames", "Participação (%)"
+        ]].rename(columns={
+            "ano": "Ano",
+            "quantidade_exames": "Exames de 25–64 anos",
+        })
+        with st.expander("Detalhamento anual do grupo 25–64 anos", expanded=False):
+            display_table(
+                alvo_tabela,
+                integer_columns=["Ano", "Exames de 25–64 anos"]
+            )
+
+section("07", "Dados mensais detalhados")
 st.markdown(
     "Tabela consolidada por **município × ano × mês**, "
     "com a quantidade registrada em cada competência."
