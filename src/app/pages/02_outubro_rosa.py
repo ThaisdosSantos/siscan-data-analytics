@@ -63,13 +63,13 @@ def section(index, title):
 
 
 
-def download_plot(fig, nome, altura=450, largura=1400):
+def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45):
     """Gráfico interativo e cópia independente para exportação PNG."""
     fig.update_layout(
         template="plotly_white", height=altura,
         paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
         font=dict(family="Arial", color=NAVY, size=13),
-        margin=dict(l=75, r=145, t=45, b=70),
+        margin=dict(l=75, r=145, t=margem_superior, b=70),
         legend_title_text="",
     )
     fig.update_yaxes(gridcolor="#E4EBF1", rangemode="tozero")
@@ -79,7 +79,7 @@ def download_plot(fig, nome, altura=450, largura=1400):
         height=max(altura + 100, 650),
         title=dict(text=nome.replace("_", " ").replace(".png", "").title(),
                    x=0.5, font=dict(size=22, color=NAVY)),
-        margin=dict(l=110, r=210, t=105, b=100),
+        margin=dict(l=110, r=210, t=max(105, margem_superior + 35), b=100),
     )
     chart_with_right_click_download(
         fig, filename=nome, height=altura,
@@ -622,6 +622,7 @@ elif not ipf_or.empty:
                 fig_ipf,
                 "outubro_rosa_estimativa_ipf_municipio_mes.png",
                 altura=altura_ipf_or, largura=largura_ipf_or,
+                margem_superior=125,
             )
             tabela_ipf_or = ipf_or[[
                 "municipio", "ano", "mes_num",
