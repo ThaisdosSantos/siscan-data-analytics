@@ -359,26 +359,29 @@ else:
             "necessárias para o gráfico."
         )
 
-section("03", "Estimativa mensal por município (IPF)")
+section("03", "Estimativa mensal regional (IPF)")
 st.markdown(
-    "Estimativa da **quantidade de exames por município e mês**, "
-    "de setembro a dezembro dos anos selecionados. "
-    "O cruzamento é reconstruído por IPF a partir de totais marginais do SISCAN."
+    "Estimativa da **quantidade de exames por mês**, de setembro a "
+    "dezembro dos anos selecionados, para os **11 municípios juntos** "
+    "(leitura regional). O cruzamento é reconstruído por IPF a partir "
+    "de totais marginais do SISCAN."
 )
 with st.expander("ℹ️ Como interpretar a estimativa IPF", expanded=False):
     st.markdown(
-        "**Cada ponto ou barra representa uma estimativa**, não a contagem "
-        "mensal observada daquele município. O IPF distribui os totais "
+        "**Cada barra representa uma estimativa regional**, não a contagem "
+        "mensal observada de um município. O IPF distribui os totais "
         "mensais regionais entre os municípios segundo seus perfis etários "
-        "consolidados. **Os filtros de anos e municípios são aplicados**, "
-        "mas a distribuição pressupõe um padrão sazonal semelhante entre "
-        "os municípios. O arredondamento pode gerar pequenas diferenças "
-        "em relação aos totais mensais regionais."
+        "consolidados, **pressupondo um padrão sazonal semelhante entre "
+        "eles** — por isso a leitura mensal individual por município foi "
+        "removida por design (pode divergir fortemente do mês observado). "
+        "O arredondamento pode gerar pequenas diferenças em relação aos "
+        "totais mensais regionais."
     )
 st.warning(
-    "**Estimativa estatística (IPF) — não são exames municipais mensais "
-    "observados no SISCAN.** Não utilize o gráfico para afirmar o número "
-    "exato de exames realizado em cada município ou o efeito da campanha.",
+    "**Estimativa estatística (IPF) — leitura regional, não são exames "
+    "mensais observados de municípios individuais.** Não utilize o "
+    "gráfico para afirmar o número exato de exames realizado em cada "
+    "município ou o efeito da campanha.",
     icon="⚠️",
 )
 try:
@@ -421,15 +424,29 @@ elif not ipf_or.empty:
             "estimativa. Revise a Gold antes de exibir o gráfico."
         )
     else:
+        # Leitura regional fixa: quando um subconjunto de municípios está
+        # selecionado, a seção não é exibida (mesmo padrão da seção 02) —
+        # estimativas mensais de municípios individuais não são observadas.
+        leitura_regional_ipf_or = (
+            set(municipios_ipf_or) == set(data_loader.MUNICIPIOS.values())
+        )
         ipf_or = ipf_or.loc[
-            ipf_or["municipio"].isin(municipios_ipf_or)
-            & ipf_or["ano"].isin(data_loader.selected_years())
+            ipf_or["ano"].isin(data_loader.selected_years())
             & ipf_or["mes_num"].isin([9, 10, 11, 12])
         ].dropna(
             subset=["municipio", "ano", "mes_num",
                     "quantidade_exames_estimada"]
         ).copy()
-        if ipf_or.empty:
+        if not leitura_regional_ipf_or:
+            st.info(
+                "A estimativa IPF está disponível apenas para os "
+                "**11 municípios juntos** (leitura regional). A "
+                "sazonalidade usada na reconstrução é a regional: o mês "
+                "individual de um município é estimado, não observado. "
+                "Selecione todos os municípios no filtro lateral para "
+                "visualizar o gráfico."
+            )
+        elif ipf_or.empty:
             st.info(
                 "Sem estimativas IPF para os anos e municípios selecionados."
             )
@@ -451,192 +468,92 @@ elif not ipf_or.empty:
                 if f"{mes}/{ano}" in set(ipf_or["Mês / ano"])
             ]
             st.caption(
-                f"Recorte IPF: {ipf_or['municipio'].nunique()} município(s) "
-                f"e {len(ordem_comp_ipf)} competência(s) selecionada(s)."
+                f"Leitura regional (11 municípios) · "
+                f"{len(ordem_comp_ipf)} competência(s) nos anos selecionados."
             )
-            tipo_ipf_or = st.radio(
-                "Visualização",
-                ["Total dos municípios selecionados", "Por município"],
-                key="outubro_rosa_ipf_visualizacao",
-                horizontal=True,
-            )
-            if tipo_ipf_or == "Por município":
-                with st.container(key="outubro_ipf_sort_panel"):
-                    ordenar_ipf = st.selectbox(
-                        "Ordenar por", ["A–Z", "Maior para menor"],
-                        key="outubro_rosa_ipf_ordenacao",
-                        help="Maior para menor considera a soma estimada "
-                             "nas competências selecionadas.",
-                    )
-                totais_mun_ipf = ipf_or.groupby(
-                    "municipio"
+            # Visão regional fixa (11 municípios juntos): a leitura mensal
+            # individual por município foi removida por design — o IPF
+            # impõe a sazonalidade regional e o mês de um município
+            # específico é estimado, não observado.
+            # Em vez de 24 rótulos diagonais, agrupa os quatro meses
+            # lado a lado dentro de cada ano selecionado.
+            regiao_ipf = (
+                ipf_or.groupby(
+                    ["ano", "mes_num"], as_index=False
                 )["quantidade_exames_estimada"].sum()
-                municipios_ord_ipf = sorted(
-                    totais_mun_ipf.index.tolist(), key=str.casefold
-                )
-                if ordenar_ipf == "Maior para menor":
-                    municipios_ord_ipf.sort(
-                        key=lambda nome: (
-                            -float(totais_mun_ipf.loc[nome]),
-                            nome.casefold(),
-                        )
-                    )
-                # Quatro séries mensais por município; eixo X compacto (anos),
-                # evitando 24 rótulos de competência por painel.
-                ipf_linhas = ipf_or.copy()
-                ipf_linhas["Ano (rótulo)"] = (
-                    ipf_linhas["ano"].astype(int).astype(str)
-                )
-                ipf_linhas["Mês"] = ipf_linhas["mes_num"].astype(int).map(MESES)
-                anos_eixo_ipf = [
-                    str(ano) for ano in sorted(ipf_linhas["ano"].unique())
-                ]
-                fig_ipf = px.line(
-                    ipf_linhas.sort_values(["ano", "mes_num"]),
-                    x="Ano (rótulo)", y="quantidade_exames_estimada",
-                    color="Mês", facet_col="municipio", facet_col_wrap=2,
-                    markers=True,
-                    category_orders={
-                        "municipio": municipios_ord_ipf,
-                        "Ano (rótulo)": anos_eixo_ipf,
-                        "Mês": ORDEM_MESES,
-                    },
-                    color_discrete_map=CORES_MESES,
-                    custom_data=["Mês"],
-                    labels={
-                        "Ano (rótulo)": "Ano",
-                        "quantidade_exames_estimada": "Exames estimados (IPF)",
-                    },
-                    facet_col_spacing=0.08,
-                    facet_row_spacing=0.11,
-                )
-                fig_ipf.for_each_annotation(
-                    lambda anotacao: anotacao.update(
-                        text=anotacao.text.split("=", 1)[-1],
-                        font=dict(size=14, color=NAVY),
-                    )
-                )
-                fig_ipf.update_traces(
-                    line=dict(width=2.5),
-                    marker=dict(size=8),
-                    connectgaps=False,
-                    hovertemplate=(
-                        "Ano: %{x}<br>Mês: %{customdata[0]}"
-                        "<br>Estimativa IPF: %{y:,.0f} exames"
-                        "<extra></extra>"
-                    ),
-                )
-                fig_ipf.update_yaxes(
-                    matches=None, rangemode="tozero",
-                    tickformat=",d", title_text=None,
-                    gridcolor="#E4EBF1",
-                )
-                fig_ipf.update_xaxes(
-                    matches=None, showticklabels=True,
-                    type="category", categoryorder="array",
-                    categoryarray=anos_eixo_ipf,
-                    tickangle=0, title_text=None,
-                    gridcolor="#EEF2F7",
-                )
-                fig_ipf.update_layout(
-                    legend=dict(
-                        title_text="Mês",
-                        orientation="h",
-                        x=0, y=1.035, yanchor="bottom",
-                    ),
-                    margin=dict(l=80, r=35, t=125, b=75),
-                )
-                altura_ipf_or = max(
-                    500, 360 * ((len(municipios_ord_ipf) + 1) // 2) + 130
-                )
-                largura_ipf_or = 1600
-                st.caption(
-                    "**Leitura:** cada linha corresponde a um mês "
-                    "(setembro a dezembro) ao longo dos anos selecionados; "
-                    "cada painel representa um município. "
-                    "As escalas verticais são independentes."
-                )
-            else:
-                # Em vez de 24 rótulos diagonais, agrupa os quatro meses
-                # lado a lado dentro de cada ano selecionado.
-                regiao_ipf = (
-                    ipf_or.groupby(
-                        ["ano", "mes_num"], as_index=False
-                    )["quantidade_exames_estimada"].sum()
-                    .sort_values(["ano", "mes_num"])
-                )
-                regiao_ipf["Ano (rótulo)"] = (
-                    regiao_ipf["ano"].astype(int).astype(str)
-                )
-                regiao_ipf["Mês"] = (
-                    regiao_ipf["mes_num"].astype(int).map(MESES)
-                )
-                anos_eixo_ipf = [
-                    str(ano) for ano in sorted(regiao_ipf["ano"].unique())
-                ]
-                fig_ipf = px.bar(
-                    regiao_ipf,
-                    x="Ano (rótulo)", y="quantidade_exames_estimada",
-                    color="Mês", barmode="group",
-                    category_orders={
-                        "Ano (rótulo)": anos_eixo_ipf,
-                        "Mês": ORDEM_MESES,
-                    },
-                    color_discrete_map=CORES_MESES,
-                    custom_data=["Mês"],
-                    labels={
-                        "Ano (rótulo)": "Ano",
-                        "quantidade_exames_estimada": "Exames estimados (IPF)",
-                    },
-                )
-                fig_ipf.update_traces(
-                    hovertemplate=(
-                        "Ano: %{x}<br>Mês: %{customdata[0]}"
-                        "<br>Estimativa IPF: %{y:,.0f} exames"
-                        "<extra></extra>"
-                    ),
-                )
-                fig_ipf.update_xaxes(
-                    categoryorder="array", categoryarray=anos_eixo_ipf,
-                    tickangle=0, title_text="Ano",
-                )
-                fig_ipf.update_yaxes(rangemode="tozero", tickformat=",d")
-                fig_ipf.update_layout(
-                    bargap=0.25,
-                    bargroupgap=0.06,
-                    legend=dict(
-                        title_text="Mês",
-                        orientation="h",
-                        x=0, y=1.04, yanchor="bottom",
-                    ),
-                    margin=dict(l=80, r=40, t=105, b=65),
-                )
-                altura_ipf_or = 530
-                largura_ipf_or = 1500
-                st.caption(
-                    "**Leitura:** cada conjunto de quatro barras representa "
-                    "um ano. As cores distinguem setembro, outubro, "
-                    "novembro e dezembro."
-                )
+                .sort_values(["ano", "mes_num"])
+            )
+            regiao_ipf["Ano (rótulo)"] = (
+                regiao_ipf["ano"].astype(int).astype(str)
+            )
+            regiao_ipf["Mês"] = (
+                regiao_ipf["mes_num"].astype(int).map(MESES)
+            )
+            anos_eixo_ipf = [
+                str(ano) for ano in sorted(regiao_ipf["ano"].unique())
+            ]
+            fig_ipf = px.bar(
+                regiao_ipf,
+                x="Ano (rótulo)", y="quantidade_exames_estimada",
+                color="Mês", barmode="group",
+                category_orders={
+                    "Ano (rótulo)": anos_eixo_ipf,
+                    "Mês": ORDEM_MESES,
+                },
+                color_discrete_map=CORES_MESES,
+                custom_data=["Mês"],
+                labels={
+                    "Ano (rótulo)": "Ano",
+                    "quantidade_exames_estimada": "Exames estimados (IPF)",
+                },
+            )
+            fig_ipf.update_traces(
+                hovertemplate=(
+                    "Ano: %{x}<br>Mês: %{customdata[0]}"
+                    "<br>Estimativa IPF: %{y:,.0f} exames"
+                    "<extra></extra>"
+                ),
+            )
+            fig_ipf.update_xaxes(
+                categoryorder="array", categoryarray=anos_eixo_ipf,
+                tickangle=0, title_text="Ano",
+            )
+            fig_ipf.update_yaxes(rangemode="tozero", tickformat=",d")
+            fig_ipf.update_layout(
+                bargap=0.25,
+                bargroupgap=0.06,
+                legend=dict(
+                    title_text="Mês",
+                    orientation="h",
+                    x=0, y=1.04, yanchor="bottom",
+                ),
+                margin=dict(l=80, r=40, t=105, b=65),
+            )
+            altura_ipf_or = 530
+            largura_ipf_or = 1500
+            st.caption(
+                "**Leitura:** cada conjunto de quatro barras representa "
+                "um ano. As cores distinguem setembro, outubro, "
+                "novembro e dezembro."
+            )
             download_plot(
                 fig_ipf,
                 "outubro_rosa_estimativa_ipf_municipio_mes.png",
                 altura=altura_ipf_or, largura=largura_ipf_or,
                 margem_superior=125,
             )
-            tabela_ipf_or = ipf_or[[
-                "municipio", "ano", "mes_num",
-                "quantidade_exames_estimada"
-            ]].sort_values(["municipio", "ano", "mes_num"]).rename(
-                columns={
-                    "municipio": "Município",
+            tabela_ipf_or = (
+                ipf_or.groupby(["ano", "mes_num"], as_index=False)
+                ["quantidade_exames_estimada"].sum()
+                .sort_values(["ano", "mes_num"])
+                .rename(columns={
                     "ano": "Ano",
                     "mes_num": "Mês",
                     "quantidade_exames_estimada": "Exames estimados (IPF)",
-                }
+                })
             )
             with st.expander(
-                "Ver tabela de estimativas por município e mês",
+                "Ver tabela de estimativas regionais por mês",
                 expanded=False,
             ):
                 display_table(
@@ -644,18 +561,19 @@ elif not ipf_or.empty:
                     integer_columns=["Ano", "Mês", "Exames estimados (IPF)"],
                 )
             st.download_button(
-                "⬇️ Exportar estimativas IPF (CSV)",
+                "⬇️ Exportar estimativas IPF regionais (CSV)",
                 tabela_ipf_or.to_csv(
                     index=False, sep=";", encoding="utf-8-sig",
                 ).encode("utf-8-sig"),
-                file_name="outubro_rosa_estimativas_ipf_municipio_mes.csv",
+                file_name="outubro_rosa_estimativas_ipf_regional.csv",
                 mime="text/csv",
                 key="outubro_rosa_ipf_export_csv",
             )
             st.caption(
                 "Fonte: Gold fato_outubro_rosa_estimativa_ipf_municipio_mes. "
                 "IPF com margens por município × idade e competência × idade. "
-                "Valores modelados; não equivalem à produção mensal observada."
+                "Valores modelados; leitura regional — não equivalem à "
+                "produção mensal observada de municípios individuais."
             )
 
 section("04", "Comparação anual: setembro × outubro")
