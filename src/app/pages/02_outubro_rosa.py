@@ -656,9 +656,10 @@ if anos_ativos_q02 != anos_totais_q02:
     )
 else:
     try:
-        perfil_or = data_loader.load_table(
-            "outubro_grupo_etario", data_loader.selected_source()
-        )
+        # Usa o mesmo filtro municipal aplicado às demais páginas.
+        # A tabela consolidada não possui ano, então a restrição de anos
+        # completos permanece acima, sem modificar os percentuais.
+        perfil_or = filtered("outubro_grupo_etario")
     except ValueError as exc:
         # Deploy do Streamlit pode servir temporariamente uma versão antiga
         # do carregador, sem o alias novo em TABLES.
@@ -691,12 +692,7 @@ else:
             "esperadas: município, grupo_etario e quantidade_exames."
         )
     else:
-        cidades_or = st.session_state.get(
-            "city_preference", list(data_loader.MUNICIPIOS.values())
-        )
-        perfil_or = perfil_or.loc[
-            perfil_or["municipio"].isin(cidades_or)
-        ].copy()
+        # filtered() já aplica city_preference (filtros confirmados).
         # A Gold consolidada utiliza chaves de grupo próprias, sem mês/ano.
         nome_grupo_or = {
             "<25 anos": "<25 anos",
@@ -722,6 +718,11 @@ else:
                 "`fato_outubro_rosa_grupo_etario`."
             )
         else:
+            st.caption(
+                f"Municípios no gráfico: {perfil_or['municipio'].nunique()} "
+                "selecionado(s). Para alterar, marque os municípios na "
+                "barra lateral e clique em **Aplicar filtros**."
+            )
             total_por_municipio_or = perfil_or.groupby("municipio")[
                 "quantidade_exames"
             ].transform("sum")
