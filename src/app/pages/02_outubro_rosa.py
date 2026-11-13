@@ -361,9 +361,9 @@ else:
 
 section("03", "Estimativa mensal por município (IPF)")
 st.markdown(
-    "Compara a **estimativa IPF** com os **exames registrados no SISCAN** "
-    "para os municípios e anos selecionados. Também permite explorar "
-    "a evolução das estimativas por município."
+    "Estimativa da **quantidade de exames por município e mês**, "
+    "de setembro a dezembro dos anos selecionados. "
+    "O cruzamento é reconstruído por IPF a partir de totais marginais do SISCAN."
 )
 with st.expander("ℹ️ Como interpretar a estimativa IPF", expanded=False):
     st.markdown(
@@ -372,10 +372,8 @@ with st.expander("ℹ️ Como interpretar a estimativa IPF", expanded=False):
         "mensais regionais entre os municípios segundo seus perfis etários "
         "consolidados. **Os filtros de anos e municípios são aplicados**, "
         "mas a distribuição pressupõe um padrão sazonal semelhante entre "
-        "os municípios. **As estimativas podem divergir consideravelmente "
-        "dos registros observados de municípios específicos**, mesmo quando "
-        "o total regional é semelhante. Pequenas diferenças adicionais "
-        "podem decorrer do arredondamento."
+        "os municípios. O arredondamento pode gerar pequenas diferenças "
+        "em relação aos totais mensais regionais."
     )
 st.warning(
     "**Estimativa estatística (IPF) — não são exames municipais mensais "
@@ -458,7 +456,7 @@ elif not ipf_or.empty:
             )
             tipo_ipf_or = st.radio(
                 "Visualização",
-                ["Comparar IPF × registrado", "Por município"],
+                ["Total dos municípios selecionados", "Por município"],
                 key="outubro_rosa_ipf_visualizacao",
                 horizontal=True,
             )
@@ -559,147 +557,73 @@ elif not ipf_or.empty:
                     "As escalas verticais são independentes."
                 )
             else:
-                # Comparar modelos é mais informativo do que repetir o gráfico
-                # de produção observada usando uma fonte estimada.
-                observado_ipf = (
-                    dados.groupby(["ano", "mes"], as_index=False)["quantidade"]
-                    .sum(min_count=1)
-                    .rename(columns={
-                        "mes": "mes_num",
-                        "quantidade": "Exames observados",
-                    })
+                # Em vez de 24 rótulos diagonais, agrupa os quatro meses
+                # lado a lado dentro de cada ano selecionado.
+                regiao_ipf = (
+                    ipf_or.groupby(
+                        ["ano", "mes_num"], as_index=False
+                    )["quantidade_exames_estimada"].sum()
+                    .sort_values(["ano", "mes_num"])
                 )
-                estimado_ipf = (
-                    ipf_or.groupby(["ano", "mes_num"], as_index=False)[
-                        "quantidade_exames_estimada"
-                    ].sum(min_count=1)
-                    .rename(columns={
-                        "quantidade_exames_estimada": "Exames estimados (IPF)"
-                    })
+                regiao_ipf["Ano (rótulo)"] = (
+                    regiao_ipf["ano"].astype(int).astype(str)
                 )
-                comparacao_ipf = estimado_ipf.merge(
-                    observado_ipf, on=["ano", "mes_num"], how="inner",
-                    validate="one_to_one",
-                ).sort_values(["ano", "mes_num"])
-                if comparacao_ipf.empty:
-                    st.info(
-                        "Não há competências comuns para comparar estimativas "
-                        "IPF com registros observados no recorte selecionado."
-                    )
-                    fig_ipf = None
-                else:
-                    comparacao_ipf["Diferença (IPF − observado)"] = (
-                        comparacao_ipf["Exames estimados (IPF)"]
-                        - comparacao_ipf["Exames observados"]
-                    )
-                    comparacao_ipf["Diferença (%)"] = (
-                        comparacao_ipf["Diferença (IPF − observado)"]
-                        .div(
-                            comparacao_ipf["Exames observados"].where(
-                                comparacao_ipf["Exames observados"] > 0
-                            )
-                        ) * 100
-                    )
-                    comparacao_ipf["Ano"] = (
-                        comparacao_ipf["ano"].astype(int).astype(str)
-                    )
-                    comparacao_ipf["Mês"] = (
-                        comparacao_ipf["mes_num"].astype(int).map(MESES)
-                    )
-                    anos_eixo_ipf = sorted(
-                        comparacao_ipf["Ano"].unique().tolist()
-                    )
-                    total_obs_ipf = comparacao_ipf["Exames observados"].sum()
-                    total_est_ipf = comparacao_ipf["Exames estimados (IPF)"].sum()
-                    diferenca_total_ipf = total_est_ipf - total_obs_ipf
-                    met1, met2, met3 = st.columns(3)
-                    met1.metric(
-                        "Registrados (SISCAN)", fmt_num(total_obs_ipf)
-                    )
-                    met2.metric(
-                        "Estimados (IPF)", fmt_num(total_est_ipf)
-                    )
-                    met3.metric(
-                        "Diferença acumulada (IPF − registrado)",
-                        f"{diferenca_total_ipf:+,.0f}".replace(",", "."),
-                    )
-                    st.caption(
-                        "Comparação restrita às competências existentes nas "
-                        "duas fontes. A diferença acumulada pode ocultar "
-                        "desvios positivos e negativos em meses distintos."
-                    )
-                    fig_ipf = px.bar(
-                        comparacao_ipf,
-                        x="Ano", y="Diferença (IPF − observado)",
-                        color="Mês", barmode="group",
-                        category_orders={
-                            "Ano": anos_eixo_ipf,
-                            "Mês": ORDEM_MESES,
-                        },
-                        color_discrete_map=CORES_MESES,
-                        custom_data=[
-                            "Exames observados", "Exames estimados (IPF)",
-                            "Diferença (%)",
-                        ],
-                        labels={
-                            "Diferença (IPF − observado)":
-                                "Diferença de exames (IPF − registrado)",
-                        },
-                    )
-                    fig_ipf.update_traces(
-                        hovertemplate=(
-                            "Ano: %{x}<br>Mês: %{fullData.name}"
-                            "<br>Registrados: %{customdata[0]:,.0f}"
-                            "<br>Estimados IPF: %{customdata[1]:,.0f}"
-                            "<br>Diferença: %{y:+,.0f} exames"
-                            "<br>Desvio: %{customdata[2]:+.2f}%"
-                            "<extra></extra>"
-                        ),
-                    )
-                    fig_ipf.update_xaxes(
-                        categoryorder="array",
-                        categoryarray=anos_eixo_ipf, title_text="Ano",
-                    )
-                    fig_ipf.update_yaxes(
-                        tickformat=",d", zeroline=True,
-                        zerolinecolor=NAVY, zerolinewidth=2,
-                        title_text="Diferença de exames (IPF − registrado)",
-                    )
-                    fig_ipf.update_layout(
-                        bargap=0.25, bargroupgap=0.06,
-                        legend=dict(
-                            title_text="Mês", orientation="h",
-                            x=0, y=1.04, yanchor="bottom",
-                        ),
-                        margin=dict(l=80, r=40, t=105, b=75),
-                    )
-                    altura_ipf_or = 520
-                    largura_ipf_or = 1500
-                    st.caption(
-                        "**Leitura:** barras acima de zero indicam "
-                        "superestimação pelo IPF; abaixo de zero, "
-                        "subestimação. Os dados registrados são a "
-                        "referência para produção municipal observada."
-                    )
-                    tabela_comparacao_ipf = comparacao_ipf[[
-                        "Ano", "Mês", "Exames observados",
-                        "Exames estimados (IPF)",
-                        "Diferença (IPF − observado)", "Diferença (%)",
-                    ]]
-                    with st.expander(
-                        "Ver comparação entre estimativas e registros",
-                        expanded=False,
-                    ):
-                        display_table(tabela_comparacao_ipf)
-            if fig_ipf is not None:
-                download_plot(
-                    fig_ipf,
-                    ("outubro_rosa_ipf_por_municipio.png"
-                     if tipo_ipf_or == "Por município"
-                     else "outubro_rosa_comparacao_ipf_observado.png"),
-                    altura=altura_ipf_or, largura=largura_ipf_or,
-                    margem_superior=125,
+                regiao_ipf["Mês"] = (
+                    regiao_ipf["mes_num"].astype(int).map(MESES)
                 )
+                anos_eixo_ipf = [
+                    str(ano) for ano in sorted(regiao_ipf["ano"].unique())
+                ]
+                fig_ipf = px.bar(
+                    regiao_ipf,
+                    x="Ano (rótulo)", y="quantidade_exames_estimada",
+                    color="Mês", barmode="group",
+                    category_orders={
+                        "Ano (rótulo)": anos_eixo_ipf,
+                        "Mês": ORDEM_MESES,
+                    },
+                    color_discrete_map=CORES_MESES,
+                    custom_data=["Mês"],
+                    labels={
+                        "Ano (rótulo)": "Ano",
+                        "quantidade_exames_estimada": "Exames estimados (IPF)",
+                    },
+                )
+                fig_ipf.update_traces(
+                    hovertemplate=(
+                        "Ano: %{x}<br>Mês: %{customdata[0]}"
+                        "<br>Estimativa IPF: %{y:,.0f} exames"
+                        "<extra></extra>"
+                    ),
+                )
+                fig_ipf.update_xaxes(
+                    categoryorder="array", categoryarray=anos_eixo_ipf,
+                    tickangle=0, title_text="Ano",
+                )
+                fig_ipf.update_yaxes(rangemode="tozero", tickformat=",d")
+                fig_ipf.update_layout(
+                    bargap=0.25,
+                    bargroupgap=0.06,
+                    legend=dict(
+                        title_text="Mês",
+                        orientation="h",
+                        x=0, y=1.04, yanchor="bottom",
+                    ),
+                    margin=dict(l=80, r=40, t=105, b=65),
+                )
+                altura_ipf_or = 530
+                largura_ipf_or = 1500
+                st.caption(
+                    "**Leitura:** cada conjunto de quatro barras representa "
+                    "um ano. As cores distinguem setembro, outubro, "
+                    "novembro e dezembro."
+                )
+            download_plot(
+                fig_ipf,
+                "outubro_rosa_estimativa_ipf_municipio_mes.png",
+                altura=altura_ipf_or, largura=largura_ipf_or,
+                margem_superior=125,
+            )
             tabela_ipf_or = ipf_or[[
                 "municipio", "ano", "mes_num",
                 "quantidade_exames_estimada"
