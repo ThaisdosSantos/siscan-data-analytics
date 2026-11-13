@@ -361,9 +361,9 @@ else:
 
 section("03", "Estimativa mensal por município (IPF)")
 st.markdown(
-    "Estimativa da **quantidade de exames por município e mês**, "
-    "de setembro a dezembro dos anos selecionados. "
-    "O cruzamento é reconstruído por IPF a partir de totais marginais do SISCAN."
+    "Compara a **estimativa IPF** com os **exames registrados no SISCAN** "
+    "para os municípios e anos selecionados. Também permite explorar "
+    "a evolução das estimativas por município."
 )
 with st.expander("ℹ️ Como interpretar a estimativa IPF", expanded=False):
     st.markdown(
@@ -372,8 +372,10 @@ with st.expander("ℹ️ Como interpretar a estimativa IPF", expanded=False):
         "mensais regionais entre os municípios segundo seus perfis etários "
         "consolidados. **Os filtros de anos e municípios são aplicados**, "
         "mas a distribuição pressupõe um padrão sazonal semelhante entre "
-        "os municípios. O arredondamento pode gerar pequenas diferenças "
-        "em relação aos totais mensais regionais."
+        "os municípios. **As estimativas podem divergir consideravelmente "
+        "dos registros observados de municípios específicos**, mesmo quando "
+        "o total regional é semelhante. Pequenas diferenças adicionais "
+        "podem decorrer do arredondamento."
     )
 st.warning(
     "**Estimativa estatística (IPF) — não são exames municipais mensais "
@@ -692,7 +694,9 @@ elif not ipf_or.empty:
             if fig_ipf is not None:
                 download_plot(
                     fig_ipf,
-                    "outubro_rosa_comparacao_ipf_observado.png",
+                    ("outubro_rosa_ipf_por_municipio.png"
+                     if tipo_ipf_or == "Por município"
+                     else "outubro_rosa_comparacao_ipf_observado.png"),
                     altura=altura_ipf_or, largura=largura_ipf_or,
                     margem_superior=125,
                 )
