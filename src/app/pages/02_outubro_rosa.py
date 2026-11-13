@@ -659,16 +659,14 @@ st.markdown(
 )
 with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
     st.markdown(
-        "**Cada barra equivale a 100% dos exames com idade classificável "
-        "do município** entre setembro e dezembro de 2020–2025. "
-        "As cores representam <25, 25–64 e ≥65 anos. "
-        "**Participação (%) = exames do grupo ÷ total dos três grupos "
-        "no município × 100.** "
-        "Use as proporções para comparar a composição etária, "
-        "não o volume absoluto. A fonte Q02 é consolidada: "
-        "**não é possível separar anos ou meses**, nem identificar "
-        "exames causados pela campanha. Um exame sem idade classificada "
-        "foi excluído do denominador regional."
+        "O gráfico mostra a **distribuição percentual dos exames por faixa "
+        "etária em cada município**, considerando setembro a dezembro de "
+        "2020–2025.\n\n"
+        "Cada barra representa 100% dos exames com idade identificada, "
+        "distribuídos em três grupos: **<25, 25–64 e ≥65 anos**.\n\n"
+        "Os percentuais permitem comparar o perfil etário entre municípios. "
+        "**Os dados estão consolidados para todo o período**, sem separação "
+        "por ano ou mês."
     )
 
 anos_totais_q02 = set(range(2020, 2026))
