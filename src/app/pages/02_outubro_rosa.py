@@ -359,7 +359,226 @@ else:
             "necessárias para o gráfico."
         )
 
-section("03", "Comparação anual: setembro × outubro")
+section("03", "Estimativa mensal por município (IPF)")
+st.markdown(
+    "Estimativa da **quantidade de exames por município e mês**, "
+    "de setembro a dezembro dos anos selecionados. "
+    "O cruzamento é reconstruído por IPF a partir de totais marginais do SISCAN."
+)
+with st.expander("ℹ️ Como interpretar a estimativa IPF", expanded=False):
+    st.markdown(
+        "**Cada ponto ou barra representa uma estimativa**, não a contagem "
+        "mensal observada daquele município. O IPF distribui os totais "
+        "mensais regionais entre os municípios segundo seus perfis etários "
+        "consolidados. **Os filtros de anos e municípios são aplicados**, "
+        "mas a distribuição pressupõe um padrão sazonal semelhante entre "
+        "os municípios. O arredondamento pode gerar pequenas diferenças "
+        "em relação aos totais mensais regionais."
+    )
+st.warning(
+    "**Estimativa estatística (IPF) — não são exames municipais mensais "
+    "observados no SISCAN.** Não utilize o gráfico para afirmar o número "
+    "exato de exames realizado em cada município ou o efeito da campanha.",
+    icon="⚠️",
+)
+try:
+    ipf_or = data_loader.load_table(
+        "outubro_ipf_municipio_mes", data_loader.selected_source()
+    )
+except (ValueError, data_loader.GoldConsultaIndisponivel):
+    ipf_or = pd.DataFrame()
+    st.info(
+        "A tabela Gold de estimativas IPF ainda não está acessível neste "
+        "ambiente. Confirme a conexão e o carregamento do novo commit."
+    )
+
+campos_ipf_or = {
+    "municipio", "ano", "mes_num", "quantidade_exames_estimada",
+    "fl_estimativa",
+}
+if not ipf_or.empty and not campos_ipf_or.issubset(ipf_or.columns):
+    st.error(
+        "A tabela IPF não possui as colunas esperadas: município, ano, "
+        "mes_num, quantidade_exames_estimada e fl_estimativa."
+    )
+elif not ipf_or.empty:
+    ipf_or = ipf_or.copy()
+    municipios_ipf_or = st.session_state.get(
+        "city_preference", list(data_loader.MUNICIPIOS.values())
+    )
+    ipf_or["ano"] = pd.to_numeric(ipf_or["ano"], errors="coerce")
+    ipf_or["mes_num"] = pd.to_numeric(ipf_or["mes_num"], errors="coerce")
+    ipf_or["quantidade_exames_estimada"] = pd.to_numeric(
+        ipf_or["quantidade_exames_estimada"], errors="coerce"
+    )
+    # O contrato da Gold estabelece fl_estimativa=True em todas as linhas.
+    flags_estimativa_or = (
+        ipf_or["fl_estimativa"].astype(str).str.lower().isin(["true", "1"])
+    )
+    if not flags_estimativa_or.all():
+        st.error(
+            "A origem IPF apresenta registros sem identificação de "
+            "estimativa. Revise a Gold antes de exibir o gráfico."
+        )
+    else:
+        ipf_or = ipf_or.loc[
+            ipf_or["municipio"].isin(municipios_ipf_or)
+            & ipf_or["ano"].isin(data_loader.selected_years())
+            & ipf_or["mes_num"].isin([9, 10, 11, 12])
+        ].dropna(
+            subset=["municipio", "ano", "mes_num",
+                    "quantidade_exames_estimada"]
+        ).copy()
+        if ipf_or.empty:
+            st.info(
+                "Sem estimativas IPF para os anos e municípios selecionados."
+            )
+        elif ipf_or.duplicated(["municipio", "ano", "mes_num"]).any():
+            st.error(
+                "Foram encontradas competências municipais duplicadas na "
+                "tabela IPF. Verifique a chave município × ano × mês."
+            )
+        else:
+            ipf_or["Mês / ano"] = (
+                ipf_or["mes_num"].astype(int).map({
+                    9: "Set", 10: "Out", 11: "Nov", 12: "Dez"
+                }) + "/" + ipf_or["ano"].astype(int).astype(str)
+            )
+            ordem_comp_ipf = [
+                f"{mes}/{ano}"
+                for ano in sorted(ipf_or["ano"].unique())
+                for mes in ["Set", "Out", "Nov", "Dez"]
+                if f"{mes}/{ano}" in set(ipf_or["Mês / ano"])
+            ]
+            st.caption(
+                f"Recorte IPF: {ipf_or['municipio'].nunique()} município(s) "
+                f"e {len(ordem_comp_ipf)} competência(s) selecionada(s)."
+            )
+            tipo_ipf_or = st.radio(
+                "Visualização",
+                ["Total dos municípios selecionados", "Por município"],
+                key="outubro_rosa_ipf_visualizacao",
+                horizontal=True,
+            )
+            if tipo_ipf_or == "Por município":
+                with st.container(key="outubro_ipf_sort_panel"):
+                    ordenar_ipf = st.selectbox(
+                        "Ordenar por", ["A–Z", "Maior para menor"],
+                        key="outubro_rosa_ipf_ordenacao",
+                        help="Maior para menor considera a soma estimada "
+                             "nas competências selecionadas.",
+                    )
+                totais_mun_ipf = ipf_or.groupby(
+                    "municipio"
+                )["quantidade_exames_estimada"].sum()
+                municipios_ord_ipf = sorted(
+                    totais_mun_ipf.index.tolist(), key=str.casefold
+                )
+                if ordenar_ipf == "Maior para menor":
+                    municipios_ord_ipf.sort(
+                        key=lambda nome: (
+                            -float(totais_mun_ipf.loc[nome]),
+                            nome.casefold(),
+                        )
+                    )
+                fig_ipf = px.line(
+                    ipf_or.sort_values(["ano", "mes_num"]),
+                    x="Mês / ano", y="quantidade_exames_estimada",
+                    facet_col="municipio", facet_col_wrap=2,
+                    category_orders={
+                        "municipio": municipios_ord_ipf,
+                        "Mês / ano": ordem_comp_ipf,
+                    },
+                    markers=True,
+                    color_discrete_sequence=["#006C9A"],
+                    labels={
+                        "quantidade_exames_estimada": "Exames estimados (IPF)",
+                    },
+                )
+                fig_ipf.for_each_annotation(
+                    lambda a: a.update(
+                        text=a.text.split("=", 1)[-1],
+                        font=dict(size=13, color=NAVY),
+                    )
+                )
+                fig_ipf.update_yaxes(
+                    matches=None, rangemode="tozero",
+                    tickformat=",d", title_text=None,
+                )
+                fig_ipf.update_xaxes(
+                    matches=None, showticklabels=True,
+                    categoryorder="array", categoryarray=ordem_comp_ipf,
+                    tickangle=-45, title_text=None,
+                )
+                altura_ipf_or = max(
+                    540, 310 * ((len(municipios_ord_ipf) + 1) // 2)
+                )
+            else:
+                regiao_ipf = (
+                    ipf_or.groupby(
+                        ["ano", "mes_num", "Mês / ano"], as_index=False
+                    )["quantidade_exames_estimada"].sum()
+                    .sort_values(["ano", "mes_num"])
+                )
+                fig_ipf = px.bar(
+                    regiao_ipf,
+                    x="Mês / ano", y="quantidade_exames_estimada",
+                    category_orders={"Mês / ano": ordem_comp_ipf},
+                    color_discrete_sequence=["#006C9A"],
+                    labels={
+                        "quantidade_exames_estimada": "Exames estimados (IPF)",
+                    },
+                )
+                fig_ipf.update_xaxes(
+                    categoryorder="array", categoryarray=ordem_comp_ipf,
+                    tickangle=-45,
+                )
+                altura_ipf_or = 480
+            fig_ipf.update_traces(
+                hovertemplate="%{x}<br>Estimativa IPF: "
+                "%{y:,.0f} exames<extra></extra>"
+            )
+            download_plot(
+                fig_ipf,
+                "outubro_rosa_estimativa_ipf_municipio_mes.png",
+                altura=altura_ipf_or,
+                largura=max(1500, len(ordem_comp_ipf) * 95),
+            )
+            tabela_ipf_or = ipf_or[[
+                "municipio", "ano", "mes_num",
+                "quantidade_exames_estimada"
+            ]].sort_values(["municipio", "ano", "mes_num"]).rename(
+                columns={
+                    "municipio": "Município",
+                    "ano": "Ano",
+                    "mes_num": "Mês",
+                    "quantidade_exames_estimada": "Exames estimados (IPF)",
+                }
+            )
+            with st.expander(
+                "Ver tabela de estimativas por município e mês",
+                expanded=False,
+            ):
+                display_table(
+                    tabela_ipf_or,
+                    integer_columns=["Ano", "Mês", "Exames estimados (IPF)"],
+                )
+            st.download_button(
+                "⬇️ Exportar estimativas IPF (CSV)",
+                tabela_ipf_or.to_csv(
+                    index=False, sep=";", encoding="utf-8-sig",
+                ).encode("utf-8-sig"),
+                file_name="outubro_rosa_estimativas_ipf_municipio_mes.csv",
+                mime="text/csv",
+                key="outubro_rosa_ipf_export_csv",
+            )
+            st.caption(
+                "Fonte: Gold fato_outubro_rosa_estimativa_ipf_municipio_mes. "
+                "IPF com margens por município × idade e competência × idade. "
+                "Valores modelados; não equivalem à produção mensal observada."
+            )
+
+section("04", "Comparação anual: setembro × outubro")
 st.markdown(
     "Evolução da **variação percentual de setembro para outubro** em cada ano, "
     "sem misturar os totais de anos distintos."
@@ -409,7 +628,7 @@ else:
     fig_ano.update_layout(showlegend=False)
     download_plot(fig_ano, "outubro_rosa_variacao_anual_setembro_outubro.png", altura=420)
 
-section("04", "Variação acumulada de setembro para outubro por município (%)")
+section("05", "Variação acumulada de setembro para outubro por município (%)")
 st.markdown(
     "Variação percentual entre os totais acumulados de setembro e outubro "
     "nos anos selecionados, por município."
@@ -563,7 +782,7 @@ if not menos_anos.empty:
         "setembro ou outubro. Confira a quantidade de anos no tooltip."
     )
 
-section("05", "Matriz de produção: município × mês")
+section("06", "Matriz de produção: município × mês")
 st.markdown(
     "Visualize a quantidade de exames em cada município nos meses de "
     "setembro a dezembro, somando apenas os anos selecionados."
@@ -627,7 +846,7 @@ else:
         altura=max(490, 37 * len(matriz) + 120), largura=1550,
     )
 
-section("06", "Perfil etário dos exames: município × grupo etário")
+section("07", "Perfil etário dos exames: município × grupo etário")
 st.markdown(
     "Distribuição percentual dos exames registrados entre **setembro e dezembro "
     "de 2020–2025**, por município e grupo etário. "
@@ -815,7 +1034,7 @@ else:
                 "registrado em Quaraí."
             )
 
-section("07", "Dados mensais detalhados")
+section("08", "Dados mensais detalhados")
 st.markdown(
     "Tabela consolidada por **município × ano × mês**, "
     "com a quantidade registrada em cada competência."
