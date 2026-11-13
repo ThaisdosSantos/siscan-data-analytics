@@ -685,18 +685,31 @@ else:
         perfil_or = data_loader.load_table(
             "outubro_grupo_etario", data_loader.selected_source()
         )
+    except ValueError as exc:
+        # Deploy do Streamlit pode servir temporariamente uma versão antiga
+        # do carregador, sem o alias novo em TABLES.
+        if "Tabela não permitida" not in str(exc):
+            raise
+        st.warning(
+            "A versão do carregador de dados ainda não reconhece a tabela "
+            "do novo cruzamento etário. Atualize ou reinicie o aplicativo "
+            "no Streamlit Cloud para carregar o código mais recente."
+        )
+        perfil_or = pd.DataFrame()
     except data_loader.GoldConsultaIndisponivel as exc:
         st.warning(
-            "O cruzamento etário consolidado ainda não está disponível "
-            "nesta fonte. Verifique a tabela "
-            "`gold.fato_outubro_rosa_grupo_etario` no Databricks."
+            "Não foi possível consultar a tabela Gold "
+            "`fato_outubro_rosa_grupo_etario`. "
+            "Verifique a conexão, as permissões e a disponibilidade "
+            "da tabela no Databricks."
         )
         perfil_or = pd.DataFrame()
 
     colunas_or = {"municipio", "grupo_etario", "quantidade_exames"}
     if perfil_or.empty:
         st.info(
-            "Sem dados do perfil etário consolidado no ambiente selecionado."
+            "O gráfico ficará disponível quando a fonte Gold do "
+            "perfil etário consolidado estiver acessível."
         )
     elif not colunas_or.issubset(perfil_or.columns):
         st.warning(
