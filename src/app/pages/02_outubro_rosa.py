@@ -651,12 +651,181 @@ else:
         mime="text/csv", key="outubro_rosa_volume_municipio_ano_csv",
     )
 
-section("06", "Município × grupo etário — gráfico pendente")
-st.info(
-    "Gráfico ainda não disponível. É necessário validar os dados por "
-    "município, mês e faixa etária especificamente para setembro a "
-    "dezembro de 2020–2025. Esta visualização será definida posteriormente."
+section("06", "Perfil etário dos exames: município × grupo etário")
+st.markdown(
+    "Distribuição percentual dos exames registrados entre **setembro e dezembro "
+    "de 2020–2025**, por município e grupo etário. "
+    "A fonte é consolidada para todo o período, sem detalhamento anual."
 )
+with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
+    st.markdown(
+        "**Cada barra equivale a 100% dos exames com idade classificável "
+        "do município** entre setembro e dezembro de 2020–2025. "
+        "As cores representam <25, 25–64 e ≥65 anos. "
+        "**Participação (%) = exames do grupo ÷ total dos três grupos "
+        "no município × 100.** "
+        "Use as proporções para comparar a composição etária, "
+        "não o volume absoluto. A fonte Q02 é consolidada: "
+        "**não é possível separar anos ou meses**, nem identificar "
+        "exames causados pela campanha. Um exame sem idade classificada "
+        "foi excluído do denominador regional."
+    )
+
+anos_totais_q02 = set(range(2020, 2026))
+anos_ativos_q02 = set(data_loader.selected_years())
+if anos_ativos_q02 != anos_totais_q02:
+    st.info(
+        "Este cruzamento está disponível somente para o período completo "
+        "**2020–2025**. A tabela Gold consolidada não possui coluna de ano; "
+        "para visualizar o gráfico, selecione todos os anos no filtro lateral. "
+        "O filtro de municípios continua sendo respeitado."
+    )
+else:
+    try:
+        perfil_or = data_loader.load_table(
+            "outubro_grupo_etario", data_loader.selected_source()
+        )
+    except data_loader.GoldConsultaIndisponivel as exc:
+        st.warning(
+            "O cruzamento etário consolidado ainda não está disponível "
+            "nesta fonte. Verifique a tabela "
+            "`gold.fato_outubro_rosa_grupo_etario` no Databricks."
+        )
+        perfil_or = pd.DataFrame()
+
+    colunas_or = {"municipio", "grupo_etario", "quantidade_exames"}
+    if perfil_or.empty:
+        st.info(
+            "Sem dados do perfil etário consolidado no ambiente selecionado."
+        )
+    elif not colunas_or.issubset(perfil_or.columns):
+        st.warning(
+            "A tabela Gold do perfil etário não possui todas as colunas "
+            "esperadas: município, grupo_etario e quantidade_exames."
+        )
+    else:
+        cidades_or = st.session_state.get(
+            "city_preference", list(data_loader.MUNICIPIOS.values())
+        )
+        perfil_or = perfil_or.loc[
+            perfil_or["municipio"].isin(cidades_or)
+        ].copy()
+        # A Gold consolidada utiliza chaves de grupo próprias, sem mês/ano.
+        nome_grupo_or = {
+            "<25 anos": "<25 anos",
+            "25-64 anos": "25–64 anos",
+            ">=65 anos": "≥65 anos",
+        }
+        perfil_or["Grupo"] = (
+            perfil_or["grupo_etario"].astype(str).str.strip()
+            .map(nome_grupo_or)
+        )
+        perfil_or["quantidade_exames"] = pd.to_numeric(
+            perfil_or["quantidade_exames"], errors="coerce"
+        )
+        perfil_or = perfil_or.dropna(
+            subset=["municipio", "Grupo", "quantidade_exames"]
+        )
+        if perfil_or.empty:
+            st.info("Não há dados etários válidos para os municípios selecionados.")
+        elif perfil_or.duplicated(["municipio", "Grupo"]).any():
+            st.error(
+                "A Gold possui grupos etários duplicados por município. "
+                "Verifique a integridade de "
+                "`fato_outubro_rosa_grupo_etario`."
+            )
+        else:
+            total_por_municipio_or = perfil_or.groupby("municipio")[
+                "quantidade_exames"
+            ].transform("sum")
+            perfil_or["Participação (%)"] = (
+                perfil_or["quantidade_exames"]
+                .div(total_por_municipio_or.where(total_por_municipio_or > 0))
+                .mul(100)
+            )
+            perfil_or = perfil_or.dropna(subset=["Participação (%)"])
+            totais_or = (
+                perfil_or.groupby("municipio")["quantidade_exames"]
+                .sum(min_count=1)
+            )
+            with st.container(key="outubro_perfil_etario_sort_panel"):
+                ordem_etaria_or = st.selectbox(
+                    "Ordenar por", ["A–Z", "Maior para menor"],
+                    index=0, key="outubro_rosa_grupo_etario_sort",
+                    help="Maior para menor considera o total de exames "
+                         "com idade classificável no município.",
+                )
+            municipios_etarios_or = sorted(
+                totais_or.index.tolist(), key=lambda nome: nome.casefold()
+            )
+            if ordem_etaria_or == "Maior para menor":
+                municipios_etarios_or.sort(
+                    key=lambda municipio: (
+                        -float(totais_or[municipio]),
+                        municipio.casefold(),
+                    )
+                )
+            ordem_grupos_or = ["<25 anos", "25–64 anos", "≥65 anos"]
+            fig_etario_or = px.bar(
+                perfil_or, y="municipio", x="Participação (%)",
+                color="Grupo", orientation="h", barmode="stack",
+                color_discrete_map={
+                    "<25 anos": "#169B62",
+                    "25–64 anos": "#1757A6",
+                    "≥65 anos": "#E85D2A",
+                },
+                category_orders={
+                    "municipio": municipios_etarios_or,
+                    "Grupo": ordem_grupos_or,
+                },
+                custom_data=["quantidade_exames"],
+                labels={"municipio": "Município"},
+            )
+            fig_etario_or.update_yaxes(
+                categoryorder="array",
+                categoryarray=list(reversed(municipios_etarios_or)),
+                automargin=True,
+            )
+            fig_etario_or.update_xaxes(
+                range=[0, 100], ticksuffix="%",
+                title_text="Participação dos exames (%)",
+            )
+            fig_etario_or.update_traces(
+                hovertemplate="%{y}<br>Grupo: %{fullData.name}"
+                "<br>Exames: %{customdata[0]:,.0f}"
+                "<br>Participação: %{x:.2f}%<extra></extra>"
+            )
+            fig_etario_or.update_layout(
+                legend=dict(title_text="Grupo etário", orientation="h",
+                            x=0, y=1.02, yanchor="bottom"),
+                margin=dict(l=140, r=35, t=90, b=65),
+            )
+            download_plot(
+                fig_etario_or,
+                "outubro_rosa_perfil_etario_consolidado_municipio.png",
+                altura=max(520, 43 * len(municipios_etarios_or) + 155),
+                largura=1600,
+            )
+            tabela_etaria_or = (
+                perfil_or.pivot(
+                    index="municipio", columns="Grupo",
+                    values="quantidade_exames"
+                ).reindex(
+                    index=municipios_etarios_or,
+                    columns=ordem_grupos_or,
+                )
+            )
+            tabela_etaria_or.index.name = "Município"
+            with st.expander(
+                "Ver tabela de exames por município e grupo etário",
+                expanded=False,
+            ):
+                display_table(tabela_etaria_or.reset_index())
+            st.caption(
+                "Fonte: Gold Q02 consolidada, setembro–dezembro de "
+                "2020–2025. O total exclui 1 exame de idade ignorada "
+                "registrado em Quaraí."
+            )
 
 section("07", "Dados mensais detalhados")
 st.markdown(
