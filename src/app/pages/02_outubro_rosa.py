@@ -201,7 +201,165 @@ fig.update_traces(
 )
 download_plot(fig, "outubro_rosa_producao_mensal_por_ano.png", altura=490, largura=1550)
 
-section("02", "Comparação anual: setembro × outubro")
+section("02", "Produção mensal por grupo etário — 10ª CRS")
+st.markdown(
+    "Quantidade de exames por **mês, ano e grupo etário** nos 11 municípios "
+    "da região. O gráfico acompanha os anos selecionados."
+)
+chart_help(
+    "**Cada barra** corresponde a um mês de um ano selecionado; os segmentos "
+    "representam exames de menores de 25 anos, de 25 a 64 anos e de 65 anos "
+    "ou mais. A altura total é a soma dos três grupos. "
+    "A tabela Gold é **regional** (sem município) e exclui registros de "
+    "idade ignorada; portanto, não permite recorte municipal."
+)
+todos_municipios_or = set(data_loader.MUNICIPIOS.values())
+municipios_selecionados_or = set(
+    st.session_state.get("city_preference", list(todos_municipios_or))
+)
+if municipios_selecionados_or != todos_municipios_or:
+    st.info(
+        "O cruzamento mensal por idade está disponível apenas para os "
+        "**11 municípios juntos**. A Gold mensal não possui município; "
+        "selecione todos os municípios no filtro lateral para visualizar "
+        "o gráfico sem misturar recortes diferentes."
+    )
+else:
+    try:
+        mensal_etario_or = data_loader.load_table(
+            "outubro_mensal_grupo_etario", data_loader.selected_source()
+        )
+    except (ValueError, data_loader.GoldConsultaIndisponivel):
+        st.warning(
+            "A nova Gold mensal por faixa etária não está acessível. "
+            "Confirme a publicação da tabela "
+            "`fato_outubro_rosa_mensal_grupo_etario` e atualize o Streamlit."
+        )
+        mensal_etario_or = pd.DataFrame()
+    colunas_necessarias_or = {
+        "ano", "mes_num", "grupo_etario", "quantidade_exames"
+    }
+    if not mensal_etario_or.empty and colunas_necessarias_or.issubset(
+        mensal_etario_or.columns
+    ):
+        mensal_etario_or = mensal_etario_or.copy()
+        mensal_etario_or["ano"] = pd.to_numeric(
+            mensal_etario_or["ano"], errors="coerce"
+        )
+        mensal_etario_or["mes_num"] = pd.to_numeric(
+            mensal_etario_or["mes_num"], errors="coerce"
+        )
+        mensal_etario_or["quantidade_exames"] = pd.to_numeric(
+            mensal_etario_or["quantidade_exames"], errors="coerce"
+        )
+        grupo_label_or = {
+            "<25 anos": "<25 anos",
+            "25-64 anos": "25–64 anos",
+            ">=65 anos": "≥65 anos",
+        }
+        mensal_etario_or["Grupo"] = (
+            mensal_etario_or["grupo_etario"].astype(str).str.strip()
+            .map(grupo_label_or)
+        )
+        mensal_etario_or = mensal_etario_or.loc[
+            mensal_etario_or["ano"].isin(data_loader.selected_years())
+            & mensal_etario_or["mes_num"].isin([9, 10, 11, 12])
+            & mensal_etario_or["Grupo"].notna()
+        ].dropna(subset=["ano", "mes_num", "quantidade_exames"])
+        if mensal_etario_or.empty:
+            st.info("Sem dados etários mensais para os anos selecionados.")
+        elif mensal_etario_or.duplicated(
+            ["ano", "mes_num", "Grupo"]
+        ).any():
+            st.error(
+                "A tabela Gold contém competências/grupos duplicados. "
+                "Revise a chave ano × mês × grupo antes de representar os valores."
+            )
+        else:
+            mensal_etario_or["Competência"] = (
+                mensal_etario_or["mes_num"].astype(int).map({
+                    9: "Set", 10: "Out", 11: "Nov", 12: "Dez"
+                })
+                + "/" + mensal_etario_or["ano"].astype(int).astype(str)
+            )
+            ordem_competencias_or = [
+                f"{mes}/{ano}"
+                for ano in sorted(mensal_etario_or["ano"].unique())
+                for mes in ["Set", "Out", "Nov", "Dez"]
+                if f"{mes}/{ano}" in set(mensal_etario_or["Competência"])
+            ]
+            ordem_grupos_mensal_or = [
+                "<25 anos", "25–64 anos", "≥65 anos"
+            ]
+            fig_mes_idade_or = px.bar(
+                mensal_etario_or,
+                x="Competência", y="quantidade_exames",
+                color="Grupo", barmode="stack",
+                category_orders={
+                    "Competência": ordem_competencias_or,
+                    "Grupo": ordem_grupos_mensal_or,
+                },
+                color_discrete_map={
+                    "<25 anos": "#169B62",
+                    "25–64 anos": "#1757A6",
+                    "≥65 anos": "#E85D2A",
+                },
+                labels={
+                    "Competência": "Mês / ano",
+                    "quantidade_exames": "Exames registrados",
+                },
+            )
+            fig_mes_idade_or.update_traces(
+                hovertemplate="%{x}<br>Grupo: %{fullData.name}"
+                "<br>Exames: %{y:,.0f}<extra></extra>"
+            )
+            fig_mes_idade_or.update_xaxes(
+                type="category", categoryorder="array",
+                categoryarray=ordem_competencias_or,
+                tickangle=-45,
+            )
+            fig_mes_idade_or.update_layout(
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+            )
+            download_plot(
+                fig_mes_idade_or,
+                "outubro_rosa_producao_mensal_por_grupo_etario.png",
+                altura=520, largura=max(1500, len(ordem_competencias_or) * 100),
+            )
+            tabela_mensal_or = (
+                mensal_etario_or.pivot(
+                    index="Competência", columns="Grupo",
+                    values="quantidade_exames"
+                )
+                .reindex(
+                    index=ordem_competencias_or,
+                    columns=ordem_grupos_mensal_or,
+                )
+            )
+            tabela_mensal_or["Total classificável"] = (
+                tabela_mensal_or.sum(axis=1, min_count=1)
+            )
+            with st.expander(
+                "Ver tabela mensal por grupo etário", expanded=False
+            ):
+                tabela_exibicao_or = tabela_mensal_or.reset_index().rename(
+                    columns={"Competência": "Mês / ano"}
+                )
+                display_table(tabela_exibicao_or)
+            st.caption(
+                "Fonte: gold.fato_outubro_rosa_mensal_grupo_etario. "
+                "Valores regionais; diferenças pontuais frente à Gold "
+                "geral podem decorrer de idade ignorada."
+            )
+    elif mensal_etario_or.empty:
+        st.info("Não há registros acessíveis na Gold mensal por grupo etário.")
+    else:
+        st.warning(
+            "A Gold mensal por grupo etário não possui todas as colunas "
+            "necessárias para o gráfico."
+        )
+
+section("03", "Comparação anual: setembro × outubro")
 st.markdown(
     "Evolução da **variação percentual de setembro para outubro** em cada ano, "
     "sem misturar os totais de anos distintos."
@@ -251,7 +409,7 @@ else:
     fig_ano.update_layout(showlegend=False)
     download_plot(fig_ano, "outubro_rosa_variacao_anual_setembro_outubro.png", altura=420)
 
-section("03", "Variação acumulada de setembro para outubro por município (%)")
+section("04", "Variação acumulada de setembro para outubro por município (%)")
 st.markdown(
     "Variação percentual entre os totais acumulados de setembro e outubro "
     "nos anos selecionados, por município."
@@ -405,7 +563,7 @@ if not menos_anos.empty:
         "setembro ou outubro. Confira a quantidade de anos no tooltip."
     )
 
-section("04", "Matriz de produção: município × mês")
+section("05", "Matriz de produção: município × mês")
 st.markdown(
     "Visualize a quantidade de exames em cada município nos meses de "
     "setembro a dezembro, somando apenas os anos selecionados."
@@ -469,7 +627,7 @@ else:
         altura=max(490, 37 * len(matriz) + 120), largura=1550,
     )
 
-section("05", "Perfil etário dos exames: município × grupo etário")
+section("06", "Perfil etário dos exames: município × grupo etário")
 st.markdown(
     "Distribuição percentual dos exames registrados entre **setembro e dezembro "
     "de 2020–2025**, por município e grupo etário. "
@@ -656,7 +814,7 @@ else:
                 "registrado em Quaraí."
             )
 
-section("06", "Dados mensais detalhados")
+section("07", "Dados mensais detalhados")
 st.markdown(
     "Tabela consolidada por **município × ano × mês**, "
     "com a quantidade registrada em cada competência."
