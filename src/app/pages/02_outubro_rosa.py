@@ -20,18 +20,6 @@ sidebar_filters()
 st.markdown("""
 <style>
 .pet-hero {margin-bottom:0!important}
-.or-source-note {
-    margin:12px 0 9px;
-    padding:10px 15px;
-    background:#EEF5FA;
-    border-left:4px solid #006C9A;
-    border-radius:8px;
-    color:#1A3B5C;
-    font-family:Manrope,Arial,sans-serif;
-    font-size:14px;
-    line-height:1.55;
-}
-.or-source-note strong {color:#1A3B5C}
 .or-mini-note {font-size:.86rem; color:#526B81; margin:4px 0 16px}
 .or-focus-header {background:#F2F7FB;border-left:4px solid #1757A6;
     border-radius:9px; padding:12px 16px;margin:9px 0 16px;
@@ -67,7 +55,6 @@ st.markdown("""
 }
 @media(max-width:768px) {
     .or-section-title {margin:27px 0 12px;font-size:20px}
-    .or-source-note {padding:10px 12px;font-size:13px}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -109,22 +96,11 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45):
 page_header(
     "Campanha · Outubro Rosa",
     "Outubro Rosa: produção e perfil etário dos exames",
-    "Analisa os exames citopatológicos registrados entre setembro e "
-    "dezembro de 2020 a 2025 nos municípios da 10ª CRS, com foco "
-    "na participação de mulheres da população-alvo de 25 a 64 anos "
-    "e nas variações da produção entre setembro e outubro.",
+    "Analisa a produção de exames citopatológicos nos municípios da "
+    "10ª CRS, com destaque para a participação da população-alvo de "
+    "25 a 64 anos e as diferenças entre períodos e municípios.",
 )
 
-# Mesmo padrão visual de fonte resumida + metodologia recolhível usado
-# na página Faixa Etária, sem chips redundantes com o cabeçalho/filtros.
-st.markdown(
-    '<div class="or-source-note">'
-    '<strong>Fonte:</strong> SISCAN/DATASUS'
-    '&nbsp;·&nbsp;<strong>Recorte:</strong> setembro a dezembro, 2020–2025'
-    '&nbsp;·&nbsp;<strong>Território:</strong> 11 municípios da 10ª CRS (RS).'
-    '</div>',
-    unsafe_allow_html=True,
-)
 with st.expander("ℹ️ Fontes e critérios de análise", expanded=False):
     st.markdown(
         "**Produção mensal e comparação municipal.** Os exames registrados "
