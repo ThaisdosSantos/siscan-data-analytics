@@ -189,7 +189,7 @@ fig.update_traces(
 )
 fig.update_layout(
     bargap=0.23, bargroupgap=0.07,
-    legend=dict(orientation="h", x=0, y=1.045, yanchor="bottom"),
+    legend=dict(orientation="v", x=1.02, xanchor="left", y=1, yanchor="top"),
 )
 fig.update_xaxes(title_text="Ano", showgrid=False)
 fig.update_yaxes(title_text="Quantidade de exames", tickformat=",d")
