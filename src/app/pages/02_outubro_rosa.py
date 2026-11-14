@@ -101,24 +101,6 @@ page_header(
     "25 a 64 anos e as diferenças entre períodos e municípios.",
 )
 
-with st.expander("ℹ️ Fontes e critérios de análise", expanded=False):
-    st.markdown(
-        "**Produção mensal e comparação municipal.** Os exames registrados "
-        "são obtidos da Gold `fato_exames_temporais_territoriais`, "
-        "com informação de município, ano e mês. Os filtros de período "
-        "e município são aplicados a esses indicadores.\n\n"
-        "**Distribuição por grupo etário.** A Gold "
-        "`fato_outubro_rosa_mensal_grupo_etario` permite analisar "
-        "o grupo de 25 a 64 anos e as demais faixas por mês e ano, "
-        "mas somente para os 11 municípios em conjunto. A Gold "
-        "`fato_outubro_rosa_grupo_etario` permite comparar municípios, "
-        "porém apenas no período consolidado de 2020–2025. "
-        "Registros de idade ignorada não integram os percentuais etários.\n\n"
-        "**Limites de interpretação.** As proporções descrevem "
-        "a distribuição dos **exames**, não a cobertura entre mulheres "
-        "distintas. A variação de registros no período não permite "
-        "atribuir os resultados causalmente à campanha Outubro Rosa."
-    )
 
 MESES = {9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
 ORDEM_MESES = list(MESES.values())
