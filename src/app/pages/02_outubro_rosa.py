@@ -506,10 +506,10 @@ else:
             "necessárias para o gráfico."
         )
 
-section("03", "Variação acumulada de setembro para outubro por município (%)")
+section("03", "Setembro × outubro · comparação municipal")
 st.markdown(
-    "Variação percentual entre os totais acumulados de setembro e outubro "
-    "nos anos selecionados, por município."
+    "Veja quais municípios registraram aumento ou redução de exames em "
+    "outubro, comparando apenas anos com setembro e outubro disponíveis."
 )
 
 # Primeiro formar os pares setembro–outubro de CADA município e ano.
@@ -550,17 +550,12 @@ pares_municipais["Variação (%)"] = [
 with st.container(key="outubro_variacao_explicacao"):
     with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
         st.markdown(
-            "**Cada barra** mostra a variação percentual dos exames de "
-            "outubro em relação a setembro para um município. "
-            "**Cálculo:** (total de outubro − total de setembro) ÷ "
-            "total de setembro × 100. Primeiro somamos os exames "
-            "dos anos selecionados; **não calculamos a média anual**. "
-            "Apenas anos com registros nos dois meses entram nas somas. "
-            "**Exemplo:** setembro = 1.000 e outubro = 1.300 exames "
-            "resultam em **+30.00% (300 exames a mais)**. "
-            "Valores negativos indicam redução. "
-            "O gráfico descreve a produção registrada e "
-            "**não comprova efeito da campanha Outubro Rosa**."
+            "**Variação (%) = (outubro − setembro) ÷ setembro × 100**. "
+            "Primeiro são pareados setembro e outubro do mesmo ano; "
+            "depois, são somados os exames dos anos selecionados. "
+            "O resultado não é a média das variações anuais. "
+            "Valores negativos indicam redução, sem atribuição "
+            "de causalidade à campanha."
         )
 
 with st.container(key="outubro_variacao_sort_panel"):
@@ -634,10 +629,10 @@ else:
         "<br>Anos com ambos os meses: %{customdata[4]}"
         "<extra></extra>"
     )
-    fig_mun.update_layout(showlegend=False)
+    fig_mun.update_layout(showlegend=False, bargap=0.32)
     download_plot(
         fig_mun, "outubro_rosa_variacao_acumulada_pares_completos.png",
-        altura=max(500, 43 * len(municipios_validos) + 130),
+        altura=max(460, 42 * len(municipios_validos) + 110),
         largura=1600,
     )
 
@@ -660,22 +655,19 @@ if not menos_anos.empty:
         "setembro ou outubro. Confira a quantidade de anos no tooltip."
     )
 
-section("04", "Perfil etário por município — consolidado 2020–2025")
+section("04", "Perfil etário municipal · consolidado 2020–2025")
 st.markdown(
-    "Distribuição percentual dos exames por grupo etário em cada município, "
-    "considerando **setembro a dezembro de 2020–2025, em conjunto**. "
-    "Os dados são consolidados: **não permitem separar anos ou meses**."
+    "Compare o percentual de exames na população-alvo (25–64 anos) "
+    "entre municípios. Dados de setembro a dezembro, "
+    "**consolidados de 2020 a 2025**, sem separação mensal ou anual."
 )
 with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
     st.markdown(
-        "O gráfico mostra a **distribuição percentual dos exames por faixa "
-        "etária em cada município**, considerando setembro a dezembro de "
-        "2020–2025.\n\n"
-        "Cada barra representa 100% dos exames com idade identificada, "
-        "distribuídos em três grupos: **<25, 25–64 e ≥65 anos**.\n\n"
-        "Os percentuais permitem comparar o perfil etário entre municípios. "
-        "**Os dados estão consolidados para todo o período**, sem separação "
-        "por ano ou mês."
+        "Cada barra equivale a **100% dos exames com idade classificada** "
+        "do município, divididos em **<25, 25–64 e ≥65 anos**. "
+        "A barra não expressa a quantidade de mulheres rastreadas. "
+        "O recorte é consolidado de setembro a dezembro de 2020–2025: "
+        "não permite observar outubro isoladamente."
     )
 
 anos_totais_q02 = set(range(2020, 2026))
@@ -818,8 +810,9 @@ else:
             )
             fig_etario_or.update_layout(
                 legend=dict(title_text="Grupo etário", orientation="h",
-                            x=0, y=1.02, yanchor="bottom"),
-                margin=dict(l=140, r=35, t=90, b=65),
+                            x=0, y=1.035, yanchor="bottom"),
+                margin=dict(l=150, r=35, t=100, b=60),
+                bargap=0.25,
             )
             download_plot(
                 fig_etario_or,
@@ -838,7 +831,7 @@ else:
             )
             tabela_etaria_or.index.name = "Município"
             with st.expander(
-                "Ver tabela de exames por município e grupo etário",
+                "Ver quantidades por município e grupo etário",
                 expanded=False,
             ):
                 display_table(tabela_etaria_or.reset_index())
@@ -848,10 +841,10 @@ else:
                 "registrado em Quaraí."
             )
 
-section("05", "Dados mensais detalhados")
+section("05", "Dados para consulta e exportação")
 st.markdown(
-    "Tabela consolidada por **município × ano × mês**, "
-    "com a quantidade registrada em cada competência."
+    "Consulte os registros observados por município, ano e mês "
+    "ou exporte os dados utilizados na análise de produção mensal."
 )
 detalhes = (
     dados.groupby(["municipio", "ano", "mes"], as_index=False)["quantidade"]
@@ -873,7 +866,7 @@ st.download_button(
 with st.expander("Ver tabela mensal detalhada", expanded=False):
     display_table(detalhes, integer_columns=["Ano", "Mês (número)", "Exames"])
 st.caption(
-    "Nota metodológica: os cruzamentos desta página são análises "
-    "descritivas da produção registrada na base geral do SISCAN, "
-    "sem atribuição de causalidade ao Outubro Rosa."
+    "Nota: a produção mensal geral é observada no SISCAN; as "
+    "visualizações etárias utilizam bases específicas, conforme "
+    "a granularidade disponível. Não se infere causalidade da campanha."
 )
