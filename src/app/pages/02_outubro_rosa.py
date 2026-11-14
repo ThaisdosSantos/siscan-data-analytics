@@ -20,19 +20,18 @@ sidebar_filters()
 st.markdown("""
 <style>
 .pet-hero {margin-bottom:0!important}
-.or-intro {
-    margin:18px 0 13px; padding:17px 22px;
-    background:#F2F7FB; border:1px solid #DCEAF3;
-    border-radius:15px; display:flex; align-items:center;
-    gap:14px; flex-wrap:wrap; color:#1A3B5C;
+.or-source-note {
+    margin:12px 0 9px;
+    padding:10px 15px;
+    background:#EEF5FA;
+    border-left:4px solid #006C9A;
+    border-radius:8px;
+    color:#1A3B5C;
+    font-family:Manrope,Arial,sans-serif;
+    font-size:14px;
+    line-height:1.55;
 }
-.or-intro strong {color:#006C9A}
-.or-intro .or-pill {
-    display:inline-block; font-size:.78rem; font-weight:750;
-    letter-spacing:.01em; border-radius:99px; padding:5px 11px;
-    background:#E2EEF6; color:#1A3B5C; white-space:nowrap;
-}
-.or-intro .or-pill.orange {background:#FFF0E8;color:#B34B23}
+.or-source-note strong {color:#1A3B5C}
 .or-mini-note {font-size:.86rem; color:#526B81; margin:4px 0 16px}
 .or-focus-header {background:#F2F7FB;border-left:4px solid #1757A6;
     border-radius:9px; padding:12px 16px;margin:9px 0 16px;
@@ -68,7 +67,7 @@ st.markdown("""
 }
 @media(max-width:768px) {
     .or-section-title {margin:27px 0 12px;font-size:20px}
-    .or-intro {padding:13px 15px;gap:9px}
+    .or-source-note {padding:10px 12px;font-size:13px}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -109,32 +108,40 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45):
 
 page_header(
     "Campanha · Outubro Rosa",
-    "Outubro Rosa: produção mensal de exames",
-    "Compara a produção registrada entre setembro e dezembro, por ano e "
-    "município de residência, nos 11 municípios da 10ª CRS (2020–2025).",
+    "Outubro Rosa: produção e perfil etário dos exames",
+    "Analisa os exames citopatológicos registrados entre setembro e "
+    "dezembro de 2020 a 2025 nos municípios da 10ª CRS, com foco "
+    "na participação de mulheres da população-alvo de 25 a 64 anos "
+    "e nas variações da produção entre setembro e outubro.",
 )
 
+# Mesmo padrão visual de fonte resumida + metodologia recolhível usado
+# na página Faixa Etária, sem chips redundantes com o cabeçalho/filtros.
 st.markdown(
-    '<div class="or-intro">'
-    '<span class="or-pill">SISCAN / DATASUS</span>'
-    '<span class="or-pill">10ª CRS · RS</span>'
-    '<span class="or-pill orange">Setembro a dezembro</span>'
-    '<span class="or-pill">2020–2025</span>'
+    '<div class="or-source-note">'
+    '<strong>Fonte:</strong> SISCAN/DATASUS'
+    '&nbsp;·&nbsp;<strong>Recorte:</strong> setembro a dezembro, 2020–2025'
+    '&nbsp;·&nbsp;<strong>Território:</strong> 11 municípios da 10ª CRS (RS).'
     '</div>',
     unsafe_allow_html=True,
 )
-with st.expander("ℹ️ Fontes, filtros e limites da análise", expanded=False):
+with st.expander("ℹ️ Fontes e critérios de análise", expanded=False):
     st.markdown(
-        "**Produção observada:** Gold "
-        "`fato_exames_temporais_territoriais` (município × ano × mês). "
-        "**Análises etárias:** Gold "
-        "`fato_outubro_rosa_mensal_grupo_etario` (regional × mês × idade) "
-        "e `fato_outubro_rosa_grupo_etario` "
-        "(município × grupo etário, consolidada 2020–2025). "
-        "Essas fontes etárias têm diferentes granularidades, portanto "
-        "nem todos os filtros podem ser aplicados a todos os gráficos. "
-        "**Aumento dos registros em outubro não comprova que a campanha "
-        "causou esse aumento** e os exames não representam mulheres únicas."
+        "**Produção mensal e comparação municipal.** Os exames registrados "
+        "são obtidos da Gold `fato_exames_temporais_territoriais`, "
+        "com informação de município, ano e mês. Os filtros de período "
+        "e município são aplicados a esses indicadores.\n\n"
+        "**Distribuição por grupo etário.** A Gold "
+        "`fato_outubro_rosa_mensal_grupo_etario` permite analisar "
+        "o grupo de 25 a 64 anos e as demais faixas por mês e ano, "
+        "mas somente para os 11 municípios em conjunto. A Gold "
+        "`fato_outubro_rosa_grupo_etario` permite comparar municípios, "
+        "porém apenas no período consolidado de 2020–2025. "
+        "Registros de idade ignorada não integram os percentuais etários.\n\n"
+        "**Limites de interpretação.** As proporções descrevem "
+        "a distribuição dos **exames**, não a cobertura entre mulheres "
+        "distintas. A variação de registros no período não permite "
+        "atribuir os resultados causalmente à campanha Outubro Rosa."
     )
 
 MESES = {9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
