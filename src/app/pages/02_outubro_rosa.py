@@ -844,11 +844,11 @@ else:
         altura=max(490, 37 * len(matriz) + 120), largura=1550,
     )
 
-section("07", "Perfil etário dos exames: município × grupo etário")
+section("07", "Perfil etário por município — consolidado 2020–2025")
 st.markdown(
-    "Distribuição percentual dos exames registrados entre **setembro e dezembro "
-    "de 2020–2025**, por município e grupo etário. "
-    "A fonte é consolidada para todo o período, sem detalhamento anual."
+    "Distribuição percentual dos exames por grupo etário em cada município, "
+    "considerando **setembro a dezembro de 2020–2025, em conjunto**. "
+    "Os dados são consolidados: **não permitem separar anos ou meses**."
 )
 with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
     st.markdown(
