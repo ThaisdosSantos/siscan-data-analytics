@@ -494,8 +494,8 @@ else:
                 f"{pct_alvo_or:.2f}%" if pd.notna(pct_alvo_or) else "N/D",
             )
             kpi_alvo_c.metric(
-                "Mudança na participação (out. − set.)",
-                f"{delta_pp_or:+.2f} p.p."
+                "Diferença em pontos percentuais (out. − set.)",
+                f"{delta_pp_or:+.2f}"
                 if pd.notna(delta_pp_or) else "N/D",
                 help="Pontos percentuais (p.p.) = participação percentual "
                      "de 25–64 anos em outubro menos a participação "
