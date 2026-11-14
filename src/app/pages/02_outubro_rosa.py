@@ -359,57 +359,7 @@ else:
             "necessárias para o gráfico."
         )
 
-section("03", "Comparação anual: setembro × outubro")
-st.markdown(
-    "Evolução da **variação percentual de setembro para outubro** em cada ano, "
-    "sem misturar os totais de anos distintos."
-)
-chart_help(
-    "Cada barra representa a diferença percentual entre outubro "
-    "e setembro **do mesmo ano**. Verde: aumento ou estabilidade; "
-    "vermelho: redução. Anos com meses ausentes ou setembro igual "
-    "a zero não recebem percentual."
-)
-por_ano = (
-    mensal.loc[mensal["mes"].isin([9, 10])]
-    .pivot(index="ano", columns="mes", values="quantidade")
-    .reindex(index=anos, columns=[9, 10])
-    .rename(columns={9: "Setembro", 10: "Outubro"})
-)
-por_ano["Variação (%)"] = [
-    variacao_percentual(row["Outubro"], row["Setembro"])
-    for _, row in por_ano.iterrows()
-]
-anual_grafico = por_ano.reset_index()
-anual_grafico["Ano"] = anual_grafico["ano"].astype(str)
-anual_valida = anual_grafico.dropna(subset=["Variação (%)"]).copy()
-if anual_valida.empty:
-    st.info("Sem pares setembro–outubro completos para a comparação anual.")
-else:
-    anual_valida["Situação"] = anual_valida["Variação (%)"].map(
-        lambda v: "Redução" if v < 0 else "Aumento ou estabilidade"
-    )
-    fig_ano = px.bar(
-        anual_valida, x="Ano", y="Variação (%)", color="Situação",
-        color_discrete_map={
-            "Redução": "#B53A27", "Aumento ou estabilidade": "#218B65",
-        },
-        custom_data=["Setembro", "Outubro"],
-        category_orders={"Ano": [str(a) for a in anos]},
-    )
-    fig_ano.update_traces(
-        hovertemplate="Ano: %{x}<br>Setembro: %{customdata[0]:,.0f}"
-        "<br>Outubro: %{customdata[1]:,.0f}"
-        "<br>Variação: %{y:+.2f}%<extra></extra>"
-    )
-    fig_ano.update_yaxes(
-        ticksuffix="%", tickformat=".2f",
-        zeroline=True, zerolinecolor=NAVY, zerolinewidth=2,
-    )
-    fig_ano.update_layout(showlegend=False)
-    download_plot(fig_ano, "outubro_rosa_variacao_anual_setembro_outubro.png", altura=420)
-
-section("04", "Variação acumulada de setembro para outubro por município (%)")
+section("03", "Variação acumulada de setembro para outubro por município (%)")
 st.markdown(
     "Variação percentual entre os totais acumulados de setembro e outubro "
     "nos anos selecionados, por município."
@@ -563,7 +513,7 @@ if not menos_anos.empty:
         "setembro ou outubro. Confira a quantidade de anos no tooltip."
     )
 
-section("05", "Perfil etário por município — consolidado 2020–2025")
+section("04", "Perfil etário por município — consolidado 2020–2025")
 st.markdown(
     "Distribuição percentual dos exames por grupo etário em cada município, "
     "considerando **setembro a dezembro de 2020–2025, em conjunto**. "
@@ -751,7 +701,7 @@ else:
                 "registrado em Quaraí."
             )
 
-section("06", "Dados mensais detalhados")
+section("05", "Dados mensais detalhados")
 st.markdown(
     "Tabela consolidada por **município × ano × mês**, "
     "com a quantidade registrada em cada competência."
