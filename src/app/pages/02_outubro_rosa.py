@@ -780,71 +780,7 @@ if not menos_anos.empty:
         "setembro ou outubro. Confira a quantidade de anos no tooltip."
     )
 
-section("06", "Matriz de produção: município × mês")
-st.markdown(
-    "Visualize a quantidade de exames em cada município nos meses de "
-    "setembro a dezembro, somando apenas os anos selecionados."
-)
-chart_help(
-    "Cada célula é a soma dos exames de um município em um mês "
-    "considerando os anos selecionados. Células sem dados permanecem "
-    "em branco — não são interpretadas como zero."
-)
-matriz = (
-    dados.groupby(["municipio", "mes"])["quantidade"].sum(min_count=1)
-    .unstack("mes")
-    .reindex(columns=list(MESES))
-    .rename(columns=MESES)
-)
-matriz.index.name = "Município"
-with st.container(key="outubro_matriz_sort_panel"):
-    ordem_matriz = st.selectbox(
-        "Ordenar por", ["A–Z", "Maior para menor"],
-        index=0, key="outubro_rosa_ordenacao_matriz",
-        help="Maior para menor usa a soma de exames de setembro a dezembro no recorte.",
-    )
-if ordem_matriz == "Maior para menor":
-    # min_count=1 preserva ausência de dados, sem converter em zero.
-    totais_matriz = matriz.sum(axis=1, min_count=1)
-    ordem_matriz_nomes = sorted(
-        matriz.index,
-        key=lambda nome: (
-            -float(totais_matriz.loc[nome])
-            if pd.notna(totais_matriz.loc[nome]) else float("inf"),
-            nome.casefold(),
-        ),
-    )
-    matriz = matriz.reindex(ordem_matriz_nomes)
-else:
-    matriz = matriz.sort_index(key=lambda nomes: nomes.str.casefold())
-if matriz.empty:
-    st.info("Não há dados para a matriz municipal.")
-else:
-    import plotly.graph_objects as go
-    z = matriz.to_numpy(dtype=float)
-    customtext = [
-        [f"{v:,.0f}".replace(",", ".") if pd.notna(v) else "—" for v in row]
-        for row in z
-    ]
-    fig_heatmap = go.Figure(go.Heatmap(
-        x=ORDEM_MESES, y=matriz.index.tolist(), z=z,
-        colorscale=[[0, "#F0F6FA"], [0.5, "#70B0D0"], [1, "#07527C"]],
-        text=customtext, texttemplate="%{text}",
-        textfont=dict(size=12),
-        hovertemplate="Município: %{y}<br>Mês: %{x}"
-        "<br>Exames: %{text}<extra></extra>",
-        colorbar=dict(title="Exames"),
-    ))
-    fig_heatmap.update_yaxes(
-        autorange="reversed", automargin=True,
-    )
-    fig_heatmap.update_layout(margin=dict(l=115, r=100, t=45, b=80))
-    download_plot(
-        fig_heatmap, "outubro_rosa_matriz_municipio_mes.png",
-        altura=max(490, 37 * len(matriz) + 120), largura=1550,
-    )
-
-section("07", "Perfil etário por município — consolidado 2020–2025")
+section("06", "Perfil etário por município — consolidado 2020–2025")
 st.markdown(
     "Distribuição percentual dos exames por grupo etário em cada município, "
     "considerando **setembro a dezembro de 2020–2025, em conjunto**. "
@@ -1032,7 +968,7 @@ else:
                 "registrado em Quaraí."
             )
 
-section("08", "Dados mensais detalhados")
+section("07", "Dados mensais detalhados")
 st.markdown(
     "Tabela consolidada por **município × ano × mês**, "
     "com a quantidade registrada em cada competência."
