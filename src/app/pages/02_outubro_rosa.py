@@ -20,10 +20,29 @@ sidebar_filters()
 st.markdown("""
 <style>
 .pet-hero {margin-bottom:0!important}
+.or-intro {
+    margin:18px 0 13px; padding:17px 22px;
+    background:#F2F7FB; border:1px solid #DCEAF3;
+    border-radius:15px; display:flex; align-items:center;
+    gap:14px; flex-wrap:wrap; color:#1A3B5C;
+}
+.or-intro strong {color:#006C9A}
+.or-intro .or-pill {
+    display:inline-block; font-size:.78rem; font-weight:750;
+    letter-spacing:.01em; border-radius:99px; padding:5px 11px;
+    background:#E2EEF6; color:#1A3B5C; white-space:nowrap;
+}
+.or-intro .or-pill.orange {background:#FFF0E8;color:#B34B23}
+.or-mini-note {font-size:.86rem; color:#526B81; margin:4px 0 16px}
+.or-focus-header {background:#F2F7FB;border-left:4px solid #1757A6;
+    border-radius:9px; padding:12px 16px;margin:9px 0 16px;
+    color:#1A3B5C;line-height:1.55}
+.st-key-outubro_rosa_ordenacao [data-testid="stSelectbox"] {max-width:280px}
+
 .or-section-title {
-    margin:30px 0 17px;padding:9px 0 12px;
-    border-bottom:2px solid #D8E5EF;
-    font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
+    margin:38px 0 13px;padding:8px 0 12px;
+    border-bottom:1px solid #D8E5EF;
+    font:750 clamp(20px,2vw,25px)/1.35 Manrope,Arial,sans-serif;
     color:#1A3B5C;
 }
 .or-section-index {color:#006C9A;margin-right:10px}
@@ -48,7 +67,8 @@ st.markdown("""
     }
 }
 @media(max-width:768px) {
-    .or-section-title {margin:24px 0 13px;font-size:21px}
+    .or-section-title {margin:27px 0 12px;font-size:20px}
+    .or-intro {padding:13px 15px;gap:9px}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -83,7 +103,7 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45):
     )
     chart_with_right_click_download(
         fig, filename=nome, height=altura,
-        min_chart_width=870, export_fig=imagem,
+        min_chart_width=0, export_fig=imagem,
     )
 
 
@@ -95,25 +115,26 @@ page_header(
 )
 
 st.markdown(
-    '<div style="margin:13px 0 16px;padding:10px 15px;background:#EEF5FA;'
-    'border-left:4px solid #006C9A;border-radius:8px;color:#1A3B5C;'
-    'font-size:.91rem;line-height:1.5">'
-    '<strong>Fonte:</strong> SISCAN/DATASUS · '
-    '<strong>Gold:</strong> fato_exames_temporais_territoriais '
-    '(competência mensal da base geral).</div>',
+    '<div class="or-intro">'
+    '<span class="or-pill">SISCAN / DATASUS</span>'
+    '<span class="or-pill">10ª CRS · RS</span>'
+    '<span class="or-pill orange">Setembro a dezembro</span>'
+    '<span class="or-pill">2020–2025</span>'
+    '</div>',
     unsafe_allow_html=True,
 )
-with st.expander("ℹ️ Fontes, recorte e limitações", expanded=False):
+with st.expander("ℹ️ Fontes, filtros e limites da análise", expanded=False):
     st.markdown(
-        "A comparação utiliza apenas a tabela Gold mensal "
-        "**fato_exames_temporais_territoriais**, no recorte de setembro "
-        "a dezembro. Os arquivos dedicados Q02-outubroRosa não são "
-        "utilizados aqui porque os meses indicados nesses arquivos "
-        "não constituem uma série mensal confiável. "
-        "**Variações de registros não comprovam efeito causal da campanha** "
-        "nem informam a quantidade de mulheres distintas examinadas. "
-        "Os resultados referem-se à produção registrada, não à cobertura "
-        "do rastreamento."
+        "**Produção observada:** Gold "
+        "`fato_exames_temporais_territoriais` (município × ano × mês). "
+        "**Análises etárias:** Gold "
+        "`fato_outubro_rosa_mensal_grupo_etario` (regional × mês × idade) "
+        "e `fato_outubro_rosa_grupo_etario` "
+        "(município × grupo etário, consolidada 2020–2025). "
+        "Essas fontes etárias têm diferentes granularidades, portanto "
+        "nem todos os filtros podem ser aplicados a todos os gráficos. "
+        "**Aumento dos registros em outubro não comprova que a campanha "
+        "causou esse aumento** e os exames não representam mulheres únicas."
     )
 
 MESES = {9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
@@ -160,16 +181,16 @@ def chart_help(message):
     with st.expander("ℹ️ Como interpretar", expanded=False):
         st.markdown(message)
 
-section("01", "Produção mensal e comparação com setembro")
+section("01", "Produção mensal · setembro a dezembro")
 st.markdown(
-    "Compara a **quantidade de exames registrados** nos quatro meses. "
-    "Os totais consideram os anos e municípios selecionados."
+    "Compare os exames registrados em cada mês, por ano, considerando "
+    "os municípios selecionados."
 )
 chart_help(
     "**Variação (%) = (Outubro − Setembro) ÷ Setembro × 100.** "
-    "Ao selecionar vários anos, o indicador combina os registros de "
-    "setembro e outubro dos anos selecionados. Se setembro for zero "
-    "ou algum dos meses estiver ausente, o percentual não é calculável."
+    "A variação reúne os totais dos meses disponíveis nos anos "
+    "selecionados; ela não equivale à média das variações anuais. "
+    "Se setembro for zero, o percentual não é calculável."
 )
 totais_mes = (
     mensal.groupby("mes")["quantidade"].sum().reindex(MESES.keys())
@@ -186,9 +207,10 @@ c3.metric(
     f"{variacao:+.2f}%" if pd.notna(variacao) else "N/D",
     delta=f"{diferenca:+,.0f} exames".replace(",", ".") if pd.notna(variacao) else None,
 )
-st.caption(
-    f"Recorte ativo: {periodo} · {cidades} município(s). "
-    "A variação usa as somas dos meses disponíveis; não indica causalidade."
+st.markdown(
+    f'<p class="or-mini-note">Recorte aplicado: <strong>{periodo}</strong>'
+    f' · {cidades} município(s) · produção registrada, não cobertura</p>',
+    unsafe_allow_html=True,
 )
 fig = px.bar(
     mensal, x="ano_texto", y="quantidade", color="Mês",
@@ -197,9 +219,16 @@ fig = px.bar(
     labels={"ano_texto": "Ano", "quantidade": "Exames registrados"},
 )
 fig.update_traces(
-    hovertemplate="Ano: %{x}<br>Exames: %{y:,.0f}<extra>%{fullData.name}</extra>"
+    hovertemplate="Ano: %{x}<br>Exames registrados: %{y:,.0f}"
+    "<extra>%{fullData.name}</extra>"
 )
-download_plot(fig, "outubro_rosa_producao_mensal_por_ano.png", altura=490, largura=1550)
+fig.update_layout(
+    bargap=0.23, bargroupgap=0.07,
+    legend=dict(orientation="h", x=0, y=1.045, yanchor="bottom"),
+)
+fig.update_xaxes(title_text="Ano", showgrid=False)
+fig.update_yaxes(title_text="Quantidade de exames", tickformat=",d")
+download_plot(fig, "outubro_rosa_producao_mensal_por_ano.png", altura=440, largura=1550, margem_superior=100)
 
 section("02", "Produção mensal por grupo etário — 10ª CRS")
 st.markdown(
