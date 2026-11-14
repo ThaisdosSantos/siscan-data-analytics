@@ -346,16 +346,21 @@ if not menos_anos.empty:
 
 section("02", "Faixa etária · participação na população-alvo")
 st.markdown(
-    "Verifique a participação dos exames em mulheres de **25 a 64 anos** "
-    "nos meses de setembro a dezembro. Dados mensais disponíveis para "
-    "**toda a 10ª CRS**, conforme os anos selecionados."
+    "Avalia a participação de exames realizados em mulheres de "
+    "**25 a 64 anos** nos meses de setembro a dezembro dos anos "
+    "selecionados. O cruzamento mensal é **regional (11 municípios)**."
 )
 chart_help(
-    "**Participação (%) = exames do grupo ÷ exames com idade "
-    "classificada × 100**, calculada em cada competência mensal. "
-    "A visualização percentual evidencia a composição etária, enquanto "
-    "a opção quantidade mostra o volume de exames. Os dados mensais "
-    "são regionais e excluem idade ignorada; não permitem filtro municipal."
+    "**Os dois primeiros indicadores** somam setembro, outubro, "
+    "novembro e dezembro dos anos selecionados. "
+    "**O terceiro compara apenas setembro e outubro** desses anos: "
+    "participação em outubro menos participação em setembro, "
+    "em pontos percentuais (p.p.). "
+    "Participação (%) = exames de 25–64 anos ÷ exames com idade "
+    "classificada × 100. A seção 01 utiliza todos os exames registrados "
+    "na Gold geral; aqui, os exames sem idade classificada são excluídos. "
+    "Portanto, os totais podem ser diferentes. "
+    "A análise etária mensal é regional e não admite filtro municipal."
 )
 todos_municipios_or = set(data_loader.MUNICIPIOS.values())
 municipios_selecionados_or = set(
@@ -471,28 +476,45 @@ else:
             p_sep_or = _participacao_alvo_mes_or(sep_class_or)
             p_out_or = _participacao_alvo_mes_or(out_class_or)
             delta_pp_or = p_out_or - p_sep_or
+            anos_etarios_or = sorted(
+                mensal_etario_or["ano"].dropna().astype(int).unique().tolist()
+            )
+            periodo_etario_or = ", ".join(map(str, anos_etarios_or))
+            st.markdown(
+                "**Período dos indicadores:** setembro a dezembro dos anos "
+                f"**{periodo_etario_or}**. "
+                "A comparação em p.p. usa **somente setembro e outubro**."
+            )
             kpi_alvo_a, kpi_alvo_b, kpi_alvo_c = st.columns(3)
             kpi_alvo_a.metric(
-                "Exames de 25–64 anos", fmt_num(alvo_or)
+                "Exames de 25–64 anos (set.–dez.)", fmt_num(alvo_or)
             )
             kpi_alvo_b.metric(
-                "Participação de 25–64 anos",
+                "Participação de 25–64 anos (set.–dez.)",
                 f"{pct_alvo_or:.2f}%" if pd.notna(pct_alvo_or) else "N/D",
             )
             kpi_alvo_c.metric(
-                "Outubro − setembro (participação)",
+                "Mudança na participação (out. − set.)",
                 f"{delta_pp_or:+.2f} p.p."
                 if pd.notna(delta_pp_or) else "N/D",
-                help="Diferença entre os percentuais de exames na "
-                     "população-alvo em outubro e setembro, agregados "
-                     "nos anos selecionados. Pontos percentuais.",
+                help="Pontos percentuais (p.p.) = participação percentual "
+                     "de 25–64 anos em outubro menos a participação "
+                     "em setembro, nos anos selecionados. Não é a "
+                     "variação da quantidade de exames.",
             )
             st.markdown(
                 '<div class="or-focus-header">'
-                '<strong>População-alvo: 25–64 anos.</strong> '
-                'A distribuição percentual permite identificar se '
-                'o perfil etário de exames se concentra nessa faixa. '
-                'Não comprova que os exames ocorreram por causa da campanha.'
+                '<strong>Como interpretar:</strong> os dois primeiros '
+                'cartões consideram <strong>setembro a dezembro</strong>; '
+                'o terceiro mede apenas a mudança na '
+                '<strong>participação de 25–64 anos entre setembro e '
+                'outubro</strong>. Por exemplo, passar de 80,00% para '
+                '80,50% equivale a <strong>+0,50 p.p.</strong>, não a '
+                '0,50% a mais de exames. '
+                '<strong>Os valores podem diferir da seção 01</strong>, '
+                'que utiliza todos os exames registrados; aqui, '
+                'consideram-se somente os de idade classificada. '
+                'Essas diferenças não demonstram efeito da campanha.'
                 '</div>',
                 unsafe_allow_html=True,
             )
