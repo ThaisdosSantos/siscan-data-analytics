@@ -230,17 +230,18 @@ fig.update_xaxes(title_text="Ano", showgrid=False)
 fig.update_yaxes(title_text="Quantidade de exames", tickformat=",d")
 download_plot(fig, "outubro_rosa_producao_mensal_por_ano.png", altura=440, largura=1550, margem_superior=100)
 
-section("02", "Produção mensal por grupo etário — 10ª CRS")
+section("02", "Faixa etária · participação na população-alvo")
 st.markdown(
-    "Quantidade de exames por **mês, ano e grupo etário** nos 11 municípios "
-    "da região. O gráfico acompanha os anos selecionados."
+    "Verifique a participação dos exames em mulheres de **25 a 64 anos** "
+    "nos meses de setembro a dezembro. Dados mensais disponíveis para "
+    "**toda a 10ª CRS**, conforme os anos selecionados."
 )
 chart_help(
-    "**Cada barra** corresponde a um mês de um ano selecionado; os segmentos "
-    "representam exames de menores de 25 anos, de 25 a 64 anos e de 65 anos "
-    "ou mais. A altura total é a soma dos três grupos. "
-    "A tabela Gold é **regional** (sem município) e exclui registros de "
-    "idade ignorada; portanto, não permite recorte municipal."
+    "**Participação (%) = exames do grupo ÷ exames com idade "
+    "classificada × 100**, calculada em cada competência mensal. "
+    "A visualização percentual evidencia a composição etária, enquanto "
+    "a opção quantidade mostra o volume de exames. Os dados mensais "
+    "são regionais e excluem idade ignorada; não permitem filtro municipal."
 )
 todos_municipios_or = set(data_loader.MUNICIPIOS.values())
 municipios_selecionados_or = set(
@@ -320,12 +321,96 @@ else:
             ordem_grupos_mensal_or = [
                 "<25 anos", "25–64 anos", "≥65 anos"
             ]
+            # O denominador usa apenas exames com idade classificável
+            # na própria competência; não representa mulheres distintas.
+            totais_comp_or = (
+                mensal_etario_or.groupby(["ano", "mes_num"])[
+                    "quantidade_exames"
+                ].transform("sum")
+            )
+            mensal_etario_or["Participação (%)"] = (
+                mensal_etario_or["quantidade_exames"]
+                .div(totais_comp_or.where(totais_comp_or > 0))
+                .mul(100)
+            )
+            total_class_or = mensal_etario_or["quantidade_exames"].sum()
+            alvo_or = mensal_etario_or.loc[
+                mensal_etario_or["Grupo"] == "25–64 anos", "quantidade_exames"
+            ].sum()
+            pct_alvo_or = (
+                alvo_or / total_class_or * 100
+                if total_class_or > 0 else float("nan")
+            )
+            sep_class_or = mensal_etario_or.loc[
+                mensal_etario_or["mes_num"] == 9
+            ]
+            out_class_or = mensal_etario_or.loc[
+                mensal_etario_or["mes_num"] == 10
+            ]
+            def _participacao_alvo_mes_or(tabela):
+                total = tabela["quantidade_exames"].sum()
+                alvo = tabela.loc[
+                    tabela["Grupo"] == "25–64 anos", "quantidade_exames"
+                ].sum()
+                return (alvo / total * 100) if total > 0 else float("nan")
+
+            p_sep_or = _participacao_alvo_mes_or(sep_class_or)
+            p_out_or = _participacao_alvo_mes_or(out_class_or)
+            delta_pp_or = p_out_or - p_sep_or
+            kpi_alvo_a, kpi_alvo_b, kpi_alvo_c = st.columns(3)
+            kpi_alvo_a.metric(
+                "Exames de 25–64 anos", fmt_num(alvo_or)
+            )
+            kpi_alvo_b.metric(
+                "Participação de 25–64 anos",
+                f"{pct_alvo_or:.2f}%" if pd.notna(pct_alvo_or) else "N/D",
+            )
+            kpi_alvo_c.metric(
+                "Outubro − setembro (participação)",
+                f"{delta_pp_or:+.2f} p.p."
+                if pd.notna(delta_pp_or) else "N/D",
+                help="Diferença entre os percentuais de exames na "
+                     "população-alvo em outubro e setembro, agregados "
+                     "nos anos selecionados. Pontos percentuais.",
+            )
+            st.markdown(
+                '<div class="or-focus-header">'
+                '<strong>População-alvo: 25–64 anos.</strong> '
+                'A distribuição percentual permite identificar se '
+                'o perfil etário de exames se concentra nessa faixa. '
+                'Não comprova que os exames ocorreram por causa da campanha.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            modo_etario_or = st.radio(
+                "Exibir no gráfico",
+                ["Participação (%)", "Quantidade de exames"],
+                key="outubro_rosa_modo_mensal_etario",
+                horizontal=True,
+            )
+            dados_grafico_etario_or = mensal_etario_or.copy()
+            dados_grafico_etario_or["Ano"] = (
+                dados_grafico_etario_or["ano"].astype(int).astype(str)
+            )
+            dados_grafico_etario_or["Mês"] = (
+                dados_grafico_etario_or["mes_num"].astype(int).map(MESES)
+            )
+            anos_grafico_or = [
+                str(a) for a in sorted(dados_grafico_etario_or["ano"].unique())
+            ]
+            campo_valor_or = (
+                "Participação (%)" if modo_etario_or == "Participação (%)"
+                else "quantidade_exames"
+            )
             fig_mes_idade_or = px.bar(
-                mensal_etario_or,
-                x="Competência", y="quantidade_exames",
+                dados_grafico_etario_or,
+                x="Mês", y=campo_valor_or,
                 color="Grupo", barmode="stack",
+                facet_col="Ano", facet_col_wrap=2,
+                facet_col_spacing=0.10, facet_row_spacing=0.13,
                 category_orders={
-                    "Competência": ordem_competencias_or,
+                    "Ano": anos_grafico_or,
+                    "Mês": ORDEM_MESES,
                     "Grupo": ordem_grupos_mensal_or,
                 },
                 color_discrete_map={
@@ -333,27 +418,60 @@ else:
                     "25–64 anos": "#1757A6",
                     "≥65 anos": "#E85D2A",
                 },
+                custom_data=["quantidade_exames", "Participação (%)"],
                 labels={
-                    "Competência": "Mês / ano",
-                    "quantidade_exames": "Exames registrados",
+                    "quantidade_exames": "Quantidade de exames",
+                    "Participação (%)": "Participação dos exames (%)",
                 },
             )
+            fig_mes_idade_or.for_each_annotation(
+                lambda anotacao: anotacao.update(
+                    text=anotacao.text.split("=", 1)[-1],
+                    font=dict(size=15, color=NAVY),
+                )
+            )
             fig_mes_idade_or.update_traces(
-                hovertemplate="%{x}<br>Grupo: %{fullData.name}"
-                "<br>Exames: %{y:,.0f}<extra></extra>"
+                hovertemplate=(
+                    "%{x} — %{fullData.name}"
+                    "<br>Exames: %{customdata[0]:,.0f}"
+                    "<br>Participação: %{customdata[1]:.2f}%"
+                    "<extra></extra>"
+                )
             )
             fig_mes_idade_or.update_xaxes(
-                type="category", categoryorder="array",
-                categoryarray=ordem_competencias_or,
-                tickangle=-45,
+                categoryorder="array", categoryarray=ORDEM_MESES,
+                tickangle=0, title_text=None, showgrid=False,
+                showticklabels=True,
             )
+            fig_mes_idade_or.update_yaxes(
+                title_text=None, rangemode="tozero",
+                ticksuffix="%" if modo_etario_or == "Participação (%)" else "",
+                tickformat=".0f" if modo_etario_or == "Participação (%)"
+                else ",d",
+            )
+            if modo_etario_or == "Participação (%)":
+                fig_mes_idade_or.update_yaxes(range=[0, 100])
             fig_mes_idade_or.update_layout(
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+                legend=dict(
+                    orientation="h", yanchor="bottom", y=1.035, x=0,
+                    title_text="Grupo etário",
+                ),
+                margin=dict(l=65, r=40, t=125, b=65),
+                bargap=0.23,
+            )
+            altura_etario_or = max(
+                530, 345 * ((len(anos_grafico_or) + 1) // 2) + 110
             )
             download_plot(
                 fig_mes_idade_or,
-                "outubro_rosa_producao_mensal_por_grupo_etario.png",
-                altura=520, largura=max(1500, len(ordem_competencias_or) * 100),
+                "outubro_rosa_perfil_mensal_grupo_etario.png",
+                altura=altura_etario_or, largura=1600,
+                margem_superior=125,
+            )
+            st.caption(
+                "Cada painel apresenta um ano e cada barra representa "
+                "um mês. A fonte é regional (11 municípios), com "
+                "idade classificável."
             )
             tabela_mensal_or = (
                 mensal_etario_or.pivot(
