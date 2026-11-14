@@ -21,9 +21,6 @@ st.markdown("""
 <style>
 .pet-hero {margin-bottom:0!important}
 .or-mini-note {font-size:.86rem; color:#526B81; margin:4px 0 16px}
-.or-focus-header {background:#F2F7FB;border-left:4px solid #1757A6;
-    border-radius:9px; padding:12px 16px;margin:9px 0 16px;
-    color:#1A3B5C;line-height:1.55}
 .st-key-outubro_rosa_ordenacao [data-testid="stSelectbox"] {max-width:280px}
 
 .or-section-title {
@@ -351,16 +348,16 @@ st.markdown(
     "selecionados. O cruzamento mensal é **regional (11 municípios)**."
 )
 chart_help(
-    "**Os dois primeiros indicadores** somam setembro, outubro, "
-    "novembro e dezembro dos anos selecionados. "
-    "**O terceiro compara apenas setembro e outubro** desses anos: "
-    "participação em outubro menos participação em setembro, "
-    "em pontos percentuais (p.p.). "
-    "Participação (%) = exames de 25–64 anos ÷ exames com idade "
-    "classificada × 100. A seção 01 utiliza todos os exames registrados "
-    "na Gold geral; aqui, os exames sem idade classificada são excluídos. "
-    "Portanto, os totais podem ser diferentes. "
-    "A análise etária mensal é regional e não admite filtro municipal."
+    "**Exames e participação (25–64 anos):** consideram setembro a "
+    "dezembro dos anos selecionados. A participação é a quantidade "
+    "de exames desse grupo dividida pelo total com idade classificada.\n\n"
+    "**Diferença outubro − setembro:** compara somente a participação "
+    "do grupo de 25–64 anos nesses dois meses. "
+    "Exemplo: de 80,00% para 80,50% = **+0,50 ponto percentual**; "
+    "não significa 0,50% a mais de exames.\n\n"
+    "**Por que pode diferir da seção 01?** Aqui são considerados "
+    "apenas exames com idade classificada, de toda a 10ª CRS. "
+    "A seção 01 utiliza os registros gerais e permite filtrar municípios."
 )
 todos_municipios_or = set(data_loader.MUNICIPIOS.values())
 municipios_selecionados_or = set(
@@ -501,22 +498,6 @@ else:
                      "de 25–64 anos em outubro menos a participação "
                      "em setembro, nos anos selecionados. Não é a "
                      "variação da quantidade de exames.",
-            )
-            st.markdown(
-                '<div class="or-focus-header">'
-                '<strong>Como interpretar:</strong> os dois primeiros '
-                'cartões consideram <strong>setembro a dezembro</strong>; '
-                'o terceiro mede apenas a mudança na '
-                '<strong>participação de 25–64 anos entre setembro e '
-                'outubro</strong>. Por exemplo, passar de 80,00% para '
-                '80,50% equivale a <strong>+0,50 p.p.</strong>, não a '
-                '0,50% a mais de exames. '
-                '<strong>Os valores podem diferir da seção 01</strong>, '
-                'que utiliza todos os exames registrados; aqui, '
-                'consideram-se somente os de idade classificada. '
-                'Essas diferenças não demonstram efeito da campanha.'
-                '</div>',
-                unsafe_allow_html=True,
             )
             modo_etario_or = st.radio(
                 "Exibir no gráfico",
