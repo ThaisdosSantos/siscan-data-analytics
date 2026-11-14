@@ -610,11 +610,6 @@ else:
                     columns={"Competência": "Mês / ano"}
                 )
                 display_table(tabela_exibicao_or)
-            st.caption(
-                "Fonte: gold.fato_outubro_rosa_mensal_grupo_etario. "
-                "Valores regionais; diferenças pontuais frente à Gold "
-                "geral podem decorrer de idade ignorada."
-            )
     elif mensal_etario_or.empty:
         st.info("Não há registros acessíveis na Gold mensal por grupo etário.")
     else:
@@ -803,11 +798,6 @@ else:
                 expanded=False,
             ):
                 display_table(tabela_etaria_or.reset_index())
-            st.caption(
-                "Fonte: Gold Q02 consolidada, setembro–dezembro de "
-                "2020–2025. O total exclui 1 exame de idade ignorada "
-                "registrado em Quaraí."
-            )
 
 section("04", "Dados para consulta e exportação")
 st.markdown(
