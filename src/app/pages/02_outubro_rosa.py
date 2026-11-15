@@ -33,23 +33,38 @@ st.markdown("""
     color:#1A3B5C;
 }
 .or-section-index {color:#006C9A;margin-right:10px}
-/* Painel de interpretação: mesma leitura e hierarquia da página Faixa Etária. */
-.st-key-outubro_variacao_explicacao [data-testid="stExpander"] summary {
+/* Explicações da página Outubro Rosa — alinhadas à tipografia de Faixa Etária. */
+[class*="st-key-outubro_ajuda_"] [data-testid="stExpander"] {
+    border:1px solid #D8E5EF!important;
+    border-radius:10px!important;
+    background:#FFFFFF!important;
+    margin:8px 0 14px!important;
+}
+[class*="st-key-outubro_ajuda_"] [data-testid="stExpander"] summary {
     font-family:Manrope,Arial,sans-serif!important;
-    font-size:0.92rem!important;
+    font-size:.95rem!important;
     font-weight:700!important;
+    line-height:1.45!important;
     color:#1A3B5C!important;
 }
-.st-key-outubro_variacao_explicacao [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+[class*="st-key-outubro_ajuda_"] [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
     font-family:Manrope,Arial,sans-serif!important;
-    font-size:0.95rem!important;
-    line-height:1.65!important;
+    font-size:.95rem!important;
+    line-height:1.6!important;
     font-weight:500!important;
     color:#1A3B5C!important;
+    margin:0 0 .65rem!important;
+}
+[class*="st-key-outubro_ajuda_"] [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p:last-child {
+    margin-bottom:0!important;
+}
+[class*="st-key-outubro_ajuda_"] [data-testid="stExpander"] strong {
+    font-weight:750!important;
 }
 @media(max-width:768px) {
-    .st-key-outubro_variacao_explicacao [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
-        font-size:0.9rem!important;
+    [class*="st-key-outubro_ajuda_"] [data-testid="stExpander"] summary,
+    [class*="st-key-outubro_ajuda_"] [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+        font-size:.9rem!important;
         line-height:1.55!important;
     }
 }
@@ -236,9 +251,11 @@ def variacao_percentual(outubro, setembro):
         return float("nan")
     return (outubro - setembro) / setembro * 100
 
-def chart_help(message):
-    with st.expander("ℹ️ Como interpretar", expanded=False):
-        st.markdown(message)
+def chart_help(message, chave):
+    """Painel recolhível com tipografia consistente entre as seções."""
+    with st.container(key=f"outubro_ajuda_{chave}"):
+        with st.expander("ℹ️ Como interpretar", expanded=False):
+            st.markdown(message)
 
 section("01", "Produção mensal · setembro a dezembro")
 st.markdown(
@@ -249,7 +266,8 @@ chart_help(
     "**Variação (%) = (Outubro − Setembro) ÷ Setembro × 100.** "
     "A variação reúne os totais dos meses disponíveis nos anos "
     "selecionados; ela não equivale à média das variações anuais. "
-    "Se setembro for zero, o percentual não é calculável."
+    "Se setembro for zero, o percentual não é calculável.",
+    chave="producao",
 )
 totais_mes = (
     mensal.groupby("mes")["quantidade"].sum().reindex(MESES.keys())
@@ -330,8 +348,8 @@ pares_municipais["Variação (%)"] = [
 ]
 # Mesmo padrão da página Faixa Etária: descrição curta acima e
 # explicação metodológica única no painel recolhível.
-with st.container(key="outubro_variacao_explicacao"):
-    with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
+with st.container(key="outubro_ajuda_variacao"):
+    with st.expander("ℹ️ Como interpretar", expanded=False):
         st.markdown(
             "**Variação (%) = (outubro − setembro) ÷ setembro × 100**. "
             "Primeiro são pareados setembro e outubro do mesmo ano; "
@@ -457,7 +475,8 @@ chart_help(
     "quantidade de exames.\n\n"
     "**Importante:** os indicadores etários incluem somente exames "
     "com idade identificada dos 11 municípios; por isso, podem "
-    "diferir dos totais gerais apresentados na seção 01."
+    "diferir dos totais gerais apresentados na seção 01.",
+    chave="etaria",
 )
 todos_municipios_or = set(data_loader.MUNICIPIOS.values())
 municipios_selecionados_or = set(
@@ -776,17 +795,18 @@ st.markdown(
     "de 25 a 64 anos**. Os resultados reúnem os registros de "
     "**setembro a dezembro de 2020–2025**, sem distinção por ano ou mês."
 )
-with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
-    st.markdown(
-        "Cada barra representa **100% dos exames com idade identificada** "
-        "em um município. As cores indicam a participação de **menores "
-        "de 25 anos, 25–64 anos e 65 anos ou mais**. "
-        "Quanto maior a parcela de 25–64 anos, maior a participação "
-        "da população-alvo entre os exames registrados. "
-        "O gráfico **não mede quantas mulheres distintas foram atendidas** "
-        "nem permite avaliar exclusivamente o mês de outubro, pois "
-        "os dados estão consolidados para todo o período."
-    )
+with st.container(key="outubro_ajuda_perfil"):
+    with st.expander("ℹ️ Como interpretar", expanded=False):
+        st.markdown(
+            "Cada barra representa **100% dos exames com idade identificada** "
+            "em um município. As cores indicam a participação de **menores "
+            "de 25 anos, 25–64 anos e 65 anos ou mais**. "
+            "Quanto maior a parcela de 25–64 anos, maior a participação "
+            "da população-alvo entre os exames registrados. "
+            "O gráfico **não mede quantas mulheres distintas foram atendidas** "
+            "nem permite avaliar exclusivamente o mês de outubro, pois "
+            "os dados estão consolidados para todo o período."
+        )
 
 anos_totais_q02 = set(range(2020, 2026))
 anos_ativos_q02 = set(data_loader.selected_years())
