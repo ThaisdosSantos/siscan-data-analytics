@@ -1216,12 +1216,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                             plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
                             font=dict(color=NAVY),
                             legend=dict(
-                                title_text="", orientation="v",
-                                x=1.02, xanchor="left", y=1, yanchor="top",
+                                title_text="Faixa etária", orientation="h",
+                                x=0.5, xanchor="center", y=1.12, yanchor="bottom",
                                 font=dict(size=14, color=NAVY),
                                 bgcolor="rgba(255,255,255,0)",
                             ),
-                            margin=dict(l=85, r=135, t=60, b=300),
+                            margin=dict(l=85, r=50, t=120, b=300),
                         )
                         # O próprio Plotly Express preserva a relação entre cada
                         # percentual, categoria e grupo, sem conversão de arrays.
@@ -1238,7 +1238,12 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                                 x=0.5, font=dict(size=21, color=NAVY),
                             ),
                             width=1650, height=870,
-                            margin=dict(l=110, r=200, t=130, b=325),
+                            legend=dict(
+                                title_text="Faixa etária", orientation="h",
+                                x=0.5, xanchor="center", y=1.10, yanchor="bottom",
+                                font=dict(size=16, color=NAVY),
+                            ),
+                            margin=dict(l=110, r=70, t=170, b=325),
                             uniformtext=dict(mode="hide", minsize=12),
                         )
                         chart_with_right_click_download(
