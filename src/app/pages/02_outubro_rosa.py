@@ -80,28 +80,48 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, marge
     # Os números de cada faixa aparecem apenas no PNG exportado.
     # Não modificamos o gráfico interativo nem reutilizamos o mesmo formato
     # para quantidades e percentuais.
-    if rotulos_exportacao in {"percentual_vertical", "quantidade_vertical", "percentual_horizontal"}:
+    if rotulos_exportacao in {
+        "percentual_vertical", "quantidade_vertical", "percentual_horizontal"
+    }:
+        # O grupo >=65 anos é a fatia SUPERIOR das colunas empilhadas:
+        # nos meses com poucos exames, o rótulo interno fica cortado.
+        # No PNG vertical, ele passa a ficar acima da barra, com cor
+        # escura; os rótulos do grupo central continuam brancos.
+        barras_verticais = rotulos_exportacao != "percentual_horizontal"
+        percentual = rotulos_exportacao != "quantidade_vertical"
         for traco in imagem.data:
-            horizontal = rotulos_exportacao == "percentual_horizontal"
-            percentual = rotulos_exportacao != "quantidade_vertical"
+            nome_grupo = str(getattr(traco, "name", ""))
+            grupo_superior = nome_grupo in {"≥65 anos", ">=65 anos"}
+            texto_escuro = grupo_superior
             traco.update(
                 texttemplate=(
-                    "<b>%{x:.1f}%</b>" if horizontal
+                    "<b>%{x:.1f}%</b>"
+                    if not barras_verticais
                     else ("<b>%{y:.1f}%</b>" if percentual
                           else "<b>%{y:,.0f}</b>")
                 ),
-                textposition="inside",
+                textposition=(
+                    "outside" if grupo_superior and barras_verticais
+                    else "inside"
+                ),
                 insidetextanchor="middle",
                 textfont=dict(
                     family="Arial Black, Arial, sans-serif",
-                    size=13,
-                    color="#FFFFFF",
+                    size=12 if grupo_superior else 13,
+                    color=NAVY if texto_escuro else "#FFFFFF",
                 ),
                 cliponaxis=False,
                 constraintext="none",
             )
-        # Mantém todos os rótulos, inclusive em segmentos estreitos.
-        imagem.update_layout(uniformtext_minsize=11, uniformtext_mode="show")
+        if rotulos_exportacao == "percentual_vertical":
+            # Deixa espaço acima dos 100% para as etiquetas laranja,
+            # mas não cria marcas percentuais acima de 100 no eixo.
+            imagem.update_yaxes(
+                range=[0, 113], tickvals=[0, 20, 40, 60, 80, 100],
+            )
+        imagem.update_layout(
+            uniformtext_minsize=10, uniformtext_mode="show",
+        )
     imagem.update_layout(
         width=largura,
         height=max(altura + 100, 650),
