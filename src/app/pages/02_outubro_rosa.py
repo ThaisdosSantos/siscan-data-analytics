@@ -465,8 +465,11 @@ if not menos_anos.empty:
 
 section("02", "Faixa etária · participação na população-alvo")
 st.markdown(
-    f"Exames de **25 a 64 anos** entre setembro e dezembro de **{periodo}** "
-    "· recorte regional (11 municípios)."
+    f"Exames de **25 a 64 anos** entre setembro e dezembro de **{periodo}**."
+)
+st.caption(
+    "ℹ️ **Limitação dos dados:** o cruzamento mensal por idade é regional "
+    "(11 municípios juntos) e não permite análise individual por município."
 )
 chart_help(
     "**Exames (set.–dez.):** quantidade registrada na faixa de 25 a 64 anos.\n\n"
