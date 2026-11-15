@@ -930,6 +930,96 @@ def apply_custom_css():
         padding:14px!important;min-height:75px!important;
       }
     }
+    /* Layout responsivo compartilhado entre TODAS as guias.
+       Não altera a apresentação de gráficos PNG nem a barra lateral. */
+    [data-testid="stMain"] .stTabs [data-baseweb="tab-list"] {
+      display:flex;overflow-x:auto;overflow-y:hidden;
+      flex-wrap:nowrap;-webkit-overflow-scrolling:touch;
+      scrollbar-width:thin;gap:4px;max-width:100%;
+    }
+    [data-testid="stMain"] .stTabs [data-baseweb="tab"] {
+      flex:0 0 auto;min-width:max-content;white-space:nowrap;
+      padding-inline:clamp(9px,1.6vw,16px);
+    }
+    [data-testid="stMain"] .stTabs [data-baseweb="tab-panel"] {
+      min-width:0;max-width:100%;
+    }
+    [data-testid="stMain"] [data-testid="stExpander"] summary {
+      min-width:0;max-width:100%;white-space:normal;
+      overflow-wrap:anywhere;
+    }
+    [data-testid="stMain"] [data-testid="stExpander"]
+      [data-testid="stMarkdownContainer"] {min-width:0;max-width:100%;}
+    [data-testid="stMain"] [data-testid="stMetricLabel"] {
+      line-height:1.45;overflow-wrap:anywhere;
+    }
+    [data-testid="stMain"] [data-testid="stMetricValue"] {
+      overflow-wrap:anywhere;line-height:1.15;
+    }
+    [data-testid="stMain"] [data-testid="stSelectbox"],
+    [data-testid="stMain"] [data-testid="stMultiSelect"],
+    [data-testid="stMain"] [data-testid="stRadio"],
+    [data-testid="stMain"] [data-testid="stSegmentedControl"],
+    [data-testid="stMain"] [data-testid="stNumberInput"] {
+      min-width:0;max-width:100%;
+    }
+    [data-testid="stMain"] [data-testid="stRadio"] [role="radiogroup"] {
+      display:flex;flex-wrap:wrap;row-gap:8px;
+    }
+    [data-testid="stMain"] [data-testid="stDownloadButton"],
+    [data-testid="stMain"] [data-testid="stButton"] {max-width:100%;}
+    [data-testid="stMain"] [data-testid="stDataFrame"] {
+      overflow-x:auto;-webkit-overflow-scrolling:touch;
+    }
+    [data-testid="stMain"] .pet-table-scroller,
+    [data-testid="stMain"] .q3-table-scroller {
+      overscroll-behavior-x:contain;
+    }
+    [data-testid="stMain"] .pet-table-scroller table,
+    [data-testid="stMain"] .q3-table-scroller table {
+      width:max-content;min-width:100%;
+    }
+    @media (max-width:768px) {
+      [data-testid="stMain"] h2,
+      [data-testid="stMain"] .panorama-section-title,
+      [data-testid="stMain"] .q3-section-title,
+      [data-testid="stMain"] .q5-section-title,
+      [data-testid="stMain"] .adequabilidade-section-title,
+      [data-testid="stMain"] .or-section-title {
+        font-size:clamp(1.13rem,3.8vw,1.38rem)!important;
+        line-height:1.4!important;
+        overflow-wrap:break-word;
+      }
+      [data-testid="stMain"] [data-testid="stMarkdownContainer"] p {
+        overflow-wrap:break-word;
+      }
+      [data-testid="stMain"] [data-testid="stMetricLabel"] {
+        font-size:clamp(.76rem,1.8vw,.88rem)!important;
+      }
+      [data-testid="stMain"] [data-testid="stMetricValue"] {
+        font-size:clamp(1.25rem,3vw,1.7rem)!important;
+      }
+      [data-testid="stMain"] [data-testid="stExpander"] {
+        max-width:100%;
+      }
+    }
+    @media (max-width:480px) {
+      [data-testid="stMain"] [data-testid="stMetricLabel"] {
+        font-size:.8rem!important;
+      }
+      [data-testid="stMain"] [data-testid="stMetricValue"] {
+        font-size:clamp(1.28rem,5.6vw,1.8rem)!important;
+      }
+      [data-testid="stMain"] [data-testid="stRadio"] [role="radiogroup"] {
+        gap:7px 12px;
+      }
+      [data-testid="stMain"] [data-testid="stDownloadButton"] button {
+        min-height:42px;width:auto;max-width:100%;
+      }
+      [data-testid="stMain"] [data-testid="stExpander"] summary {
+        padding-block:11px;
+      }
+    }
     </style>""", unsafe_allow_html=True)
 
 
