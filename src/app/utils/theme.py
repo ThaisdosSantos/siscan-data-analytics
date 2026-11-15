@@ -1128,6 +1128,94 @@ def apply_custom_css():
         .pet-hero .pet-active-scope {gap:8px!important;}
         .pet-hero .pet-active-scope .pet-scope-chip {font-size:.86rem!important;padding:8px 11px!important;}
     }
+
+    /* Ajuste de zoom 110% e navegação: largura mínima estável, sem textos espremidos. */
+    @media (min-width: 901px) {
+      [data-testid="stSidebar"][aria-expanded="true"] {
+        width: 278px!important;
+        min-width: 278px!important;
+        max-width: 278px!important;
+        flex: 0 0 278px!important;
+      }
+      [data-testid="stSidebar"][aria-expanded="true"] > div {
+        width:100%!important;
+        min-width:0!important;
+        box-sizing:border-box!important;
+      }
+    }
+    [data-testid="stSidebar"] .lovable-brand {
+      min-width:0!important;
+      width:100%!important;
+      box-sizing:border-box!important;
+      align-items:center!important;
+    }
+    [data-testid="stSidebar"] .lovable-brand > * {min-width:0!important;}
+    [data-testid="stSidebar"] .lovable-brand strong {
+      overflow-wrap:normal!important;
+      word-break:normal!important;
+    }
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a {
+      min-width:0!important;
+      box-sizing:border-box!important;
+      align-items:center!important;
+    }
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a p {
+      min-width:0!important;
+      overflow-wrap:break-word!important;
+      word-break:normal!important;
+    }
+    /* Botão circular creme com três linhas verde-escuras, conforme referência. 
+       Mantém o botão nativo clicável para abrir a sidebar. */
+    [data-testid="stSidebarCollapsedControl"] button,
+    [data-testid="stSidebarCollapsedControl"] > button {
+      position:relative!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      width:40px!important;height:40px!important;
+      min-width:40px!important;
+      padding:0!important;
+      border:1px solid #e7dac8!important;
+      border-radius:50%!important;
+      background:#fcf9f3!important;
+      box-shadow:none!important;
+      color:#123f37!important;
+    }
+    [data-testid="stSidebarCollapsedControl"] button:hover {
+      background:#f4ecdf!important;
+      border-color:#d4c4ac!important;
+    }
+    [data-testid="stSidebarCollapsedControl"] button svg,
+    [data-testid="stSidebarCollapsedControl"] button [data-testid="stIconMaterial"] {
+      opacity:0!important;
+    }
+    [data-testid="stSidebarCollapsedControl"] button::after {
+      content:""!important;
+      display:block!important;
+      position:absolute!important;
+      width:17px!important;height:14px!important;
+      left:50%!important;top:50%!important;
+      transform:translate(-50%,-50%)!important;
+      background:linear-gradient(to bottom,
+        #173f39 0 2px, transparent 2px 6px,
+        #173f39 6px 8px, transparent 8px 12px,
+        #173f39 12px 14px)!important;
+      border-radius:1px!important;
+      pointer-events:none!important;
+    }
+    @media(max-width:900px){
+      [data-testid="stSidebar"][aria-expanded="true"] {
+        width:min(280px,88vw)!important;
+        min-width:0!important;
+        max-width:88vw!important;
+      }
+    }
+    @media(max-width:480px){
+      [data-testid="stSidebar"][aria-expanded="true"] {
+        width:min(280px,92vw)!important;
+        max-width:92vw!important;
+      }
+    }
     </style>""", unsafe_allow_html=True)
 
 
