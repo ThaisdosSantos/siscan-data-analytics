@@ -1020,6 +1020,91 @@ def apply_custom_css():
         padding-block:11px;
       }
     }
+
+    /* Componentes comuns: mesma hierarquia, legibilidade e recortes em todas as páginas. */
+    [data-testid="stMain"] .panorama-section-title,
+    [data-testid="stMain"] .q3-section-title,
+    [data-testid="stMain"] .q5-section-title,
+    [data-testid="stMain"] .adequabilidade-section-title,
+    [data-testid="stMain"] .or-section-title {
+        margin:30px 0 17px!important; padding:9px 0 12px!important;
+        border-bottom:2px solid #D8E5EF!important;
+        font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif!important;
+        color:#1A3B5C!important;
+    }
+    [data-testid="stMain"] h3 {
+        font:700 clamp(1.06rem,1.5vw,1.22rem)/1.4 Manrope,Arial,sans-serif!important;
+        color:#1A3B5C!important;
+    }
+    [data-testid="stMain"] [data-testid="stMarkdownContainer"] > p {
+        font-family:Manrope,Arial,sans-serif!important;
+        font-size:.95rem!important; line-height:1.6!important;
+    }
+    [data-testid="stMain"] [data-testid="stCaptionContainer"] p {
+        font-family:Manrope,Arial,sans-serif!important;
+        font-size:.83rem!important; line-height:1.5!important;
+    }
+    [data-testid="stMain"] [data-testid="stMetric"] {
+        border-radius:12px!important; min-height:124px;
+        padding:18px 20px!important;
+    }
+    [data-testid="stMain"] [data-testid="stMetricLabel"] p {
+        font-family:Manrope,Arial,sans-serif!important;
+        font-weight:700!important; font-size:.85rem!important;
+        line-height:1.4!important;
+    }
+    [data-testid="stMain"] [data-testid="stMetricValue"] {
+        font-family:Manrope,Arial,sans-serif!important;
+        font-weight:780!important;
+    }
+    [data-testid="stMain"] [data-testid="stExpander"] {
+        border:1px solid #D8E5EF!important; border-radius:10px!important;
+        background:#fff!important; margin:8px 0 14px!important;
+    }
+    [data-testid="stMain"] [data-testid="stExpander"] summary p {
+        font-family:Manrope,Arial,sans-serif!important;
+        font-size:.95rem!important; line-height:1.45!important;
+        font-weight:700!important; color:#1A3B5C!important;
+    }
+    [data-testid="stMain"] [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+        font-family:Manrope,Arial,sans-serif!important;
+        font-size:.95rem!important; line-height:1.6!important;
+        font-weight:500!important; color:#1A3B5C!important;
+    }
+    .pet-indicator-context {
+        display:flex; align-items:flex-start; flex-wrap:wrap; gap:5px 12px;
+        margin:12px 0 16px; padding:11px 15px;
+        border-left:4px solid #006C9A; border-radius:9px;
+        background:#EEF5FA; color:#1A3B5C;
+        font:500 .86rem/1.55 Manrope,Arial,sans-serif;
+    }
+    .pet-indicator-context strong {font-weight:800;color:#1A3B5C;}
+    .pet-indicator-context span {color:#38566F;}
+    .pet-hero .pet-active-scope {gap:12px!important;margin-top:22px!important;align-items:center!important;}
+    .pet-hero .pet-active-scope .pet-scope-label {color:white!important;font-size:.85rem!important;font-weight:800!important;}
+    .pet-hero .pet-active-scope .pet-scope-chip {
+        color:white!important;background:rgba(255,255,255,.19)!important;
+        border:1px solid rgba(255,255,255,.48)!important;
+        font-size:.95rem!important;font-weight:700!important;
+        line-height:1.4!important;padding:9px 14px!important;
+    }
+    @media(max-width:768px) {
+        [data-testid="stMain"] .panorama-section-title,
+        [data-testid="stMain"] .q3-section-title,
+        [data-testid="stMain"] .q5-section-title,
+        [data-testid="stMain"] .adequabilidade-section-title,
+        [data-testid="stMain"] .or-section-title {
+            margin:24px 0 13px!important;
+            font-size:clamp(1.13rem,3.8vw,1.38rem)!important;
+        }
+        [data-testid="stMain"] [data-testid="stExpander"] summary p,
+        [data-testid="stMain"] [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+            font-size:.9rem!important;line-height:1.55!important;
+        }
+        .pet-indicator-context {font-size:.82rem;margin:10px 0 14px;padding:10px 12px;}
+        .pet-hero .pet-active-scope {gap:8px!important;}
+        .pet-hero .pet-active-scope .pet-scope-chip {font-size:.86rem!important;padding:8px 11px!important;}
+    }
     </style>""", unsafe_allow_html=True)
 
 
@@ -1055,6 +1140,16 @@ def page_header(kicker, title, description=""):
         + html.escape(str(kicker)) + '</p><h1 class="pet-hero-title">'
         + html.escape(str(title)) + '</h1>' + description_html
         + active_scope_html() + '</header>',
+        unsafe_allow_html=True,
+    )
+
+
+def indicator_context(label, description):
+    """Identifica explicitamente a base temporal e populacional dos KPIs."""
+    st.markdown(
+        '<div class="pet-indicator-context" role="note"><strong>'
+        + html.escape(str(label)) + '</strong><span>'
+        + html.escape(str(description)) + '</span></div>',
         unsafe_allow_html=True,
     )
 

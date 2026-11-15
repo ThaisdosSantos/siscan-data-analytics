@@ -9,7 +9,7 @@ import plotly.express as px
 import streamlit as st
 
 from utils.theme import (
-    apply_custom_css, page_header, display_table, fmt_num, NAVY,
+    apply_custom_css, page_header, indicator_context, display_table, fmt_num, NAVY,
 )
 from utils.chart_download import chart_with_right_click_download
 from utils import data_loader
@@ -276,6 +276,11 @@ setembro = totais_mes.get(9, float("nan"))
 outubro = totais_mes.get(10, float("nan"))
 diferenca = outubro - setembro if pd.notna(outubro) and pd.notna(setembro) else float("nan")
 variacao = variacao_percentual(outubro, setembro)
+indicator_context(
+    f"Produção mensal · {periodo}",
+    "Os três cartões comparam a soma dos registros de setembro e outubro nos anos "
+    "selecionados. Cada mês utiliza as competências disponíveis; não é uma média anual.",
+)
 c1, c2, c3 = st.columns(3)
 c1.metric("Exames em setembro", fmt_num(setembro) if pd.notna(setembro) else "N/D")
 c2.metric("Exames em outubro", fmt_num(outubro) if pd.notna(outubro) else "N/D")
@@ -289,6 +294,14 @@ st.markdown(
     f' · {cidades} município(s) · produção registrada, não cobertura</p>',
     unsafe_allow_html=True,
 )
+anos_set_or = set(mensal.loc[mensal["mes"] == 9, "ano"])
+anos_out_or = set(mensal.loc[mensal["mes"] == 10, "ano"])
+if anos_set_or != anos_out_or:
+    st.warning(
+        "Atenção: setembro e outubro não aparecem em todos os mesmos anos. "
+        "Os cartões acima agregam meses disponíveis; a comparação municipal "
+        "abaixo utiliza apenas pares completos do mesmo município e ano."
+    )
 fig = px.bar(
     mensal, x="ano_texto", y="quantidade", color="Mês",
     barmode="group", color_discrete_map=CORES_MESES,
@@ -338,6 +351,11 @@ pares_municipais = (
         "municipio": "Município",
         "Anos_pareados": "Anos pareados",
     })
+)
+indicator_context(
+    f"Comparação municipal · {periodo}",
+    f"Base comparável: {len(pares_completos)} pares município × ano com ambos os "
+    "meses (setembro e outubro). Sem par completo, o ano não entra na variação municipal.",
 )
 pares_municipais["Diferença absoluta"] = (
     pares_municipais["Outubro"] - pares_municipais["Setembro"]
@@ -457,6 +475,11 @@ if not menos_anos.empty:
     )
 
 section("02", "Faixa etária · participação na população-alvo")
+indicator_context(
+    f"Perfil etário mensal · {periodo}",
+    "Somente setembro a dezembro dos anos selecionados, em toda a 10ª CRS "
+    "(11 municípios juntos). Esta base não permite filtro municipal individual.",
+)
 st.markdown(
     "Avalia a participação de exames realizados em mulheres de "
     "**25 a 64 anos** nos meses de setembro a dezembro dos anos "
@@ -614,6 +637,12 @@ else:
                 ) if pd.notna(p_sep_or) and pd.notna(p_out_or)
                 else "Não há dados suficientes de setembro e outubro "
                      "para calcular a diferença de participação.",
+            )
+            st.caption(
+                "**Recorte dos indicadores:** os dois primeiros acumulam setembro–dezembro "
+                f"de {periodo}; o terceiro compara **somente setembro e outubro** de "
+                f"{periodo}, pela diferença entre participações (pontos percentuais), "
+                "não pela variação do número de exames."
             )
             modo_etario_or = st.radio(
                 "Exibir no gráfico",
@@ -789,6 +818,11 @@ else:
         )
 
 section("03", "Perfil etário municipal · consolidado 2020–2025")
+indicator_context(
+    "Base fixa · setembro–dezembro de 2020–2025",
+    "A tabela Gold deste cruzamento não contém ano ou mês. Exige os seis anos "
+    "selecionados e respeita o filtro de municípios; não representa somente outubro.",
+)
 st.markdown(
     "Mostra como os exames citopatológicos se distribuem entre os grupos "
     "etários em cada município, com destaque para a **população-alvo "
@@ -980,6 +1014,10 @@ else:
                 display_table(tabela_etaria_or.reset_index())
 
 section("04", "Dados para consulta e exportação")
+indicator_context(
+    f"Dados mensais para exportação · {periodo}",
+    "Exames observados entre setembro e dezembro dos anos e municípios selecionados.",
+)
 st.markdown(
     "Consulte os registros observados por município, ano e mês "
     "ou exporte os dados utilizados na análise de produção mensal."

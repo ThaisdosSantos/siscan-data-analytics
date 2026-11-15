@@ -2,9 +2,9 @@ import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,ORANGE,SKY
+from utils.theme import apply_custom_css,page_header,indicator_context,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,ORANGE,SKY
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered,require,sidebar_filters
+from utils.data_loader import filtered,require,sidebar_filters,years_label
 st.set_page_config(page_title="Adequabilidade | SISCAN",layout="wide")
 apply_custom_css()
 sidebar_filters()
@@ -59,6 +59,11 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
         "Os indicadores resumem a **quantidade de amostras registradas** e a "
         "**proporção de amostras satisfatórias, insatisfatórias ou rejeitadas** "
         "no recorte selecionado."
+    )
+    indicator_context(
+        f"Indicadores de adequabilidade · {years_label()}",
+        "Totais acumulados dos municípios selecionados; as proporções usam o total "
+        "de amostras registradas no mesmo recorte como denominador.",
     )
     metric_row([("Amostras avaliadas",fmt_num(tot)),("Satisfatórias",fmt_pct(pct(g.get("Satisfatória",0),tot))),
                 ("Insatisfatórias e rejeitadas",fmt_pct(pct(ruim,tot)))])
