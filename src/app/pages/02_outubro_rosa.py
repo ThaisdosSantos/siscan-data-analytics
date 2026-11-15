@@ -555,6 +555,11 @@ else:
                     "<extra></extra>"
                 )
             )
+            modo_percentual_or = modo_etario_or == "Participação (%)"
+            titulo_y_etario_or = (
+                "Participação dos exames (%)"
+                if modo_percentual_or else "Quantidade de exames"
+            )
             fig_mes_idade_or.update_xaxes(
                 categoryorder="array", categoryarray=ORDEM_MESES,
                 tickangle=0, title_text=None, showgrid=False,
@@ -562,22 +567,51 @@ else:
             )
             fig_mes_idade_or.update_yaxes(
                 title_text=None, rangemode="tozero",
-                ticksuffix="%" if modo_etario_or == "Participação (%)" else "",
-                tickformat=".0f" if modo_etario_or == "Participação (%)"
-                else ",d",
+                ticksuffix="%" if modo_percentual_or else "",
+                tickformat=".0f" if modo_percentual_or else ",d",
             )
-            if modo_etario_or == "Participação (%)":
+            # Cada opção tem seu próprio eixo e limites. Isso evita
+            # que a escala percentual de 0–100 seja mantida ao trocar
+            # para a visualização de quantidades.
+            if modo_percentual_or:
                 fig_mes_idade_or.update_yaxes(range=[0, 100])
+            else:
+                max_mensal_or = (
+                    dados_grafico_etario_or.groupby(
+                        ["ano", "mes_num"]
+                    )["quantidade_exames"].sum(min_count=1).max()
+                )
+                fig_mes_idade_or.update_yaxes(
+                    range=[0, float(max_mensal_or) * 1.12]
+                    if pd.notna(max_mensal_or) and max_mensal_or > 0
+                    else None
+                )
+            # Eixos identificados em todos os painéis: meses no eixo
+            # horizontal e unidade de medida no eixo vertical.
+            linhas_facet_or = (len(anos_grafico_or) + 1) // 2
+            for linha_or in range(1, linhas_facet_or + 1):
+                fig_mes_idade_or.update_yaxes(
+                    title_text=titulo_y_etario_or,
+                    title_standoff=8,
+                    row=linha_or, col=1,
+                )
+                for coluna_or in range(1, 3):
+                    if (linha_or - 1) * 2 + coluna_or <= len(anos_grafico_or):
+                        fig_mes_idade_or.update_xaxes(
+                            title_text="Meses",
+                            title_standoff=9,
+                            row=linha_or, col=coluna_or,
+                        )
             fig_mes_idade_or.update_layout(
                 legend=dict(
                     orientation="h", yanchor="bottom", y=1.035, x=0,
                     title_text="Grupo etário",
                 ),
-                margin=dict(l=65, r=40, t=125, b=65),
+                margin=dict(l=105, r=40, t=125, b=85),
                 bargap=0.23,
             )
             altura_etario_or = max(
-                530, 345 * ((len(anos_grafico_or) + 1) // 2) + 110
+                580, 390 * ((len(anos_grafico_or) + 1) // 2) + 130
             )
             download_plot(
                 fig_mes_idade_or,
