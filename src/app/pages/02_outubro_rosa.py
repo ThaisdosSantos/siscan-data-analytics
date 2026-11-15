@@ -571,7 +571,7 @@ else:
                 x="Mês", y=campo_valor_or,
                 color="Grupo", barmode="stack",
                 facet_col="Ano", facet_col_wrap=2,
-                facet_col_spacing=0.10, facet_row_spacing=0.13,
+                facet_col_spacing=0.10, facet_row_spacing=0.18,
                 category_orders={
                     "Ano": anos_grafico_or,
                     "Mês": ORDEM_MESES,
@@ -582,21 +582,35 @@ else:
                     "25–64 anos": "#1757A6",
                     "≥65 anos": "#E85D2A",
                 },
-                custom_data=["quantidade_exames", "Participação (%)"],
+                custom_data=["quantidade_exames", "Participação (%)", "Ano"],
                 labels={
                     "quantidade_exames": "Quantidade de exames",
                     "Participação (%)": "Participação dos exames (%)",
                 },
             )
-            fig_mes_idade_or.for_each_annotation(
-                lambda anotacao: anotacao.update(
+            # Cada ano deve aparecer ABAIXO dos quatro meses do seu painel.
+            # Os títulos automáticos de facetagem são colocados em cima
+            # pelo Plotly; reposicionamos no rodapé da respectiva linha.
+            dominios_y_etario_or = [
+                list(getattr(fig_mes_idade_or.layout, chave).domain)
+                for chave in fig_mes_idade_or.layout
+                if chave.startswith("yaxis")
+                and getattr(fig_mes_idade_or.layout, chave).domain is not None
+            ]
+            for anotacao in fig_mes_idade_or.layout.annotations:
+                dominio_painel_or = min(
+                    dominios_y_etario_or,
+                    key=lambda d: abs(d[1] - float(anotacao.y)),
+                )
+                anotacao.update(
                     text=anotacao.text.split("=", 1)[-1],
+                    y=dominio_painel_or[0] - 0.055,
+                    yanchor="top",
                     font=dict(size=15, color=NAVY),
                 )
-            )
             fig_mes_idade_or.update_traces(
                 hovertemplate=(
-                    "%{x} — %{fullData.name}"
+                    "%{x}/%{customdata[2]} — %{fullData.name}"
                     "<br>Exames: %{customdata[0]:,.0f}"
                     "<br>Participação: %{customdata[1]:.2f}%"
                     "<extra></extra>"
@@ -633,7 +647,7 @@ else:
             # Os meses e as escalas permanecem em cada ano, sem
             # repetir "Meses" ou a unidade em cada pequeno gráfico.
             fig_mes_idade_or.add_annotation(
-                text="Meses", x=0.5, y=-0.095,
+                text="Competência (mês / ano)", x=0.5, y=-0.17,
                 xref="paper", yref="paper",
                 showarrow=False, font=dict(size=13, color=NAVY),
             )
@@ -650,18 +664,18 @@ else:
                     orientation="h", yanchor="bottom", y=1.035, x=0,
                     title_text="Grupo etário",
                 ),
-                margin=dict(l=75, r=40, t=115, b=60),
+                margin=dict(l=75, r=40, t=115, b=115),
                 bargap=0.23,
             )
             altura_etario_or = max(
-                520, 345 * ((len(anos_grafico_or) + 1) // 2) + 115
+                590, 365 * ((len(anos_grafico_or) + 1) // 2) + 150
             )
             download_plot(
                 fig_mes_idade_or,
                 "outubro_rosa_perfil_mensal_grupo_etario.png",
                 altura=altura_etario_or, largura=1600,
                 margem_superior=125, margem_esquerda=120,
-                margem_inferior=105,
+                margem_inferior=150,
                 rotulos_exportacao=(
                     "percentual_vertical" if modo_percentual_or
                     else "quantidade_vertical"
@@ -673,9 +687,9 @@ else:
                 ),
             )
             st.caption(
-                "Cada painel apresenta um ano e cada barra representa "
-                "um mês. A fonte é regional (11 municípios), com "
-                "idade classificável."
+                "Os meses aparecem no eixo horizontal e o ano fica "
+                "abaixo de cada painel. Cada barra representa uma "
+                "competência mês/ano; dados regionais com idade classificável."
             )
             tabela_mensal_or = (
                 mensal_etario_or.pivot(
