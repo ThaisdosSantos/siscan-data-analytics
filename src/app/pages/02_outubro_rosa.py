@@ -1,5 +1,8 @@
 """Outubro Rosa: cruzamentos mensais da Gold territorial, setembro a dezembro."""
 import copy
+import base64
+
+import numpy as np
 
 import pandas as pd
 import plotly.express as px
@@ -122,11 +125,26 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, marge
             for traco in imagem.data:
                 if str(getattr(traco, "name", "")) != "<25 anos":
                     continue
-                valores = list(traco.x)
+                # Plotly 6 pode armazenar vetores numéricos como
+                # dicionário binário {dtype, bdata}, e não como lista.
+                # Iterar diretamente nesse dicionário produz as chaves
+                # "dtype"/"bdata" e provocava ValueError em float().
+                bruto_x = traco.x
+                if isinstance(bruto_x, dict) and "bdata" in bruto_x:
+                    valores = np.frombuffer(
+                        base64.b64decode(bruto_x["bdata"]),
+                        dtype=np.dtype(bruto_x["dtype"]),
+                    ).tolist()
+                else:
+                    valores = list(bruto_x)
                 municipios = list(traco.y)
                 templates = []
                 for valor, municipio in zip(valores, municipios):
-                    largura_faixa = float(valor)
+                    try:
+                        largura_faixa = float(valor)
+                    except (TypeError, ValueError):
+                        templates.append("<b>%{x:.1f}%</b>")
+                        continue
                     if 0 < largura_faixa < 4:
                         templates.append("")
                         imagem.add_annotation(
