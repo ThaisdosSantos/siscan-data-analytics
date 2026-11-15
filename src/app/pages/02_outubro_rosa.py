@@ -520,14 +520,11 @@ else:
             p_sep_or = _participacao_alvo_mes_or(sep_class_or)
             p_out_or = _participacao_alvo_mes_or(out_class_or)
             delta_pp_or = p_out_or - p_sep_or
-            anos_etarios_or = sorted(
-                mensal_etario_or["ano"].dropna().astype(int).unique().tolist()
-            )
-            periodo_etario_or = ", ".join(map(str, anos_etarios_or))
-            st.markdown(
-                "**Período dos indicadores:** setembro a dezembro dos anos "
-                f"**{periodo_etario_or}**. "
-                "A comparação em p.p. usa **somente setembro e outubro**."
+            st.caption(
+                "**Meses considerados:** os dois primeiros indicadores "
+                "incluem **setembro a dezembro** dos anos selecionados; "
+                "o terceiro compara **outubro com setembro** desses anos. "
+                "Os anos ativos já aparecem no filtro lateral."
             )
             kpi_alvo_a, kpi_alvo_b, kpi_alvo_c = st.columns(3)
             kpi_alvo_a.metric(
