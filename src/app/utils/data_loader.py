@@ -370,7 +370,10 @@ def sidebar_filters():
         st.divider()
         _render_filter_controls()
         st.markdown(
-            '<div class="lovable-footer">Fonte: SISCAN/DATASUS · 2020–2025'
-            '<br>TCC Engenharia de Software · Informação e Saúde Digital</div>',
+            '<div class="lovable-footer" aria-label="Fonte e contexto do projeto">'
+            '<span class="lovable-footer-source">Dados: SISCAN/DATASUS</span>'
+            '<span class="lovable-footer-period">Período: 2020–2025</span>'
+            '<span class="lovable-footer-project">TCC · Engenharia de Software</span>'
+            '</div>',
             unsafe_allow_html=True,
         )

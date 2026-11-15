@@ -126,7 +126,19 @@ def apply_custom_css():
       .lovable-brand strong {font-size:1.08rem;}
     }
     .lovable-label {font-weight:800;color:#9cc5de!important;font-size:.68rem;letter-spacing:.15em;margin:14px 0 9px;}
-    .lovable-footer {font-size:.72rem;line-height:1.8;color:#bad0df!important;border-top:1px solid #456b87;margin-top:20px;padding-top:18px;}
+    .lovable-footer {
+      display:flex;flex-direction:column;gap:4px;
+      font:500 .74rem/1.45 Manrope,Arial,sans-serif;
+      color:#c8ddea!important;
+      border-top:1px solid rgba(201,224,239,.25);
+      margin-top:20px;padding:16px 5px 8px;
+    }
+    .lovable-footer span {display:block;color:inherit!important;}
+    .lovable-footer .lovable-footer-source {font-weight:750;color:#f1f7fc!important;}
+    .lovable-footer .lovable-footer-period {color:#c8ddea!important;}
+    .lovable-footer .lovable-footer-project {
+      color:#a9c4d6!important;font-size:.7rem;margin-top:6px;
+    }
     [data-testid="stSidebar"] [data-testid="stPageLink"] a {padding:10px 13px;border-radius:10px;font-weight:650;text-decoration:none;}
     [data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {background:#285778;}
     [data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {background:#006c9a!important;}
