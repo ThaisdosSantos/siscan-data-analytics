@@ -1129,162 +1129,131 @@ def apply_custom_css():
         .pet-hero .pet-active-scope .pet-scope-chip {font-size:.86rem!important;padding:8px 11px!important;}
     }
 
-    /* Ajuste de zoom 110% e navegação: largura mínima estável, sem textos espremidos. */
-    @media (min-width: 901px) {
-      [data-testid="stSidebar"][aria-expanded="true"] {
-        width: 278px!important;
-        min-width: 278px!important;
-        max-width: 278px!important;
-        flex: 0 0 278px!important;
-      }
-      [data-testid="stSidebar"][aria-expanded="true"] > div {
-        width:100%!important;
-        min-width:0!important;
-        box-sizing:border-box!important;
-      }
-    }
-    [data-testid="stSidebar"] .lovable-brand {
-      min-width:0!important;
-      width:100%!important;
-      box-sizing:border-box!important;
+
+    /* feature: Menu único responsivo com o mesmo botão aberto/fechado.
+       Streamlit atual: stExpandSidebarButton (abrir), stSidebarCollapseButton (fechar).
+       Compatibilidade: stSidebarCollapsedControl (versões anteriores). */
+    [data-testid="stExpandSidebarButton"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="stSidebarCollapseButton"] {
+      display:flex!important;
       align-items:center!important;
+      justify-content:center!important;
+      width:44px!important;
+      height:44px!important;
+      min-width:44px!important;
+      min-height:44px!important;
+      margin:0!important;
+      padding:0!important;
+      background:transparent!important;
+      border:0!important;
+      line-height:0!important;
+      z-index:10!important;
     }
-    [data-testid="stSidebar"] .lovable-brand > * {min-width:0!important;}
-    [data-testid="stSidebar"] .lovable-brand strong {
-      overflow-wrap:normal!important;
-      word-break:normal!important;
-    }
-    [data-testid="stSidebar"] [data-testid="stPageLink"] a {
-      min-width:0!important;
-      box-sizing:border-box!important;
-      align-items:center!important;
-    }
-    [data-testid="stSidebar"] [data-testid="stPageLink"] a p {
-      min-width:0!important;
-      overflow-wrap:break-word!important;
-      word-break:normal!important;
-    }
-    /* Botão circular creme com três linhas verde-escuras, conforme referência. 
-       Mantém o botão nativo clicável para abrir a sidebar. */
+    [data-testid="stExpandSidebarButton"] button,
     [data-testid="stSidebarCollapsedControl"] button,
-    [data-testid="stSidebarCollapsedControl"] > button {
+    [data-testid="stSidebarCollapseButton"] button {
       position:relative!important;
       display:flex!important;
       align-items:center!important;
       justify-content:center!important;
-      width:40px!important;height:40px!important;
-      min-width:40px!important;
-      padding:0!important;
-      border:1px solid #e7dac8!important;
-      border-radius:50%!important;
-      background:#fcf9f3!important;
-      box-shadow:none!important;
-      color:#123f37!important;
-    }
-    [data-testid="stSidebarCollapsedControl"] button:hover {
-      background:#f4ecdf!important;
-      border-color:#d4c4ac!important;
-    }
-    [data-testid="stSidebarCollapsedControl"] button svg,
-    [data-testid="stSidebarCollapsedControl"] button [data-testid="stIconMaterial"] {
-      opacity:0!important;
-    }
-    [data-testid="stSidebarCollapsedControl"] button::after {
-      content:""!important;
-      display:block!important;
-      position:absolute!important;
-      width:17px!important;height:14px!important;
-      left:50%!important;top:50%!important;
-      transform:translate(-50%,-50%)!important;
-      background:linear-gradient(to bottom,
-        #173f39 0 2px, transparent 2px 6px,
-        #173f39 6px 8px, transparent 8px 12px,
-        #173f39 12px 14px)!important;
-      border-radius:1px!important;
-      pointer-events:none!important;
-    }
-    @media(max-width:900px){
-      [data-testid="stSidebar"][aria-expanded="true"] {
-        width:min(280px,88vw)!important;
-        min-width:0!important;
-        max-width:88vw!important;
-      }
-    }
-    @media(max-width:480px){
-      [data-testid="stSidebar"][aria-expanded="true"] {
-        width:min(280px,92vw)!important;
-        max-width:92vw!important;
-      }
-    }
-
-    /* Feature: menu SISCAN coerente em 100%, 110% e telas menores.
-       O Streamlit usa CONTROLES DISTINTOS para fechar e abrir a sidebar. */
-    [data-testid="stSidebarCollapseButton"] button,
-    [data-testid="stSidebarCollapsedControl"] button {
-      position:relative!important;
-      display:inline-flex!important;
-      align-items:center!important;
-      justify-content:center!important;
+      flex:0 0 40px!important;
       width:40px!important;
       height:40px!important;
       min-width:40px!important;
       min-height:40px!important;
       padding:0!important;
-      border:1px solid #e4d8c7!important;
+      border:1px solid #e3d9cb!important;
       border-radius:50%!important;
-      background:#fbf8f1!important;
-      color:#163e37!important;
+      background:#fbf8f2!important;
+      color:#193f39!important;
       box-shadow:none!important;
       cursor:pointer!important;
-      transition:background-color .15s ease,border-color .15s ease!important;
+      overflow:hidden!important;
     }
-    [data-testid="stSidebarCollapseButton"] button:hover,
-    [data-testid="stSidebarCollapsedControl"] button:hover {
-      background:#f3ecdf!important;
-      border-color:#d2c2ac!important;
+    [data-testid="stExpandSidebarButton"] button:hover,
+    [data-testid="stSidebarCollapsedControl"] button:hover,
+    [data-testid="stSidebarCollapseButton"] button:hover {
+      background:#f2eadf!important;
+      border-color:#cfbeaa!important;
     }
-    [data-testid="stSidebarCollapseButton"] button:focus-visible,
-    [data-testid="stSidebarCollapsedControl"] button:focus-visible {
-      outline:2px solid #75b5d5!important;
-      outline-offset:3px!important;
+    [data-testid="stExpandSidebarButton"] button:focus-visible,
+    [data-testid="stSidebarCollapsedControl"] button:focus-visible,
+    [data-testid="stSidebarCollapseButton"] button:focus-visible {
+      outline:2px solid #4a9fd8!important;
+      outline-offset:2px!important;
     }
-    [data-testid="stSidebarCollapseButton"] button svg,
+    [data-testid="stExpandSidebarButton"] button svg,
+    [data-testid="stExpandSidebarButton"] button [data-testid="stIconMaterial"],
     [data-testid="stSidebarCollapsedControl"] button svg,
-    [data-testid="stSidebarCollapseButton"] button [data-testid="stIconMaterial"],
-    [data-testid="stSidebarCollapsedControl"] button [data-testid="stIconMaterial"] {
+    [data-testid="stSidebarCollapsedControl"] button [data-testid="stIconMaterial"],
+    [data-testid="stSidebarCollapseButton"] button svg,
+    [data-testid="stSidebarCollapseButton"] button [data-testid="stIconMaterial"] {
       opacity:0!important;
     }
-    [data-testid="stSidebarCollapseButton"] button::after,
-    [data-testid="stSidebarCollapsedControl"] button::after {
+    [data-testid="stExpandSidebarButton"] button::after,
+    [data-testid="stSidebarCollapsedControl"] button::after,
+    [data-testid="stSidebarCollapseButton"] button::after {
       content:""!important;
       position:absolute!important;
       display:block!important;
-      width:18px!important;
-      height:14px!important;
       top:50%!important;
       left:50%!important;
+      width:18px!important;
+      height:14px!important;
       transform:translate(-50%,-50%)!important;
+      background:linear-gradient(to bottom,
+        #163e37 0 2px,transparent 2px 6px,
+        #163e37 6px 8px,transparent 8px 12px,
+        #163e37 12px 14px)!important;
       border:0!important;
       border-radius:0!important;
-      background:linear-gradient(to bottom,
-        #173f39 0 2px, transparent 2px 6px,
-        #173f39 6px 8px, transparent 8px 12px,
-        #173f39 12px 14px)!important;
       pointer-events:none!important;
     }
-    [data-testid="stSidebarCollapseButton"] {
-      visibility:visible!important;
-      z-index:2!important;
-    }
     [data-testid="stSidebarHeader"] {
-      min-height:56px!important;
+      min-height:54px!important;
       display:flex!important;
       align-items:center!important;
       justify-content:flex-end!important;
-      padding:8px 12px!important;
+      padding:5px 12px!important;
+    }
+    [data-testid="stSidebar"][aria-expanded="true"] .lovable-brand {
+      display:flex!important;
+      gap:12px!important;
+      min-width:0!important;
+      width:100%!important;
+      padding:12px 4px 20px!important;
+      align-items:center!important;
       box-sizing:border-box!important;
     }
-    /* Fixar a largura efetiva do painel, não apenas o elemento externo. */
+    [data-testid="stSidebar"] .lovable-brand-copy {
+      flex:1 1 0!important;
+      min-width:0!important;
+    }
+    [data-testid="stSidebar"] .lovable-brand strong {
+      font-size:1.08rem!important;
+      line-height:1.23!important;
+      overflow-wrap:normal!important;
+      word-break:normal!important;
+    }
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a {
+      min-width:0!important;
+      align-items:center!important;
+    }
+    /* Sem faixa superior vazia gigante quando o menu está recolhido.
+       O toolbar continua presente e clicável no canto superior direito. */
+    [data-testid="stHeader"] {
+      height:52px!important;
+      min-height:52px!important;
+      background:#f8fafb!important;
+      box-shadow:none!important;
+    }
+    [data-testid="stHeader"] [data-testid="stExpandSidebarButton"] {
+      margin-left:12px!important;
+    }
+    [data-testid="stMainBlockContainer"] {
+      padding-top:0.25rem!important;
+    }
     @media(min-width:901px) {
       section[data-testid="stSidebar"][aria-expanded="true"],
       [data-testid="stSidebar"][aria-expanded="true"] {
@@ -1293,33 +1262,18 @@ def apply_custom_css():
         max-width:292px!important;
         flex-basis:292px!important;
       }
-      [data-testid="stSidebar"][aria-expanded="true"] [data-testid="stSidebarContent"],
-      [data-testid="stSidebar"][aria-expanded="true"] [data-testid="stSidebarUserContent"] {
-        box-sizing:border-box!important;
-        width:100%!important;
+      [data-testid="stSidebar"][aria-expanded="true"] [data-testid="stSidebarContent"] {
         min-width:0!important;
-        max-width:100%!important;
+        width:100%!important;
+        box-sizing:border-box!important;
       }
-      [data-testid="stSidebar"] .lovable-brand {
-        display:flex!important;
-        gap:12px!important;
-        padding:12px 4px 20px!important;
-      }
-      [data-testid="stSidebar"] .lovable-brand-copy {flex:1 1 0!important;min-width:0!important;}
-      [data-testid="stSidebar"] .lovable-brand strong {
-        font-size:1.08rem!important;
-        line-height:1.22!important;
-        white-space:normal!important;
-      }
-      [data-testid="stSidebar"] .lovable-brand small {font-size:.69rem!important;}
     }
-    @media(min-width:769px) and (max-width:900px) {
+    @media(min-width:769px) and (max-width:900px){
       [data-testid="stSidebar"][aria-expanded="true"] {
-        width: min(292px, 40vw)!important;
+        width:min(292px,40vw)!important;
         min-width:0!important;
         max-width:40vw!important;
       }
-      [data-testid="stSidebar"] .lovable-brand strong {font-size:1rem!important;}
     }
     @media(max-width:768px) {
       [data-testid="stSidebar"][aria-expanded="true"] {
@@ -1327,7 +1281,14 @@ def apply_custom_css():
         min-width:0!important;
         max-width:88vw!important;
       }
-      [data-testid="stSidebarHeader"] {min-height:52px!important;}
+      [data-testid="stHeader"] {height:50px!important;min-height:50px!important;}
+      [data-testid="stMainBlockContainer"] {padding-top:.3rem!important;}
+    }
+    @media(max-width:480px){
+      [data-testid="stSidebar"][aria-expanded="true"] {
+        width:min(292px,92vw)!important;
+        max-width:92vw!important;
+      }
     }
     </style>""", unsafe_allow_html=True)
 
