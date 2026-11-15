@@ -347,7 +347,9 @@ def sidebar_filters():
             '<img src="data:image/jpeg;base64,' + logo_base64 + '" '
             'alt="Logo PET-Saúde" loading="eager" />'
             '</span>'
-            '<span><strong>SISCAN</strong><small>PET-Saúde · 10ª CRS</small></span></div>',
+            '<span class="lovable-brand-copy"><strong>Painel SISCAN</strong>'
+            '<small>Exames citopatológicos</small>'
+            '<small class="lovable-brand-region">10ª CRS · RS</small></span></div>',
             unsafe_allow_html=True,
         )
         st.markdown('<div class="lovable-label">EXPLORAR</div>',
