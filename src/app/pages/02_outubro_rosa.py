@@ -284,11 +284,6 @@ c3.metric(
     f"{variacao:+.2f}%" if pd.notna(variacao) else "N/D",
     delta=f"{diferenca:+,.0f} exames".replace(",", ".") if pd.notna(variacao) else None,
 )
-st.markdown(
-    f'<p class="or-mini-note">Recorte aplicado: <strong>{periodo}</strong>'
-    f' · {cidades} município(s) · produção registrada, não cobertura</p>',
-    unsafe_allow_html=True,
-)
 anos_set_or = set(mensal.loc[mensal["mes"] == 9, "ano"])
 anos_out_or = set(mensal.loc[mensal["mes"] == 10, "ano"])
 if anos_set_or != anos_out_or:
