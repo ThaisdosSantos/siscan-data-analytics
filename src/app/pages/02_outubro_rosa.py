@@ -66,13 +66,13 @@ def section(index, title):
 
 
 
-def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45):
+def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, margem_esquerda=75, margem_inferior=70):
     """Gráfico interativo e cópia independente para exportação PNG."""
     fig.update_layout(
         template="plotly_white", height=altura,
         paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
         font=dict(family="Arial", color=NAVY, size=13),
-        margin=dict(l=75, r=145, t=margem_superior, b=70),
+        margin=dict(l=margem_esquerda, r=145, t=margem_superior, b=margem_inferior),
         legend_title_text="",
     )
     fig.update_yaxes(gridcolor="#E4EBF1", rangemode="tozero")
@@ -82,7 +82,9 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45):
         height=max(altura + 100, 650),
         title=dict(text=nome.replace("_", " ").replace(".png", "").title(),
                    x=0.5, font=dict(size=22, color=NAVY)),
-        margin=dict(l=110, r=210, t=max(105, margem_superior + 35), b=100),
+        margin=dict(l=max(110, margem_esquerda + 35), r=210,
+                    t=max(105, margem_superior + 35),
+                    b=max(100, margem_inferior + 30)),
     )
     chart_with_right_click_download(
         fig, filename=nome, height=altura,
@@ -582,6 +584,22 @@ else:
                     if pd.notna(max_mensal_or) and max_mensal_or > 0
                     else None
                 )
+            # Um único título global para os eixos de todos os painéis.
+            # Os meses e as escalas permanecem em cada ano, sem
+            # repetir "Meses" ou a unidade em cada pequeno gráfico.
+            fig_mes_idade_or.add_annotation(
+                text="Meses", x=0.5, y=-0.095,
+                xref="paper", yref="paper",
+                showarrow=False, font=dict(size=13, color=NAVY),
+            )
+            fig_mes_idade_or.add_annotation(
+                text=("Participação dos exames (%)" if modo_percentual_or
+                      else "Quantidade de exames"),
+                x=-0.09, y=0.5,
+                xref="paper", yref="paper",
+                textangle=-90, showarrow=False,
+                font=dict(size=13, color=NAVY),
+            )
             fig_mes_idade_or.update_layout(
                 legend=dict(
                     orientation="h", yanchor="bottom", y=1.035, x=0,
@@ -597,7 +615,8 @@ else:
                 fig_mes_idade_or,
                 "outubro_rosa_perfil_mensal_grupo_etario.png",
                 altura=altura_etario_or, largura=1600,
-                margem_superior=125,
+                margem_superior=125, margem_esquerda=120,
+                margem_inferior=105,
             )
             st.caption(
                 "Cada painel apresenta um ano e cada barra representa "
