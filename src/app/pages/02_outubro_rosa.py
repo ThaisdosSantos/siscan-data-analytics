@@ -276,11 +276,6 @@ setembro = totais_mes.get(9, float("nan"))
 outubro = totais_mes.get(10, float("nan"))
 diferenca = outubro - setembro if pd.notna(outubro) and pd.notna(setembro) else float("nan")
 variacao = variacao_percentual(outubro, setembro)
-indicator_context(
-    f"Produção mensal · {periodo}",
-    "Os três cartões comparam a soma dos registros de setembro e outubro nos anos "
-    "selecionados. Cada mês utiliza as competências disponíveis; não é uma média anual.",
-)
 c1, c2, c3 = st.columns(3)
 c1.metric("Exames em setembro", fmt_num(setembro) if pd.notna(setembro) else "N/D")
 c2.metric("Exames em outubro", fmt_num(outubro) if pd.notna(outubro) else "N/D")
@@ -351,11 +346,6 @@ pares_municipais = (
         "municipio": "Município",
         "Anos_pareados": "Anos pareados",
     })
-)
-indicator_context(
-    f"Comparação municipal · {periodo}",
-    f"Base comparável: {len(pares_completos)} pares município × ano com ambos os "
-    "meses (setembro e outubro). Sem par completo, o ano não entra na variação municipal.",
 )
 pares_municipais["Diferença absoluta"] = (
     pares_municipais["Outubro"] - pares_municipais["Setembro"]
