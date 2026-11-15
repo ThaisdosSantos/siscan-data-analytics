@@ -66,7 +66,7 @@ def section(index, title):
 
 
 
-def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, margem_esquerda=75, margem_inferior=70):
+def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, margem_esquerda=75, margem_inferior=70, rotulos_exportacao=None, titulo_exportacao=None):
     """Gráfico interativo e cópia independente para exportação PNG."""
     fig.update_layout(
         template="plotly_white", height=altura,
@@ -77,10 +77,30 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, marge
     )
     fig.update_yaxes(gridcolor="#E4EBF1", rangemode="tozero")
     imagem = copy.deepcopy(fig)
+    # Os números de cada faixa aparecem apenas no PNG exportado.
+    # Não modificamos o gráfico interativo nem reutilizamos o mesmo formato
+    # para quantidades e percentuais.
+    if rotulos_exportacao in {"percentual_vertical", "quantidade_vertical", "percentual_horizontal"}:
+        for traco in imagem.data:
+            horizontal = rotulos_exportacao == "percentual_horizontal"
+            percentual = rotulos_exportacao != "quantidade_vertical"
+            traco.update(
+                texttemplate=(
+                    "%{x:.1f}%" if horizontal
+                    else ("%{y:.1f}%" if percentual else "%{y:,.0f}")
+                ),
+                textposition="inside",
+                insidetextanchor="middle",
+                textfont=dict(size=11, color="#FFFFFF"),
+                cliponaxis=False,
+                constraintext="none",
+            )
+        # Mantém todos os rótulos, inclusive em segmentos estreitos.
+        imagem.update_layout(uniformtext_minsize=9, uniformtext_mode="show")
     imagem.update_layout(
         width=largura,
         height=max(altura + 100, 650),
-        title=dict(text=nome.replace("_", " ").replace(".png", "").title(),
+        title=dict(text=(titulo_exportacao or nome.replace("_", " ").replace(".png", "").title()),
                    x=0.5, font=dict(size=22, color=NAVY)),
         margin=dict(l=max(110, margem_esquerda + 35), r=210,
                     t=max(105, margem_superior + 35),
@@ -617,6 +637,15 @@ else:
                 altura=altura_etario_or, largura=1600,
                 margem_superior=125, margem_esquerda=120,
                 margem_inferior=105,
+                rotulos_exportacao=(
+                    "percentual_vertical" if modo_percentual_or
+                    else "quantidade_vertical"
+                ),
+                titulo_exportacao=(
+                    "Outubro Rosa — Participação por grupo etário (%)"
+                    if modo_percentual_or
+                    else "Outubro Rosa — Exames por grupo etário (quantidade)"
+                ),
             )
             st.caption(
                 "Cada painel apresenta um ano e cada barra representa "
@@ -819,6 +848,10 @@ else:
                 "outubro_rosa_perfil_etario_consolidado_municipio.png",
                 altura=max(520, 43 * len(municipios_etarios_or) + 155),
                 largura=1600,
+                rotulos_exportacao="percentual_horizontal",
+                titulo_exportacao=(
+                    "Outubro Rosa — Perfil etário por município (%)"
+                ),
             )
             tabela_etaria_or = (
                 perfil_or.pivot(
