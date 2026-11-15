@@ -203,11 +203,11 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, marge
 
 
 page_header(
-    "Campanha · Outubro Rosa",
+    "",
     "Outubro Rosa: produção e perfil etário dos exames",
-    "Analisa a produção de exames citopatológicos nos municípios da "
-    "10ª CRS, com destaque para a participação da população-alvo de "
-    "25 a 64 anos e as diferenças entre períodos e municípios.",
+    "Analisa a produção de exames citopatológicos, com destaque para a "
+    "participação da população-alvo de 25 a 64 anos e as diferenças "
+    "entre períodos e municípios.",
 )
 
 

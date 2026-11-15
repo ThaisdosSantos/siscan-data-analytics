@@ -1146,11 +1146,14 @@ def page_header(kicker, title, description=""):
         '<div class="pet-hero-desc">' + html.escape(str(description)) + '</div>'
         if description else ""
     )
+    kicker_html = (
+        '<p class="pet-hero-kicker">' + html.escape(str(kicker)) + '</p>'
+        if kicker else ""
+    )
     st.markdown(
-        '<header class="pet-hero"><p class="pet-hero-kicker">'
-        + html.escape(str(kicker)) + '</p><h1 class="pet-hero-title">'
-        + html.escape(str(title)) + '</h1>' + description_html
-        + active_scope_html() + '</header>',
+        '<header class="pet-hero">' + kicker_html
+        + '<h1 class="pet-hero-title">' + html.escape(str(title))
+        + '</h1>' + description_html + active_scope_html() + '</header>',
         unsafe_allow_html=True,
     )
 

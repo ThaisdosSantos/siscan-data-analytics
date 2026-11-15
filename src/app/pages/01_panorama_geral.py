@@ -36,9 +36,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 sidebar_filters()
 page_header(
-    "Panorama geral",
+    "",
     "Volume de exames por competência e município",
-    "Apresenta a quantidade de exames citopatológicos registrados na 10ª CRS "
+    "Apresenta a quantidade de exames citopatológicos registrados "
     "no período selecionado, sua evolução mensal e anual, a distribuição entre os "
     "municípios e as variações percentuais de um ano para o seguinte. "
     "Permite comparar os volumes de exames ao longo do tempo e identificar "
