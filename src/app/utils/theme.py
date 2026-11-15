@@ -1130,92 +1130,29 @@ def apply_custom_css():
     }
 
 
-    /* feature: Menu único responsivo com o mesmo botão aberto/fechado.
-       Streamlit atual: stExpandSidebarButton (abrir), stSidebarCollapseButton (fechar).
-       Compatibilidade: stSidebarCollapsedControl (versões anteriores). */
-    [data-testid="stExpandSidebarButton"],
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="stSidebarCollapseButton"] {
-      display:flex!important;
-      align-items:center!important;
-      justify-content:center!important;
-      width:44px!important;
-      height:44px!important;
-      min-width:44px!important;
-      min-height:44px!important;
-      margin:0!important;
-      padding:0!important;
-      background:transparent!important;
-      border:0!important;
-      line-height:0!important;
-      z-index:10!important;
-    }
-    [data-testid="stExpandSidebarButton"] button,
-    [data-testid="stSidebarCollapsedControl"] button,
-    [data-testid="stSidebarCollapseButton"] button {
-      position:relative!important;
-      display:flex!important;
-      align-items:center!important;
-      justify-content:center!important;
-      flex:0 0 40px!important;
-      width:40px!important;
-      height:40px!important;
-      min-width:40px!important;
-      min-height:40px!important;
-      padding:0!important;
-      border:1px solid #e3d9cb!important;
-      border-radius:50%!important;
-      background:#fbf8f2!important;
-      color:#193f39!important;
-      box-shadow:none!important;
-      cursor:pointer!important;
-      overflow:hidden!important;
-    }
-    [data-testid="stExpandSidebarButton"] button:hover,
-    [data-testid="stSidebarCollapsedControl"] button:hover,
-    [data-testid="stSidebarCollapseButton"] button:hover {
-      background:#f2eadf!important;
-      border-color:#cfbeaa!important;
-    }
-    [data-testid="stExpandSidebarButton"] button:focus-visible,
-    [data-testid="stSidebarCollapsedControl"] button:focus-visible,
-    [data-testid="stSidebarCollapseButton"] button:focus-visible {
-      outline:2px solid #4a9fd8!important;
-      outline-offset:2px!important;
-    }
-    [data-testid="stExpandSidebarButton"] button svg,
-    [data-testid="stExpandSidebarButton"] button [data-testid="stIconMaterial"],
-    [data-testid="stSidebarCollapsedControl"] button svg,
-    [data-testid="stSidebarCollapsedControl"] button [data-testid="stIconMaterial"],
-    [data-testid="stSidebarCollapseButton"] button svg,
-    [data-testid="stSidebarCollapseButton"] button [data-testid="stIconMaterial"] {
-      opacity:0!important;
-    }
-    [data-testid="stExpandSidebarButton"] button::after,
-    [data-testid="stSidebarCollapsedControl"] button::after,
-    [data-testid="stSidebarCollapseButton"] button::after {
-      content:""!important;
-      position:absolute!important;
-      display:block!important;
-      top:50%!important;
-      left:50%!important;
-      width:18px!important;
-      height:14px!important;
-      transform:translate(-50%,-50%)!important;
-      background:linear-gradient(to bottom,
-        #163e37 0 2px,transparent 2px 6px,
-        #163e37 6px 8px,transparent 8px 12px,
-        #163e37 12px 14px)!important;
-      border:0!important;
-      border-radius:0!important;
-      pointer-events:none!important;
-    }
+    /* Restaurar os ícones nativos de abrir/fechar do Streamlit.
+       Não substituir SVG, fundo, pseudo-elementos ou estados dos botões. */
     [data-testid="stSidebarHeader"] {
-      min-height:54px!important;
+      min-height:46px!important;
+      height:46px!important;
+      padding:6px 12px!important;
       display:flex!important;
       align-items:center!important;
       justify-content:flex-end!important;
-      padding:5px 12px!important;
+      box-sizing:border-box!important;
+    }
+    /* Evita o vão acima da marca gerado pelo padding padrão do sidebar. */
+    [data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
+      padding-top:0!important;
+      margin-top:0!important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+      padding-top:0!important;
+    }
+    [data-testid="stSidebar"] .lovable-brand {
+      padding-top:2px!important;
+      padding-bottom:16px!important;
+      margin-top:0!important;
     }
     [data-testid="stSidebar"][aria-expanded="true"] .lovable-brand {
       display:flex!important;
