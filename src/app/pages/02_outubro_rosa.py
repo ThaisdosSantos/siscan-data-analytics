@@ -520,12 +520,6 @@ else:
             p_sep_or = _participacao_alvo_mes_or(sep_class_or)
             p_out_or = _participacao_alvo_mes_or(out_class_or)
             delta_pp_or = p_out_or - p_sep_or
-            st.caption(
-                "**Meses considerados:** os dois primeiros indicadores "
-                "incluem **setembro a dezembro** dos anos selecionados; "
-                "o terceiro compara **outubro com setembro** desses anos. "
-                "Os anos ativos já aparecem no filtro lateral."
-            )
             kpi_alvo_a, kpi_alvo_b, kpi_alvo_c = st.columns(3)
             kpi_alvo_a.metric(
                 "Exames de 25–64 anos (set.–dez.)", fmt_num(alvo_or)
