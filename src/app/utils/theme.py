@@ -112,8 +112,19 @@ def apply_custom_css():
       display:block;width:100%;height:100%;object-fit:contain;
       border-radius:7px;background:#fff;
     }
-    .lovable-brand strong {display:block;font-size:1.3rem;color:white;font-weight:800;}
-    .lovable-brand small {display:block;color:#c3d7e6;font-size:.74rem;}
+    .lovable-brand-copy {display:flex;flex-direction:column;gap:3px;min-width:0;}
+    .lovable-brand strong {
+      display:block;font-family:Manrope,Arial,sans-serif;font-size:1.17rem;
+      line-height:1.2;letter-spacing:-.02em;color:white;font-weight:800;
+    }
+    .lovable-brand small {display:block;color:#dceaf4;font-size:.72rem;line-height:1.35;}
+    .lovable-brand .lovable-brand-region {
+      color:#9fc8e0;font-size:.68rem;font-weight:750;letter-spacing:.045em;
+    }
+    @media(max-width:768px) {
+      .lovable-brand {gap:10px;padding:12px 4px 18px;}
+      .lovable-brand strong {font-size:1.08rem;}
+    }
     .lovable-label {font-weight:800;color:#9cc5de!important;font-size:.68rem;letter-spacing:.15em;margin:14px 0 9px;}
     .lovable-footer {font-size:.72rem;line-height:1.8;color:#bad0df!important;border-top:1px solid #456b87;margin-top:20px;padding-top:18px;}
     [data-testid="stSidebar"] [data-testid="stPageLink"] a {padding:10px 13px;border-radius:10px;font-weight:650;text-decoration:none;}
