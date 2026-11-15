@@ -3,7 +3,7 @@ from html import escape
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from utils.theme import apply_custom_css, page_header, indicator_context, display_chart, display_table, export_table, fmt_num, fmt_pct, pct, OCEAN
+from utils.theme import apply_custom_css, page_header, display_chart, display_table, export_table, fmt_num, fmt_pct, pct, OCEAN
 from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered, require, sidebar_filters, MUNICIPIOS, selected_years, years_label, year_month_index
 
@@ -83,11 +83,6 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         'Panorama da produção de exames</h2>', unsafe_allow_html=True,
     )
 
-    indicator_context(
-        f"Indicadores acumulados · {period}",
-        f"Municípios selecionados: {len(places)}. A média mensal utiliza "
-        f"somente os {months_count} meses com registros disponíveis.",
-    )
     col_total, col_media, col_municipio = st.columns(3)
     with col_total:
         st.metric("Total de exames registrados", fmt_num(total))
@@ -402,6 +397,24 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             sorted(pivo_var.columns, key=lambda c: int(str(c).split("→")[1]))
         ]
         st.markdown("#### Variação anual (%) por município e transição")
+        st.markdown(
+            "Compara a **variação percentual dos exames entre anos consecutivos** "
+            "para cada município. Azul indica aumento e vermelho indica redução."
+        )
+        with st.expander("ℹ️ Como interpretar a matriz de variação", expanded=False):
+            st.markdown(
+                "Cada **linha** corresponde a um município e cada **coluna** a uma "
+                "transição, como 2023→2024. **+20.00%** significa 20% mais exames "
+                "que no ano anterior; **-20.00%**, 20% menos. O percentual toma "
+                "como base o **primeiro ano** da comparação. O símbolo **—** "
+                "representa comparação indisponível. O indicador mede registros "
+                "de exames, não cobertura de mulheres rastreadas. "
+                "**Cálculo:** (exames no ano atual − exames no ano anterior) "
+                "÷ exames no ano anterior × 100. "
+                "Azul indica aumento; vermelho, redução; valores próximos de zero "
+                "indicam pouca mudança. A comparação exige anos consecutivos "
+                "e um total de exames maior que zero no primeiro ano."
+            )
         modo_ordem_var = st.selectbox(
             "Ordenar por",
             ["A–Z", "Maior para menor (última variação)"],
@@ -419,19 +432,6 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 ascending=False,
                 na_position="last",
                 kind="stable",
-            )
-        st.markdown(
-            "Compara a **variação percentual dos exames entre anos consecutivos** "
-            "para cada município. Azul indica aumento e vermelho indica redução."
-        )
-        with st.expander("ℹ️ Como interpretar a matriz de variação", expanded=False):
-            st.markdown(
-                "Cada **linha** corresponde a um município e cada **coluna** a uma "
-                "transição, como 2023→2024. **+20.00%** significa 20% mais exames "
-                "que no ano anterior; **-20.00%**, 20% menos. O percentual toma "
-                "como base o **primeiro ano** da comparação. O símbolo **—** "
-                "representa comparação indisponível. O indicador mede registros "
-                "de exames, não cobertura de mulheres rastreadas."
             )
 
         # Mesma linguagem visual de display_table: cabeçalho azul-marinho,
@@ -533,14 +533,6 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             mime="text/csv",
             key="exportar_matriz_variacao_panorama",
         )
-        st.caption(
-            "**Como interpretar as cores:** azul = aumento; vermelho = redução; "
-            "valor próximo de 0% = pouca mudança; **—** = comparação indisponível. "
-            "**Cálculo:** Δ% = (exames no ano atual − exames no ano anterior) "
-            "÷ exames no ano anterior × 100. "
-            "A comparação exige dois anos consecutivos e quantidade anterior "
-            "maior que zero."
-        )
         if agosto_2022_ausente and any(
             "2022" in str(coluna) for coluna in pivo_var.columns
         ):
@@ -549,6 +541,21 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 "que incluem 2022 podem ser afetadas por essa ausência."
             )
 
+        st.markdown(
+            "Visualize a **variação percentual por município** em cada "
+            "comparação anual. **Azul, à direita do zero**, indica aumento; "
+            "**vermelho, à esquerda**, indica redução."
+        )
+        with st.expander("ℹ️ Como interpretar o ranking", expanded=False):
+            st.markdown(
+                "Cada ranking compara o total de exames de **dois anos consecutivos**. "
+                "Quanto maior a distância da barra ao zero, maior a variação. "
+                "São **percentuais de mudança**, não quantidades absolutas. "
+                "Passe o mouse sobre as barras para conferir os dois volumes. "
+                "Na opção **Todas as transições**, cada período é apresentado "
+                "separadamente; os percentuais não são somados nem calculados "
+                "como uma média entre anos."
+            )
         # "Todas" apresenta um ranking independente para cada transição,
         # sem combinar percentuais de períodos diferentes.
         transicoes_disponiveis = list(pivo_var.columns)
@@ -565,21 +572,6 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         transicoes_ranking = (
             transicoes_disponiveis if modo_todas else [transicao_ranking]
         )
-        st.markdown(
-            "Visualize a **variação percentual por município** em cada "
-            "comparação anual. **Azul, à direita do zero**, indica aumento; "
-            "**vermelho, à esquerda**, indica redução."
-        )
-        with st.expander("ℹ️ Como interpretar o ranking", expanded=False):
-            st.markdown(
-                "Cada ranking compara o total de exames de **dois anos consecutivos**. "
-                "Quanto maior a distância da barra ao zero, maior a variação. "
-                "São **percentuais de mudança**, não quantidades absolutas. "
-                "Passe o mouse sobre as barras para conferir os dois volumes. "
-                "Na opção **Todas as transições**, cada período é apresentado "
-                "separadamente; os percentuais não são somados nem calculados "
-                "como uma média entre anos."
-            )
         if agosto_2022_ausente and any(
             "2022" in t for t in transicoes_ranking
         ):
