@@ -369,20 +369,24 @@ pares_municipais["Variação (%)"] = [
 with st.container(key="outubro_ajuda_variacao"):
     with st.expander("ℹ️ Como interpretar", expanded=False):
         st.markdown(
-            "**Variação (%) = (outubro − setembro) ÷ setembro × 100**. "
-            "Primeiro são pareados setembro e outubro do mesmo ano; "
-            "depois, são somados os exames dos anos selecionados. "
-            "O resultado não é a média das variações anuais. "
-            "Valores negativos indicam redução, sem atribuição "
-            "de causalidade à campanha."
+            "**Como interpretar:** este indicador compara o total de exames de "
+            "setembro com o total de outubro nos anos selecionados. Para cada "
+            "município, entram apenas os anos com registros nos dois meses.\n\n"
+            "**Cálculo:** (total de outubro − total de setembro) ÷ "
+            "total de setembro × 100.\n\n"
+            "O resultado é a **variação percentual dos totais de setembro e outubro**, "
+            "não a média simples das variações de cada ano. "
+            "Valores positivos indicam aumento e negativos indicam redução "
+            "na quantidade de exames. Essa comparação não demonstra que "
+            "as mudanças foram causadas pela campanha Outubro Rosa."
         )
 
 with st.container(key="outubro_variacao_sort_panel"):
     ordenacao = st.selectbox(
         "Ordenar por", ["A–Z", "Maior para menor"],
         index=0, key="outubro_rosa_ordenacao",
-        help="Maior para menor considera a variação percentual acumulada "
-             "de outubro em relação a setembro.",
+        help="Maior para menor considera a variação percentual dos totais "
+             "de setembro e outubro nos anos pareados.",
     )
 municipios_validos = pares_municipais.dropna(
     subset=["Variação (%)"]
@@ -444,7 +448,7 @@ else:
         "<br>Setembro (acumulado): %{customdata[0]} exames"
         "<br>Outubro (acumulado): %{customdata[1]} exames"
         "<br>Diferença absoluta: %{customdata[2]} exames"
-        "<br>Variação acumulada: %{customdata[3]}"
+        "<br>Variação percentual dos totais de setembro e outubro: %{customdata[3]}"
         "<br>Anos com ambos os meses: %{customdata[4]}"
         "<extra></extra>"
     )
