@@ -61,8 +61,14 @@ html,body{margin:0;background:transparent;font-family:Arial,sans-serif}
 #wrap{position:relative;width:100%;min-width:0}
 #chart-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 #chart-content{width:100%;min-width:__MIN_WIDTH__px}
+#chart-hint{display:none;position:absolute;right:8px;bottom:3px;
+  z-index:4;max-width:calc(100% - 16px);padding:4px 9px;
+  background:#edf5fb;color:#1a3b5c;border:1px solid #d8e5ef;
+  border-radius:7px;font:600 11px/1.3 Arial,sans-serif;
+  pointer-events:none;white-space:nowrap}
+#chart-hint.is-visible{display:block}
 @media(max-width:600px){
-  #chart-scroll{overscroll-behavior-x:contain}
+  #chart-scroll{overscroll-behavior-x:contain;scrollbar-width:thin}
   #chart-content .modebar{opacity:.8}
 }
 #menu{display:none;position:absolute;z-index:1000;border:1px solid #cbd9e4;
@@ -76,7 +82,8 @@ font:600 12px Arial,sans-serif;box-shadow:0 2px 8px #1a3b5c33;cursor:pointer}
 @media(hover:none), (pointer:coarse){#mobile-save{display:block}}
 
 </style></head><body><div id="wrap">
-<div id="chart-scroll"><div id="chart-content">__FIGURE__</div></div>
+<div id="chart-scroll" tabindex="0" role="region" aria-label="Gráfico interativo, deslize horizontalmente quando necessário"><div id="chart-content">__FIGURE__</div></div>
+<div id="chart-hint" aria-hidden="true">↔ Deslize para explorar o gráfico</div>
 <div id="menu" role="menu" aria-label="Exportar gráfico">
 <button type="button" role="menuitem" id="save">⬇ Baixar imagem PNG</button>
 </div><button type="button" id="mobile-save" aria-label="Baixar gráfico em PNG">⬇ Baixar PNG</button></div>
@@ -120,6 +127,16 @@ async function downloadPng(){
 }
 button.addEventListener("click",downloadPng);
 document.getElementById("mobile-save").addEventListener("click",downloadPng);
+const scrollArea=document.getElementById("chart-scroll");
+const scrollHint=document.getElementById("chart-hint");
+function updateScrollHint(){
+  const compact=wrap.getBoundingClientRect().width<=800;
+  const overflowing=scrollArea.scrollWidth>scrollArea.clientWidth+6;
+  scrollHint.classList.toggle("is-visible",compact&&overflowing);
+}
+scrollArea.addEventListener("scroll",updateScrollHint,{passive:true});
+window.addEventListener("resize",updateScrollHint);
+requestAnimationFrame(updateScrollHint);
 document.addEventListener("click",e=>{if(!menu.contains(e.target))close()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
 if("ResizeObserver" in window){
@@ -129,6 +146,7 @@ if("ResizeObserver" in window){
     timer=setTimeout(()=>{
       const chart=wrap.querySelector(".js-plotly-plot");
       if(chart&&window.Plotly)Plotly.Plots.resize(chart);
+      updateScrollHint();
     },100);
   });
   observer.observe(document.getElementById("chart-content"));
@@ -139,4 +157,4 @@ if("ResizeObserver" in window){
             .replace("__MIN_WIDTH__", str(min_width))
             .replace("__FILENAME__", json.dumps(name))
             .replace("__EXPORT_SPEC__", export_spec))
-    components.html(html, height=height + 12, scrolling=False)
+    components.html(html, height=height + 28, scrolling=False)
