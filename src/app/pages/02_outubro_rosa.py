@@ -556,10 +556,6 @@ else:
                 )
             )
             modo_percentual_or = modo_etario_or == "Participação (%)"
-            titulo_y_etario_or = (
-                "Participação dos exames (%)"
-                if modo_percentual_or else "Quantidade de exames"
-            )
             fig_mes_idade_or.update_xaxes(
                 categoryorder="array", categoryarray=ORDEM_MESES,
                 tickangle=0, title_text=None, showgrid=False,
@@ -586,32 +582,16 @@ else:
                     if pd.notna(max_mensal_or) and max_mensal_or > 0
                     else None
                 )
-            # Eixos identificados em todos os painéis: meses no eixo
-            # horizontal e unidade de medida no eixo vertical.
-            linhas_facet_or = (len(anos_grafico_or) + 1) // 2
-            for linha_or in range(1, linhas_facet_or + 1):
-                fig_mes_idade_or.update_yaxes(
-                    title_text=titulo_y_etario_or,
-                    title_standoff=8,
-                    row=linha_or, col=1,
-                )
-                for coluna_or in range(1, 3):
-                    if (linha_or - 1) * 2 + coluna_or <= len(anos_grafico_or):
-                        fig_mes_idade_or.update_xaxes(
-                            title_text="Meses",
-                            title_standoff=9,
-                            row=linha_or, col=coluna_or,
-                        )
             fig_mes_idade_or.update_layout(
                 legend=dict(
                     orientation="h", yanchor="bottom", y=1.035, x=0,
                     title_text="Grupo etário",
                 ),
-                margin=dict(l=105, r=40, t=125, b=85),
+                margin=dict(l=75, r=40, t=115, b=60),
                 bargap=0.23,
             )
             altura_etario_or = max(
-                580, 390 * ((len(anos_grafico_or) + 1) // 2) + 130
+                520, 345 * ((len(anos_grafico_or) + 1) // 2) + 115
             )
             download_plot(
                 fig_mes_idade_or,
