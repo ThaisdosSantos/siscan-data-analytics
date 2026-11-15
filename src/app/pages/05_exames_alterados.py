@@ -809,12 +809,25 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                 )
                 # Mantém os percentuais calculados a partir dos registros filtrados,
                 # sem somar os totais repetidos em cada linha da tabela Gold.
-                por_cat_ano["rotulo_exportacao"] = por_cat_ano[
-                    "participacao_pct"
-                ].map(
-                    lambda valor: f"{valor:.2f}%"
-                    if pd.notna(valor) and valor >= 6 else ""
-                )
+                # O PNG e o gráfico usam somente a unidade escolhida.
+                # Segmentos pequenos não recebem texto para evitar sobreposição.
+                if percentual_anual:
+                    por_cat_ano["rotulo_exportacao"] = por_cat_ano[
+                        "participacao_pct"
+                    ].map(
+                        lambda valor: f"{valor:.2f}%"
+                        if pd.notna(valor) and valor >= 6 else ""
+                    )
+                else:
+                    por_cat_ano["rotulo_exportacao"] = por_cat_ano.apply(
+                        lambda linha: (
+                            f"{linha['quantidade_alterados']:,.0f}".replace(",", ".")
+                            if pd.notna(linha["quantidade_alterados"])
+                            and pd.notna(linha["participacao_pct"])
+                            and linha["participacao_pct"] >= 6 else ""
+                        ),
+                        axis=1,
+                    )
                 fig_cat = px.bar(
                     por_cat_ano, x="ano", y=coluna_grafico_anual,
                     color="categoria", barmode="stack",
@@ -829,12 +842,15 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
                         "categoria": "Categoria citopatológica",
                     },
                 )
+                hover_anual = (
+                    "Ano: %{x}<br>Participação: %{y:.2f}%"
+                    "<extra>%{fullData.name}</extra>"
+                    if percentual_anual else
+                    "Ano: %{x}<br>Quantidade de exames: %{y:,.0f}"
+                    "<extra>%{fullData.name}</extra>"
+                )
                 fig_cat.update_traces(
-                    hovertemplate=(
-                        "Ano: %{x}<br>Exames: %{customdata[0]:,.0f}"
-                        "<br>Participação: %{customdata[1]:.2f}%"
-                        "<extra>%{fullData.name}</extra>"
-                    ),
+                    hovertemplate=hover_anual,
                     marker_line_color="#FFFFFF",
                     marker_line_width=0.6,
                     textposition="none",  # os rótulos aparecem apenas no PNG
