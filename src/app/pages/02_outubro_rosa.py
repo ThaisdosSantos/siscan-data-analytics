@@ -813,6 +813,15 @@ else:
                     columns={"Competência": "Mês / ano"}
                 )
                 display_table(tabela_exibicao_or)
+                st.download_button(
+                    "⬇️ Exportar tabela mensal por grupo etário (CSV)",
+                    data=tabela_exibicao_or.to_csv(
+                        index=False, sep=";", decimal=".", float_format="%.2f"
+                    ).encode("utf-8-sig"),
+                    file_name="siscan_outubro_rosa_mensal_grupo_etario.csv",
+                    mime="text/csv",
+                    key="exportar_outubro_mensal_grupo_etario",
+                )
     elif mensal_etario_or.empty:
         st.info("Não há registros acessíveis na Gold mensal por grupo etário.")
     else:
@@ -1015,7 +1024,17 @@ else:
                 "Ver quantidades por município e grupo etário",
                 expanded=False,
             ):
-                display_table(tabela_etaria_or.reset_index())
+                tabela_etaria_exportacao_or = tabela_etaria_or.reset_index()
+                display_table(tabela_etaria_exportacao_or)
+                st.download_button(
+                    "⬇️ Exportar quantidades por município e grupo etário (CSV)",
+                    data=tabela_etaria_exportacao_or.to_csv(
+                        index=False, sep=";", decimal=".", float_format="%.2f"
+                    ).encode("utf-8-sig"),
+                    file_name="siscan_outubro_rosa_municipio_grupo_etario.csv",
+                    mime="text/csv",
+                    key="exportar_outubro_municipio_grupo_etario",
+                )
 
 section("04", "Dados para consulta e exportação")
 indicator_context(
@@ -1037,14 +1056,17 @@ detalhes = (
 )
 detalhes["Mês"] = detalhes["Mês (número)"].map(MESES)
 detalhes = detalhes[["Município", "Ano", "Mês (número)", "Mês", "Exames"]]
-st.download_button(
-    "⬇️ Exportar dados mensais (CSV)",
-    detalhes.to_csv(index=False, sep=";", decimal=",").encode("utf-8-sig"),
-    file_name="siscan_outubro_rosa_producao_mensal.csv",
-    mime="text/csv", key="outubro_rosa_mensal_csv",
-)
 with st.expander("Ver tabela mensal detalhada", expanded=False):
     display_table(detalhes, integer_columns=["Ano", "Mês (número)", "Exames"])
+    st.download_button(
+        "⬇️ Exportar dados mensais (CSV)",
+        data=detalhes.to_csv(
+            index=False, sep=";", decimal=".", float_format="%.2f"
+        ).encode("utf-8-sig"),
+        file_name="siscan_outubro_rosa_producao_mensal.csv",
+        mime="text/csv",
+        key="outubro_rosa_mensal_csv",
+    )
 st.caption(
     "Nota: a produção mensal geral é observada no SISCAN; as "
     "visualizações etárias utilizam bases específicas, conforme "
