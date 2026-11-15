@@ -88,6 +88,36 @@ st.markdown("""
         line-height: 1.55 !important;
     }
 }
+/* Painel de fontes: cartão claro e texto legível, sem sobreposição ao hero. */
+.st-key-q3_sources_panel {
+    margin-top: 52px !important;
+    margin-bottom: 16px !important;
+}
+.st-key-q3_sources_panel [data-testid="stExpander"] details {
+    background: #FFFFFF !important;
+    border: 1px solid #D5E3ED !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+}
+.st-key-q3_sources_panel [data-testid="stExpander"] summary,
+.st-key-q3_sources_panel [data-testid="stExpander"] summary:hover {
+    background: #F1F7FB !important;
+    color: #1A3B5C !important;
+    padding: 12px 16px !important;
+}
+.st-key-q3_sources_panel [data-testid="stExpander"] summary *,
+.st-key-q3_sources_panel [data-testid="stExpander"] summary svg {
+    color: #1A3B5C !important;
+    fill: currentColor !important;
+    font-weight: 700 !important;
+}
+.st-key-q3_sources_panel [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+    background: #FFFFFF !important;
+    color: #1A3B5C !important;
+}
+@media (max-width: 768px) {
+    .st-key-q3_sources_panel {margin-top: 12px !important;}
+}
 </style>
 """, unsafe_allow_html=True)
 sidebar_filters()
@@ -97,18 +127,19 @@ page_header(
     "Apresenta a distribuição dos exames por faixa etária, as diferenças entre municípios e a evolução da produção, incluindo indicadores que relacionam o volume de exames à população feminina de 25 a 64 anos.",
 )
 
-with st.expander("ℹ️ Fontes e critérios de cálculo", expanded=False):
-    st.markdown(
-        "**Exames citopatológicos:** SISCAN/DATASUS. "
-        "**População feminina de 25 a 64 anos:** Censo Demográfico IBGE 2022, "
-        "utilizado como denominador fixo em todos os anos por ser o censo "
-        "mais recente.\n\n"
-        "**Referência técnica:** indicador 1.5 do IDSS/ANS (ano-base 2023). "
-        "O parâmetro de 33 exames por 100 mulheres/ano foi adaptado à "
-        "produção municipal do SISCAN, sem desduplicação das pacientes. "
-        "Portanto, a medida apresentada não corresponde à taxa oficial "
-        "de beneficiárias da ANS."
-    )
+with st.container(key="q3_sources_panel"):
+    with st.expander("ℹ️ Fontes e critérios de cálculo", expanded=False):
+        st.markdown(
+            "**Exames citopatológicos:** SISCAN/DATASUS. "
+            "**População feminina de 25 a 64 anos:** Censo Demográfico IBGE 2022, "
+            "utilizado como denominador fixo em todos os anos por ser o censo "
+            "mais recente.\n\n"
+            "**Referência técnica:** indicador 1.5 do IDSS/ANS (ano-base 2023). "
+            "O parâmetro de 33 exames por 100 mulheres/ano foi adaptado à "
+            "produção municipal do SISCAN, sem desduplicação das pacientes. "
+            "Portanto, a medida apresentada não corresponde à taxa oficial "
+            "de beneficiárias da ANS."
+        )
 
 st.markdown("""
 <style>
