@@ -3,7 +3,7 @@ from html import escape
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from utils.theme import apply_custom_css, page_header, display_chart, display_table, export_table, fmt_num, fmt_pct, pct, OCEAN
+from utils.theme import apply_custom_css, page_header, indicator_context, display_chart, display_table, export_table, fmt_num, fmt_pct, pct, OCEAN
 from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered, require, sidebar_filters, MUNICIPIOS, selected_years, years_label, year_month_index
 
@@ -83,6 +83,11 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         'Panorama da produção de exames</h2>', unsafe_allow_html=True,
     )
 
+    indicator_context(
+        f"Indicadores acumulados · {period}",
+        f"Municípios selecionados: {len(places)}. A média mensal utiliza "
+        f"somente os {months_count} meses com registros disponíveis.",
+    )
     col_total, col_media, col_municipio = st.columns(3)
     with col_total:
         st.metric("Total de exames registrados", fmt_num(total))

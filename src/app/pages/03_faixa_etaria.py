@@ -7,11 +7,11 @@ import plotly.express as px
 import streamlit as st
 
 from utils.theme import (
-    apply_custom_css, page_header, display_chart, display_table, export_table,
+    apply_custom_css, page_header, indicator_context, display_chart, display_table, export_table,
     fmt_num, fmt_pct, pct, style_chart, OCEAN, SKY, ORANGE, NAVY,
 )
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered, sidebar_filters, require
+from utils.data_loader import filtered, sidebar_filters, require, years_label
 
 
 def normalize(value):
@@ -161,6 +161,11 @@ st.markdown(
     'Perfil etário dos exames</h2>', unsafe_allow_html=True,
 )
 
+indicator_context(
+    f"Indicadores etários · {years_label()}",
+    "Participação calculada sobre os exames com faixa etária conhecida dos municípios selecionados. "
+    "Não representa a quantidade de mulheres distintas.",
+)
 sums = groups.groupby("grupo")["quantidade_exames"].sum()
 total = sums.sum()
 # Indicadores em ordem crescente de idade e com quantidades legíveis.

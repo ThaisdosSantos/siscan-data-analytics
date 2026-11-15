@@ -2,9 +2,9 @@ import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,SKY,ORANGE,NAVY
+from utils.theme import apply_custom_css,page_header,indicator_context,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,SKY,ORANGE,NAVY
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered,require,sidebar_filters,selected_years
+from utils.data_loader import filtered,require,sidebar_filters,selected_years,years_label
 
 # Cores com maior contraste entre os grupos etários (PET-Saúde).
 BABY_BLUE = "#A9DDF4"   # <25 anos
@@ -91,9 +91,36 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         'Panorama dos exames alterados</h2>',
         unsafe_allow_html=True,
     )
-    metric_row([("Exames alterados",fmt_num(num)),("Proporção operacional",fmt_pct(pct(num,den))),
-                ("Exames no denominador disponível",fmt_num(den) if pd.notna(den) else "N/D")])
-    st.markdown("### Proporção de exames alterados por grupo etário")
+    indicator_context(
+        f"Indicadores gerais · {years_label()}",
+        "Somatório dos municípios selecionados, considerando apenas faixas etárias identificadas. "
+        "O denominador é a estimativa de exames válidos disponível na Gold Q5.",
+    )
+    metric_row([
+        ("Exames alterados", fmt_num(num)),
+        ("Proporção operacional", fmt_pct(pct(num, den)) if pd.notna(den) and den > 0 else "N/D"),
+        ("Exames válidos (denominador)", fmt_num(den) if pd.notna(den) else "N/D"),
+    ])
+    st.markdown(
+        "**Proporção operacional:** de cada 100 exames considerados válidos na Gold Q5, "
+        "indica quantos tiveram resultado citopatológico alterado. "
+        "É uma proporção de **exames registrados**, não de mulheres ou diagnósticos de câncer."
+    )
+    with st.expander("ℹ️ Como é calculada a proporção operacional?", expanded=False):
+        st.markdown(
+            "**Fórmula:** (soma de exames alterados ÷ soma dos exames válidos) × 100. "
+            "Somamos primeiro numeradores e denominadores dos municípios, anos e "
+            "grupos selecionados; **não** calculamos a média simples de percentuais.\n\n"
+            "**Base de comparação:** a Gold desconta amostras rejeitadas e "
+            "insatisfatórias do total de exames. Como o SISCAN não disponibiliza "
+            "o cruzamento de adequabilidade por faixa etária, essas exclusões são "
+            "**distribuídas proporcionalmente por idade em cada município/ano**. "
+            "Esse pressuposto torna o percentual uma **estimativa operacional**, "
+            "não uma taxa clínica de risco, prevalência ou cobertura.\n\n"
+            "**Limitações:** registros sem grupo etário identificável não entram "
+            "nos cartões; exames não correspondem necessariamente a pessoas distintas."
+        )
+    st.markdown("### Proporção operacional de exames alterados por grupo etário")
     st.markdown(
         "Compara a **proporção de exames citopatológicos alterados** nos grupos "
         "etários de menores de 25 anos, 25–64 anos e 65 anos ou mais."
@@ -345,279 +372,283 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         else:
             st.info("Não há registros anuais de exames alterados para o recorte selecionado.")
 
-    # Evolução anual com linhas independentes para os três grupos etários.
-    # Dois municípios por linha (até seis linhas), sem acumular grupos.
-    st.markdown("### Evolução anual de exames alterados por município e grupo etário")
     st.markdown(
-        "Apresenta a **quantidade anual de exames alterados por município**, "
-        "com linhas separadas para os três grupos etários no período selecionado."
+        "Para uma leitura mais detalhada, abra a evolução anual separada por grupos etários."
     )
-    with st.expander("ℹ️ Como interpretar a evolução anual por grupo etário", expanded=False):
+    if st.toggle("Exibir evolução por município e grupo etário", value=False, key="q5_detalhe_evolucao"):
+        # Evolução anual com linhas independentes para os três grupos etários.
+        # Dois municípios por linha (até seis linhas), sem acumular grupos.
+        st.markdown("### Evolução anual de exames alterados por município e grupo etário")
         st.markdown(
-            "Cada painel corresponde a um **município**. **Eixo horizontal:** "
-            "anos selecionados. **Eixo vertical:** quantidade de exames alterados. "
-            "As cores e os símbolos identificam os grupos **<25 anos**, "
-            "**25–64 anos** e **≥65 anos**. Linhas ascendentes indicam aumento "
-            "de registros alterados; descendentes, redução. "
-            "**Este gráfico apresenta quantidades absolutas, não percentuais.** "
-            "Um aumento pode acompanhar mudanças no volume total de exames; "
-            "não significa, isoladamente, maior risco ou prevalência de alterações. "
-            "Ausências de registros não devem ser interpretadas automaticamente como zero."
+            "Apresenta a **quantidade anual de exames alterados por município**, "
+            "com linhas separadas para os três grupos etários no período selecionado."
         )
-    if "ano" not in df.columns:
-        st.info("A evolução anual requer a coluna 'ano' na tabela Gold.")
-    else:
-        lines_source = df.copy()
-        lines_source["ano"] = pd.to_numeric(lines_source["ano"], errors="coerce")
-        lines_source["quantidade_alterados"] = pd.to_numeric(
-            lines_source["quantidade_alterados"], errors="coerce"
-        )
-        lines_source = lines_source.dropna(
-            subset=["municipio", "ano", "grupo_3", "quantidade_alterados"]
-        )
-        lines_source = lines_source.loc[
-            lines_source["grupo_3"].isin(ordem_grupos)
-            & (lines_source["quantidade_alterados"] >= 0)
-        ].copy()
-        if lines_source.empty:
-            st.info("Não há exames alterados por município e grupo etário no período selecionado.")
+        with st.expander("ℹ️ Como interpretar a evolução anual por grupo etário", expanded=False):
+            st.markdown(
+                "Cada painel corresponde a um **município**. **Eixo horizontal:** "
+                "anos selecionados. **Eixo vertical:** quantidade de exames alterados. "
+                "As cores e os símbolos identificam os grupos **<25 anos**, "
+                "**25–64 anos** e **≥65 anos**. Linhas ascendentes indicam aumento "
+                "de registros alterados; descendentes, redução. "
+                "**Este gráfico apresenta quantidades absolutas, não percentuais.** "
+                "Um aumento pode acompanhar mudanças no volume total de exames; "
+                "não significa, isoladamente, maior risco ou prevalência de alterações. "
+                "Ausências de registros não devem ser interpretadas automaticamente como zero."
+            )
+        if "ano" not in df.columns:
+            st.info("A evolução anual requer a coluna 'ano' na tabela Gold.")
         else:
-            lines_yearly = (
-                lines_source.groupby(
-                    ["municipio", "ano", "grupo_3"], as_index=False
-                )["quantidade_alterados"].sum(min_count=1)
+            lines_source = df.copy()
+            lines_source["ano"] = pd.to_numeric(lines_source["ano"], errors="coerce")
+            lines_source["quantidade_alterados"] = pd.to_numeric(
+                lines_source["quantidade_alterados"], errors="coerce"
             )
-            lines_yearly["ano"] = lines_yearly["ano"].astype(int)
-            lines_yearly["ano_label"] = lines_yearly["ano"].astype(str)
-            st.markdown("""
-                <style>
-                .st-key-alterados_sort_grupos_panel [data-testid="stSelectbox"] label p {
-                    color: #1A3B5C !important;
-                    font-weight: 700 !important;
-                    font-size: 0.88rem !important;
-                }
-                .st-key-alterados_sort_grupos_panel [data-baseweb="select"] > div {
-                    background: #FFFFFF !important;
-                    border: 1.5px solid #8FAFC5 !important;
-                    border-radius: 9px !important;
-                    min-height: 43px !important;
-                }
-                .st-key-alterados_sort_grupos_panel [data-baseweb="select"] * {
-                    color: #1A3B5C !important;
-                }
-                </style>
-            """, unsafe_allow_html=True)
-            # Ordenação independente das facetas gerais, com os mesmos rótulos
-            # e estilo de seletor já usados na página.
-            with st.container(key="alterados_sort_grupos_panel"):
-                sort_grupos = st.selectbox(
-                    "Ordenar por",
-                    options=["A–Z", "Maior para menor"],
-                    key="sort_facetas_grupos_alterados",
-                    help=(
-                        "Maior para menor considera o total de exames alterados "
-                        "dos três grupos no período e municípios selecionados."
-                    ),
-                )
-            municipios_lines = sorted(
-                lines_yearly["municipio"].unique(), key=lambda name: name.casefold()
+            lines_source = lines_source.dropna(
+                subset=["municipio", "ano", "grupo_3", "quantidade_alterados"]
             )
-            if sort_grupos == "Maior para menor":
-                totals_grupos = (
-                    lines_yearly.groupby("municipio")["quantidade_alterados"]
-                    .sum(min_count=1)
+            lines_source = lines_source.loc[
+                lines_source["grupo_3"].isin(ordem_grupos)
+                & (lines_source["quantidade_alterados"] >= 0)
+            ].copy()
+            if lines_source.empty:
+                st.info("Não há exames alterados por município e grupo etário no período selecionado.")
+            else:
+                lines_yearly = (
+                    lines_source.groupby(
+                        ["municipio", "ano", "grupo_3"], as_index=False
+                    )["quantidade_alterados"].sum(min_count=1)
                 )
-                municipios_lines.sort(
-                    key=lambda municipio: (
-                        -float(totals_grupos.loc[municipio])
-                        if pd.notna(totals_grupos.loc[municipio])
-                        else float("inf"),
-                        municipio.casefold(),
+                lines_yearly["ano"] = lines_yearly["ano"].astype(int)
+                lines_yearly["ano_label"] = lines_yearly["ano"].astype(str)
+                st.markdown("""
+                    <style>
+                    .st-key-alterados_sort_grupos_panel [data-testid="stSelectbox"] label p {
+                        color: #1A3B5C !important;
+                        font-weight: 700 !important;
+                        font-size: 0.88rem !important;
+                    }
+                    .st-key-alterados_sort_grupos_panel [data-baseweb="select"] > div {
+                        background: #FFFFFF !important;
+                        border: 1.5px solid #8FAFC5 !important;
+                        border-radius: 9px !important;
+                        min-height: 43px !important;
+                    }
+                    .st-key-alterados_sort_grupos_panel [data-baseweb="select"] * {
+                        color: #1A3B5C !important;
+                    }
+                    </style>
+                """, unsafe_allow_html=True)
+                # Ordenação independente das facetas gerais, com os mesmos rótulos
+                # e estilo de seletor já usados na página.
+                with st.container(key="alterados_sort_grupos_panel"):
+                    sort_grupos = st.selectbox(
+                        "Ordenar por",
+                        options=["A–Z", "Maior para menor"],
+                        key="sort_facetas_grupos_alterados",
+                        help=(
+                            "Maior para menor considera o total de exames alterados "
+                            "dos três grupos no período e municípios selecionados."
+                        ),
+                    )
+                municipios_lines = sorted(
+                    lines_yearly["municipio"].unique(), key=lambda name: name.casefold()
+                )
+                if sort_grupos == "Maior para menor":
+                    totals_grupos = (
+                        lines_yearly.groupby("municipio")["quantidade_alterados"]
+                        .sum(min_count=1)
+                    )
+                    municipios_lines.sort(
+                        key=lambda municipio: (
+                            -float(totals_grupos.loc[municipio])
+                            if pd.notna(totals_grupos.loc[municipio])
+                            else float("inf"),
+                            municipio.casefold(),
+                        )
+                    )
+                anos_lines = sorted(lines_yearly["ano"].unique().tolist())
+                fig_lines = px.line(
+                    lines_yearly,
+                    x="ano_label",
+                    y="quantidade_alterados",
+                    color="grupo_3",
+                    facet_col="municipio",
+                    facet_col_wrap=2,
+                    facet_col_spacing=0.075,
+                    facet_row_spacing=0.075,
+                    category_orders={
+                        "municipio": municipios_lines,
+                        "ano_label": [str(ano) for ano in anos_lines],
+                        "grupo_3": ordem_grupos,
+                    },
+                    color_discrete_map={
+                        "<25 anos": "#169B62",
+                        "25–64 anos": ROYAL_BLUE,
+                        "≥65 anos": ORANGE,
+                    },
+                    labels={
+                        "ano_label": "Anos",
+                        "quantidade_alterados": "Exames alterados",
+                        "grupo_3": "Grupo etário",
+                        "municipio": "Município",
+                    },
+                    markers=True,
+                )
+                fig_lines.for_each_annotation(
+                    lambda annotation: annotation.update(
+                        text=annotation.text.split("=", 1)[-1],
+                        font=dict(size=12, color=NAVY),
                     )
                 )
-            anos_lines = sorted(lines_yearly["ano"].unique().tolist())
-            fig_lines = px.line(
-                lines_yearly,
-                x="ano_label",
-                y="quantidade_alterados",
-                color="grupo_3",
-                facet_col="municipio",
-                facet_col_wrap=2,
-                facet_col_spacing=0.075,
-                facet_row_spacing=0.075,
-                category_orders={
-                    "municipio": municipios_lines,
-                    "ano_label": [str(ano) for ano in anos_lines],
-                    "grupo_3": ordem_grupos,
-                },
-                color_discrete_map={
-                    "<25 anos": "#169B62",
-                    "25–64 anos": ROYAL_BLUE,
-                    "≥65 anos": ORANGE,
-                },
-                labels={
-                    "ano_label": "Anos",
-                    "quantidade_alterados": "Exames alterados",
-                    "grupo_3": "Grupo etário",
-                    "municipio": "Município",
-                },
-                markers=True,
-            )
-            fig_lines.for_each_annotation(
-                lambda annotation: annotation.update(
-                    text=annotation.text.split("=", 1)[-1],
-                    font=dict(size=12, color=NAVY),
-                )
-            )
-            fig_lines.update_traces(
-                hovertemplate=(
-                    "Ano: %{x}<br>Exames alterados: %{y:,.0f}"
-                    "<extra>%{fullData.name}</extra>"
-                ),
-                line=dict(width=2.5),
-                marker=dict(size=7),
-                connectgaps=False,
-            )
-            # Há anos em que <25 e >=65 possuem ambos zero. Se o laranja
-            # for desenhado por cima, esconderá a linha verde nesses anos.
-            # Ordem de desenho: laranja atrás, azul no meio, verde por cima;
-            # sem alterar valores nem imputar competências ausentes.
-            ordem_desenho = {"≥65 anos": 0, "25–64 anos": 1, "<25 anos": 2}
-            fig_lines.data = tuple(
-                sorted(
-                    fig_lines.data,
-                    key=lambda trace: ordem_desenho.get(trace.name, 3),
-                )
-            )
-            for trace in fig_lines.data:
-                grupo = trace.name
-                trace.update(
-                    legendrank={
-                        "<25 anos": 1, "25–64 anos": 2, "≥65 anos": 3
-                    }.get(grupo, 4),
-                    line=dict(
-                        width=4 if grupo == "≥65 anos" else 2.8,
-                        dash="dot" if grupo == "≥65 anos" else "solid",
+                fig_lines.update_traces(
+                    hovertemplate=(
+                        "Ano: %{x}<br>Exames alterados: %{y:,.0f}"
+                        "<extra>%{fullData.name}</extra>"
                     ),
-                    marker=dict(
-                        size=8,
-                        symbol={
-                            "<25 anos": "circle",
-                            "25–64 anos": "diamond",
-                            "≥65 anos": "square",
-                        }.get(grupo, "circle"),
-                    ),
+                    line=dict(width=2.5),
+                    marker=dict(size=7),
+                    connectgaps=False,
                 )
-            fig_lines.update_xaxes(
-                type="category",
-                categoryorder="array",
-                categoryarray=[str(ano) for ano in anos_lines],
-                showticklabels=True,
-                matches=None,
-                title_text=None,
-                showgrid=False,
-                showline=False,
-            )
-            fig_lines.update_yaxes(
-                matches=None,
-                showticklabels=True,
-                title_text=None,
-                rangemode="tozero",
-                tickformat=",.0f",
-                gridcolor="#E9EDF1",
-            )
-            fig_lines.add_annotation(
-                x=-0.065, y=0.5, xref="paper", yref="paper",
-                text="Exames alterados", textangle=-90,
-                showarrow=False, font=dict(size=13, color=NAVY),
-            )
-            fig_lines.add_annotation(
-                x=0.5, y=-0.025, xref="paper", yref="paper",
-                text="Anos", showarrow=False,
-                font=dict(size=13, color=NAVY),
-            )
-            n_linhas = (len(municipios_lines) + 1) // 2
-            fig_lines.update_layout(
-                height=max(520, 360 * n_linhas),
-                showlegend=True,
-                legend=dict(
-                    title_text="", orientation="h",
-                    x=0.5, xanchor="center", y=1.06, yanchor="bottom",
-                    font=dict(size=12, color=NAVY),
-                ),
-                margin=dict(l=95, r=25, t=115, b=95),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
-                font=dict(color=NAVY, size=11),
-            )
-            # PNG sem tabelas: preservar a mesma grade de 11 gráficos.
-            # Rótulos distintos para cada grupo, com espaço extra abaixo
-            # da linha zero para não sobrepor números ao eixo dos anos.
-            export_lines = copy.deepcopy(fig_lines)
-            posicoes_texto = {
-                "<25 anos": "top left",
-                "25–64 anos": "top center",
-                "≥65 anos": "bottom right",
-            }
-            for trace in export_lines.data:
-                trace.update(
-                    mode="lines+markers+text",
-                    texttemplate="%{y:,.0f}",
-                    textposition=posicoes_texto.get(trace.name, "top center"),
-                    textfont=dict(size=12, color=trace.line.color or NAVY),
-                    cliponaxis=False,
-                )
-            # Ajustar escalas de cada faceta separadamente para os valores
-            # baixos (verde/laranja) não se confundirem com o eixo X.
-            for pos, municipio in enumerate(municipios_lines):
-                painel = lines_yearly.loc[
-                    lines_yearly["municipio"].eq(municipio),
-                    "quantidade_alterados",
-                ]
-                maximo = float(painel.max()) if not painel.empty else 0.0
-                amplitude = max(maximo, 3.0)
-                # plotly express com wrap=2 posiciona a primeira faceta
-                # na última linha, da esquerda para a direita.
-                numero_eixo = (
-                    (n_linhas - 1 - pos // 2) * 2 + pos % 2 + 1
-                )
-                eixo = "yaxis" if numero_eixo == 1 else f"yaxis{numero_eixo}"
-                if eixo in export_lines.layout:
-                    export_lines.layout[eixo].update(
-                        range=[-amplitude * 0.19, amplitude * 1.20],
-                        tickformat=",.0f",
-                        automargin=True,
+                # Há anos em que <25 e >=65 possuem ambos zero. Se o laranja
+                # for desenhado por cima, esconderá a linha verde nesses anos.
+                # Ordem de desenho: laranja atrás, azul no meio, verde por cima;
+                # sem alterar valores nem imputar competências ausentes.
+                ordem_desenho = {"≥65 anos": 0, "25–64 anos": 1, "<25 anos": 2}
+                fig_lines.data = tuple(
+                    sorted(
+                        fig_lines.data,
+                        key=lambda trace: ordem_desenho.get(trace.name, 3),
                     )
-            export_lines.update_layout(
-                title=dict(
-                    text="Evolução anual de exames alterados por município e grupo etário",
-                    x=0.5, xanchor="center",
-                    font=dict(size=23, color=NAVY),
-                ),
-                height=max(950, 465 * n_linhas),
-                width=1800,
-                legend=dict(
-                    title_text="", orientation="h",
-                    x=0.5, xanchor="center",
-                    y=-0.065, yanchor="top",
-                    font=dict(size=15, color=NAVY),
-                ),
-                margin=dict(l=115, r=75, t=125, b=145),
-                paper_bgcolor="#FFFFFF",
-                plot_bgcolor="#FFFFFF",
-                font=dict(color=NAVY, size=12),
-            )
-            st.caption(
-                "No celular, deslize o gráfico para os lados. "
-                "O PNG mostra valores nas três linhas, sem tabelas."
-            )
-            chart_with_right_click_download(
-                fig_lines,
-                filename="exames_alterados_linhas_grupos_etarios_por_municipio.png",
-                height=fig_lines.layout.height,
-                min_chart_width=760,
-                export_fig=export_lines,
-            )
+                )
+                for trace in fig_lines.data:
+                    grupo = trace.name
+                    trace.update(
+                        legendrank={
+                            "<25 anos": 1, "25–64 anos": 2, "≥65 anos": 3
+                        }.get(grupo, 4),
+                        line=dict(
+                            width=4 if grupo == "≥65 anos" else 2.8,
+                            dash="dot" if grupo == "≥65 anos" else "solid",
+                        ),
+                        marker=dict(
+                            size=8,
+                            symbol={
+                                "<25 anos": "circle",
+                                "25–64 anos": "diamond",
+                                "≥65 anos": "square",
+                            }.get(grupo, "circle"),
+                        ),
+                    )
+                fig_lines.update_xaxes(
+                    type="category",
+                    categoryorder="array",
+                    categoryarray=[str(ano) for ano in anos_lines],
+                    showticklabels=True,
+                    matches=None,
+                    title_text=None,
+                    showgrid=False,
+                    showline=False,
+                )
+                fig_lines.update_yaxes(
+                    matches=None,
+                    showticklabels=True,
+                    title_text=None,
+                    rangemode="tozero",
+                    tickformat=",.0f",
+                    gridcolor="#E9EDF1",
+                )
+                fig_lines.add_annotation(
+                    x=-0.065, y=0.5, xref="paper", yref="paper",
+                    text="Exames alterados", textangle=-90,
+                    showarrow=False, font=dict(size=13, color=NAVY),
+                )
+                fig_lines.add_annotation(
+                    x=0.5, y=-0.025, xref="paper", yref="paper",
+                    text="Anos", showarrow=False,
+                    font=dict(size=13, color=NAVY),
+                )
+                n_linhas = (len(municipios_lines) + 1) // 2
+                fig_lines.update_layout(
+                    height=max(520, 360 * n_linhas),
+                    showlegend=True,
+                    legend=dict(
+                        title_text="", orientation="h",
+                        x=0.5, xanchor="center", y=1.06, yanchor="bottom",
+                        font=dict(size=12, color=NAVY),
+                    ),
+                    margin=dict(l=95, r=25, t=115, b=95),
+                    paper_bgcolor="#FFFFFF",
+                    plot_bgcolor="#FFFFFF",
+                    font=dict(color=NAVY, size=11),
+                )
+                # PNG sem tabelas: preservar a mesma grade de 11 gráficos.
+                # Rótulos distintos para cada grupo, com espaço extra abaixo
+                # da linha zero para não sobrepor números ao eixo dos anos.
+                export_lines = copy.deepcopy(fig_lines)
+                posicoes_texto = {
+                    "<25 anos": "top left",
+                    "25–64 anos": "top center",
+                    "≥65 anos": "bottom right",
+                }
+                for trace in export_lines.data:
+                    trace.update(
+                        mode="lines+markers+text",
+                        texttemplate="%{y:,.0f}",
+                        textposition=posicoes_texto.get(trace.name, "top center"),
+                        textfont=dict(size=12, color=trace.line.color or NAVY),
+                        cliponaxis=False,
+                    )
+                # Ajustar escalas de cada faceta separadamente para os valores
+                # baixos (verde/laranja) não se confundirem com o eixo X.
+                for pos, municipio in enumerate(municipios_lines):
+                    painel = lines_yearly.loc[
+                        lines_yearly["municipio"].eq(municipio),
+                        "quantidade_alterados",
+                    ]
+                    maximo = float(painel.max()) if not painel.empty else 0.0
+                    amplitude = max(maximo, 3.0)
+                    # plotly express com wrap=2 posiciona a primeira faceta
+                    # na última linha, da esquerda para a direita.
+                    numero_eixo = (
+                        (n_linhas - 1 - pos // 2) * 2 + pos % 2 + 1
+                    )
+                    eixo = "yaxis" if numero_eixo == 1 else f"yaxis{numero_eixo}"
+                    if eixo in export_lines.layout:
+                        export_lines.layout[eixo].update(
+                            range=[-amplitude * 0.19, amplitude * 1.20],
+                            tickformat=",.0f",
+                            automargin=True,
+                        )
+                export_lines.update_layout(
+                    title=dict(
+                        text="Evolução anual de exames alterados por município e grupo etário",
+                        x=0.5, xanchor="center",
+                        font=dict(size=23, color=NAVY),
+                    ),
+                    height=max(950, 465 * n_linhas),
+                    width=1800,
+                    legend=dict(
+                        title_text="", orientation="h",
+                        x=0.5, xanchor="center",
+                        y=-0.065, yanchor="top",
+                        font=dict(size=15, color=NAVY),
+                    ),
+                    margin=dict(l=115, r=75, t=125, b=145),
+                    paper_bgcolor="#FFFFFF",
+                    plot_bgcolor="#FFFFFF",
+                    font=dict(color=NAVY, size=12),
+                )
+                st.caption(
+                    "No celular, deslize o gráfico para os lados. "
+                    "O PNG mostra valores nas três linhas, sem tabelas."
+                )
+                chart_with_right_click_download(
+                    fig_lines,
+                    filename="exames_alterados_linhas_grupos_etarios_por_municipio.png",
+                    height=fig_lines.layout.height,
+                    min_chart_width=760,
+                    export_fig=export_lines,
+                )
 
     st.markdown(
         '<h2 class="q5-section-title"><span class="q5-section-index">03</span>'
@@ -721,516 +752,521 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         unsafe_allow_html=True,
     )
 
-    # Novas métricas Q5: fatos de composição da Gold, separados do indicador canônico.
-    st.markdown("### Composição dos exames alterados por categoria e ano")
     st.markdown(
-        "Mostra as **quantidades de registros por categoria citopatológica** "
-        "ao longo dos anos e municípios selecionados."
+        "As análises por categoria são complementares e não substituem a proporção "
+        "operacional. Os gráficos detalhados ficam ocultos inicialmente para facilitar a navegação."
     )
-    with st.expander("ℹ️ Como interpretar a composição anual", expanded=False):
+    if st.toggle("Exibir análises avançadas por categoria citopatológica", value=False, key="q5_detalhe_categorias"):
+        # Novas métricas Q5: fatos de composição da Gold, separados do indicador canônico.
+        st.markdown("### Composição dos exames alterados por categoria e ano")
         st.markdown(
-            "Cada barra representa um ano e suas cores representam as categorias. "
-            "A altura mostra **quantidades absolutas**, não taxas entre exames válidos. "
-            "Na Gold, combinações não retornadas pelo TabNet são preenchidas com zero. "
-            "**A soma das categorias pode diferir ligeiramente da métrica geral** "
-            "de exames alterados em alguns pares município/ano; a métrica geral "
-            "acima continua sendo a referência oficial deste dashboard."
+            "Mostra as **quantidades de registros por categoria citopatológica** "
+            "ao longo dos anos e municípios selecionados."
         )
-    cat_anual = filtered("categoria_anual")
-    if not cat_anual.empty and {
-        "ano", "municipio", "categoria", "quantidade_alterados"
-    }.issubset(cat_anual.columns):
-        cat_anual["quantidade_alterados"] = pd.to_numeric(
-            cat_anual["quantidade_alterados"], errors="coerce"
-        )
-        por_cat_ano = (
-            cat_anual.groupby(["ano", "categoria"], as_index=False)[
-                "quantidade_alterados"
-            ].sum(min_count=1).dropna(subset=["quantidade_alterados"])
-        )
-        if not por_cat_ano.empty:
-            # Paleta PET-Saúde: uma cor fixa por categoria, inclusive quando
-            # os filtros ocultam categorias em determinados anos.
-            categorias_ordenadas = sorted(
-                por_cat_ano["categoria"].dropna().unique(), key=str.casefold
-            )
-            cores_categorias = [
-                "#006C9A", "#E85D2A", "#218B65", "#6B5FB5",
-                "#D49B22", "#1A3B5C", "#C24B75", "#54A8C3",
-            ]
-            mapa_cores = {
-                categoria: cores_categorias[i % len(cores_categorias)]
-                for i, categoria in enumerate(categorias_ordenadas)
-            }
-            # Associa o percentual ao próprio registro antes de o Plotly
-            # separar as barras por categoria, evitando converter trace.x em int.
-            total_por_ano = por_cat_ano.groupby("ano")[
-                "quantidade_alterados"
-            ].transform("sum")
-            por_cat_ano["participacao_pct"] = (
-                por_cat_ano["quantidade_alterados"]
-                .div(total_por_ano.where(total_por_ano > 0))
-                .mul(100)
-            )
-            visual_anual = st.selectbox(
-                "Visualizar composição anual",
-                ["Quantidade de exames", "Participação por categoria (%)"],
-                key="q5_categoria_anual_visual",
-            )
-            percentual_anual = visual_anual == "Participação por categoria (%)"
-            coluna_grafico_anual = (
-                "participacao_pct" if percentual_anual else "quantidade_alterados"
-            )
-            # Mantém os percentuais calculados a partir dos registros filtrados,
-            # sem somar os totais repetidos em cada linha da tabela Gold.
-            por_cat_ano["rotulo_exportacao"] = por_cat_ano[
-                "participacao_pct"
-            ].map(
-                lambda valor: f"{valor:.2f}%"
-                if pd.notna(valor) and valor >= 6 else ""
-            )
-            fig_cat = px.bar(
-                por_cat_ano, x="ano", y=coluna_grafico_anual,
-                color="categoria", barmode="stack",
-                text="rotulo_exportacao",
-                custom_data=["quantidade_alterados", "participacao_pct"],
-                color_discrete_map=mapa_cores,
-                category_orders={"categoria": categorias_ordenadas},
-                labels={
-                    "ano": "Ano",
-                    "quantidade_alterados": "Exames por categoria",
-                    "participacao_pct": "Participação (%)",
-                    "categoria": "Categoria citopatológica",
-                },
-            )
-            fig_cat.update_traces(
-                hovertemplate=(
-                    "Ano: %{x}<br>Exames: %{customdata[0]:,.0f}"
-                    "<br>Participação: %{customdata[1]:.2f}%"
-                    "<extra>%{fullData.name}</extra>"
-                ),
-                marker_line_color="#FFFFFF",
-                marker_line_width=0.6,
-                textposition="none",  # os rótulos aparecem apenas no PNG
-            )
-            fig_cat.update_xaxes(type="category", showgrid=False)
-            fig_cat.update_yaxes(
-                rangemode="tozero",
-                tickformat=".0f" if percentual_anual else ",d",
-                ticksuffix="%" if percentual_anual else "",
-                range=[0, 100] if percentual_anual else None,
-                gridcolor="#E4EBF1",
-            )
-            fig_cat.update_layout(
-                height=500, plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
-                font=dict(color=NAVY),
-                legend=dict(
-                    title_text="Categoria citopatológica",
-                    x=1.02, xanchor="left", y=1, yanchor="top",
-                    font=dict(size=11, color=NAVY),
-                    bgcolor="rgba(255,255,255,0)",
-                ),
-                margin=dict(l=70, r=225, t=35, b=65),
-            )
-            # O texto já foi associado a cada registro pelo Plotly Express.
-            # Nenhuma conversão ou comparação de arrays durante a exportação.
-            export_cat = copy.deepcopy(fig_cat)
-            export_cat.update_traces(
-                textposition="inside",
-                textfont=dict(size=13, color="#FFFFFF"),
-                insidetextanchor="middle",
-            )
-            # PNG contém apenas o gráfico. Segmentos pequenos continuam
-            # consultáveis no tooltip do site e na exportação CSV.
-            export_cat.update_layout(
-                title=dict(
-                    text=("Composição percentual por categoria e ano"
-                          if percentual_anual
-                          else "Exames alterados por categoria e ano"),
-                    x=0.5,
-                ),
-                height=650, width=1600,
-                margin=dict(l=90, r=265, t=110, b=90),
-                uniformtext=dict(mode="hide", minsize=12),
-            )
-            chart_with_right_click_download(
-                fig_cat, filename="alterados_categorias_ano.png",
-                height=480, export_fig=export_cat,
-            )
-            with st.expander("Ver dados de categorias por ano", expanded=False):
-                tabela_cat = por_cat_ano[
-                    ["ano", "categoria", "quantidade_alterados", "participacao_pct"]
-                ].rename(columns={
-                    "ano": "Ano", "categoria": "Categoria",
-                    "quantidade_alterados": "Exames na categoria",
-                    "participacao_pct": "Participação entre categorias (%)",
-                })
-                export_table(tabela_cat, "siscan_categoria_anual.csv")
-        else:
-            st.info("Não há registros por categoria nos filtros selecionados.")
-
-        st.markdown("### Composição dos exames alterados por município e categoria")
-        st.markdown(
-            "Mostra **quantos exames alterados foram registrados em cada categoria** "
-            "e **qual a participação de cada categoria no total de alterados** "
-            "de cada município, conforme os filtros selecionados."
-        )
-        with st.expander("ℹ️ Como interpretar a composição por município", expanded=False):
+        with st.expander("ℹ️ Como interpretar a composição anual", expanded=False):
             st.markdown(
-                "**Como ler:** cada **linha** representa um município e cada "
-                "**coluna**, uma categoria citopatológica. As cores mais escuras "
-                "indicam valores maiores na medida escolhida.\n\n"
-                "**Quantidade de exames:** mostra o número de registros daquela "
-                "categoria no município, somando os anos selecionados. "
-                "Exemplo: **70** significa 70 exames classificados nessa categoria.\n\n"
-                "**Participação (%):** mostra quanto a categoria representa "
-                "**entre todos os exames alterados do mesmo município**. "
-                "É calculada por **exames da categoria ÷ total de exames alterados "
-                "classificados no município × 100**. Exemplo: se 70 dos 100 exames "
-                "alterados forem ASC-US, a célula exibirá **70.00%**. "
-                "As participações das categorias de cada município somam 100% "
-                "quando há registros.\n\n"
-                "**Atenção:** o percentual **não** representa a proporção de "
-                "alterações entre todos os exames válidos nem a porcentagem de "
-                "mulheres com a alteração. **0** ou **0.00%** indica nenhum "
-                "registro da categoria na grade consultada; **—** indica que "
-                "o percentual não pôde ser calculado por falta de denominador. "
-                "Os resultados citopatológicos não equivalem, por si só, "
-                "a diagnósticos de câncer."
+                "Cada barra representa um ano e suas cores representam as categorias. "
+                "A altura mostra **quantidades absolutas**, não taxas entre exames válidos. "
+                "Na Gold, combinações não retornadas pelo TabNet são preenchidas com zero. "
+                "**A soma das categorias pode diferir ligeiramente da métrica geral** "
+                "de exames alterados em alguns pares município/ano; a métrica geral "
+                "acima continua sendo a referência oficial deste dashboard."
             )
-        medida_municipal = st.selectbox(
-            "Visualizar composição municipal",
-            ["Participação (%)", "Quantidade de exames"],
-            key="q5_categoria_municipal_visual",
-        )
-        st.caption(
-            "**Leitura atual:** "
-            + (
-                "cada célula apresenta a **participação percentual** da categoria "
-                "entre os exames alterados do município (total da linha = 100%, "
-                "quando há registros)."
-                if medida_municipal == "Participação (%)"
-                else "cada célula apresenta a **quantidade de exames** da categoria "
-                "registrada no município, nos anos selecionados."
+        cat_anual = filtered("categoria_anual")
+        if not cat_anual.empty and {
+            "ano", "municipio", "categoria", "quantidade_alterados"
+        }.issubset(cat_anual.columns):
+            cat_anual["quantidade_alterados"] = pd.to_numeric(
+                cat_anual["quantidade_alterados"], errors="coerce"
             )
-        )
-        dados_municipais = cat_anual.dropna(
-            subset=["municipio", "categoria", "quantidade_alterados"]
-        ).groupby(["municipio", "categoria"], as_index=False)[
-            "quantidade_alterados"
-        ].sum(min_count=1)
-        if not dados_municipais.empty:
-            denominador_municipio = dados_municipais.groupby("municipio")[
-                "quantidade_alterados"
-            ].transform("sum")
-            dados_municipais["participacao_pct"] = (
-                dados_municipais["quantidade_alterados"]
-                .div(denominador_municipio.where(denominador_municipio > 0))
-                .mul(100)
-            )
-            coluna_municipal = (
-                "participacao_pct"
-                if medida_municipal == "Participação (%)"
-                else "quantidade_alterados"
-            )
-            nomes_municipios = sorted(
-                dados_municipais["municipio"].unique(), key=str.casefold
-            )
-            categorias_municipais = sorted(
-                dados_municipais["categoria"].unique(), key=str.casefold
-            )
-            quadro_municipal = dados_municipais.pivot(
-                index="municipio", columns="categoria",
-                values=coluna_municipal,
-            ).reindex(
-                index=nomes_municipios, columns=categorias_municipais
-            )
-            if quadro_municipal.notna().any().any():
-                st.caption(
-                    "Para facilitar a leitura, a matriz utiliza células maiores. "
-                    "Em telas menores, deslize horizontalmente para ver todas "
-                    "as categorias; no PNG, todos os valores ficam visíveis."
-                )
-                grafico_municipal = px.imshow(
-                    quadro_municipal,
-                    aspect="auto",
-                    color_continuous_scale="Blues",
-                    labels={
-                        "x": "Categoria citopatológica",
-                        "y": "Município",
-                        "color": (
-                            "Participação (%)"
-                            if coluna_municipal == "participacao_pct"
-                            else "Exames alterados"
-                        ),
-                    },
-                    title=None,
-                )
-                grafico_municipal.update_traces(
-                    xgap=4, ygap=4,
-                    hovertemplate=(
-                        "Município: %{y}<br>Categoria: %{x}<br>"
-                        + (
-                            "Participação: %{z:.2f}%"
-                            if coluna_municipal == "participacao_pct"
-                            else "Exames: %{z:,.0f}"
-                        )
-                        + "<extra></extra>"
-                    ),
-                )
-                maior_valor = quadro_municipal.max().max()
-                # Mesmo padrão da matriz territorial Q5: valores no centro
-                # das células, contraste automático e rótulo — para N/D.
-                for municipio in nomes_municipios:
-                    for categoria in categorias_municipais:
-                        valor = quadro_municipal.at[municipio, categoria]
-                        valido = pd.notna(valor)
-                        rotulo = (
-                            (
-                                f"{valor:.2f}%"
-                                if coluna_municipal == "participacao_pct"
-                                else f"{valor:,.0f}"
-                            )
-                            if valido else "—"
-                        )
-                        texto_claro = (
-                            valido and pd.notna(maior_valor)
-                            and float(maior_valor) > 0
-                            and float(valor) / float(maior_valor) >= 0.55
-                        )
-                        grafico_municipal.add_annotation(
-                            x=categoria, y=municipio,
-                            text=rotulo, showarrow=False,
-                            font=dict(
-                                size=15, family="Arial",
-                                color="#FFFFFF" if texto_claro else NAVY,
-                            ),
-                            xanchor="center", yanchor="middle",
-                        )
-                if coluna_municipal == "participacao_pct":
-                    grafico_municipal.update_coloraxes(
-                        colorbar_tickformat=".2f",
-                        colorbar_ticksuffix="%",
-                    )
-                else:
-                    grafico_municipal.update_coloraxes(
-                        colorbar_tickformat=",.0f",
-                    )
-                # As categorias são longas: rótulos verticais preservam
-                # os nomes completos e seguem o padrão dos gráficos Q5.
-                grafico_municipal.update_xaxes(
-                    tickangle=-90,
-                    tickfont=dict(color=NAVY, size=16, family="Arial"),
-                    title_text="Categoria citopatológica",
-                    title_font=dict(color=NAVY, size=18, family="Arial"),
-                    title_standoff=35,
-                    automargin=True,
-                    showgrid=False,
-                )
-                grafico_municipal.update_yaxes(
-                    tickfont=dict(color=NAVY, size=17, family="Arial"),
-                    title_text="Municípios",
-                    title_font=dict(color=NAVY, size=18, family="Arial"),
-                    title_standoff=20,
-                    automargin=True,
-                    showgrid=False,
-                )
-                grafico_municipal.update_layout(
-                    template="plotly_white",
-                    height=max(825, 51 * len(nomes_municipios) + 255),
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="#FFFFFF",
-                    font=dict(color=NAVY, family="Arial"),
-                    margin=dict(l=65, r=65, t=35, b=245),
-                )
-                export_municipal = copy.deepcopy(grafico_municipal)
-                export_municipal.update_layout(
-                    title=dict(
-                        text="Composição de exames alterados por município",
-                        x=0.5, font=dict(size=22, color=NAVY),
-                    ),
-                    width=1750,
-                    height=max(960, 51 * len(nomes_municipios) + 375),
-                    margin=dict(l=160, r=110, t=105, b=290),
-                )
-                chart_with_right_click_download(
-                    grafico_municipal,
-                    filename="alterados_composicao_municipio_categoria.png",
-                    height=grafico_municipal.layout.height,
-                    min_chart_width=1450,
-                    export_fig=export_municipal,
-                )
-            else:
-                st.info("Não há valores calculáveis para a composição municipal.")
-            with st.expander(
-                "Ver dados por município e categoria", expanded=False
-            ):
-                detalhe_municipal = dados_municipais.rename(columns={
-                    "municipio": "Município",
-                    "categoria": "Categoria citopatológica",
-                    "quantidade_alterados": "Exames na categoria",
-                    "participacao_pct": "Participação (%)",
-                }).sort_values(["Município", "Categoria citopatológica"])
-                export_table(
-                    detalhe_municipal,
-                    "siscan_composicao_municipio_categoria.csv",
-                )
-        else:
-            st.info("Não há registros por município e categoria neste recorte.")
-    else:
-        st.info("A tabela Gold de categorias anuais está vazia ou incompleta.")
-
-    st.markdown("### Distribuição etária dos exames alterados por categoria")
-    st.markdown(
-        "Compara a **distribuição dos registros de cada categoria** entre "
-        "os grupos etários no consolidado de 2020–2025."
-    )
-    with st.expander("ℹ️ Como interpretar a distribuição por faixa etária", expanded=False):
-        st.markdown(
-            "Cada barra corresponde a uma categoria e os segmentos representam "
-            "a participação de cada grupo etário **dentro daquela categoria**. "
-            "A distribuição não mede o risco de alteração em cada faixa. "
-            "**A Gold não possui ano nessa tabela:** o cruzamento representa "
-            "todo o período 2020–2025, e não pode ser filtrado por ano."
-        )
-    if selected_years() != list(range(2020, 2026)):
-        st.info(
-            "Este cruzamento foi consolidado na Gold para 2020–2025, sem "
-            "detalhamento anual. Selecione todos os anos para visualizá-lo."
-        )
-    else:
-        cat_faixa = filtered("categoria_faixa")
-        if not cat_faixa.empty and {
-            "categoria", "grupo_etario_3", "quantidade_alterados"
-        }.issubset(cat_faixa.columns):
-            cat_faixa["grupo_3"] = (
-                cat_faixa["grupo_etario_3"].astype("string").str.strip()
-                .map(grupo_para_rotulo)
-            )
-            cat_faixa["quantidade_alterados"] = pd.to_numeric(
-                cat_faixa["quantidade_alterados"], errors="coerce"
-            )
-            comp = (
-                cat_faixa.dropna(subset=["grupo_3", "quantidade_alterados"])
-                .groupby(["categoria", "grupo_3"], as_index=False)[
+            por_cat_ano = (
+                cat_anual.groupby(["ano", "categoria"], as_index=False)[
                     "quantidade_alterados"
-                ].sum(min_count=1)
+                ].sum(min_count=1).dropna(subset=["quantidade_alterados"])
             )
-            if not comp.empty:
-                base = comp.groupby("categoria")[
+            if not por_cat_ano.empty:
+                # Paleta PET-Saúde: uma cor fixa por categoria, inclusive quando
+                # os filtros ocultam categorias em determinados anos.
+                categorias_ordenadas = sorted(
+                    por_cat_ano["categoria"].dropna().unique(), key=str.casefold
+                )
+                cores_categorias = [
+                    "#006C9A", "#E85D2A", "#218B65", "#6B5FB5",
+                    "#D49B22", "#1A3B5C", "#C24B75", "#54A8C3",
+                ]
+                mapa_cores = {
+                    categoria: cores_categorias[i % len(cores_categorias)]
+                    for i, categoria in enumerate(categorias_ordenadas)
+                }
+                # Associa o percentual ao próprio registro antes de o Plotly
+                # separar as barras por categoria, evitando converter trace.x em int.
+                total_por_ano = por_cat_ano.groupby("ano")[
                     "quantidade_alterados"
                 ].transform("sum")
-                comp["participacao_pct"] = comp[
-                    "quantidade_alterados"
-                ].div(base.where(base > 0)).mul(100)
-                comp = comp.dropna(subset=["participacao_pct"])
-                if not comp.empty:
-                    # Barras verticais 100% com rótulos quebrados em duas linhas.
-                    # Mantém os nomes originais nos dados e no hover.
-                    categorias_presentes = sorted(
-                        comp["categoria"].unique(), key=str.casefold
-                    )
-                    cores_faixa = {
-                        "<25 anos": "#169B62",
-                        "25–64 anos": ROYAL_BLUE,
-                        "≥65 anos": "#E85D2A",
-                    }
-                    # Prepara rótulos no DataFrame para evitar comparações
-                    # com arrays internos retornados pelos traces do Plotly.
-                    comp["rotulo_exportacao"] = comp["participacao_pct"].map(
-                        lambda valor: f"{valor:.2f}%"
-                        if pd.notna(valor) and valor >= 6 else ""
-                    )
-                    fig_faixas = px.bar(
-                        comp, x="categoria", y="participacao_pct",
-                        color="grupo_3", barmode="stack",
-                        color_discrete_map=cores_faixa,
-                        category_orders={
-                            "grupo_3": ordem_grupos,
-                            "categoria": categorias_presentes,
-                        },
-                        labels={
-                            "categoria": "Categoria citopatológica",
-                            "participacao_pct": "Participação (%)",
-                            "grupo_3": "Grupo etário",
-                        },
-                        custom_data=["quantidade_alterados"],
-                        text="rotulo_exportacao",
-                    )
-                    fig_faixas.update_traces(
-                        marker_line_color="#FFFFFF", marker_line_width=0.8,
-                        textposition="none",  # rótulos apenas na exportação
-                        hovertemplate=(
-                            "Categoria: %{x}<br>Participação: %{y:.2f}%"
-                            "<br>Exames: %{customdata[0]:,.0f}"
-                            "<extra>%{fullData.name}</extra>"
-                        ),
-                    )
-                    fig_faixas.update_yaxes(
-                        range=[0, 100], ticksuffix="%", dtick=20,
-                        gridcolor="#E4EBF1",
-                        title_text="Participação (%)",
-                    )
-                    fig_faixas.update_xaxes(
-                        type="category", categoryorder="array",
-                        categoryarray=categorias_presentes,
-                        tickmode="array", tickvals=categorias_presentes,
-                        ticktext=[
-                            str(nome).replace("_", " ")
-                            for nome in categorias_presentes
-                        ],
-                        tickangle=-90,
-                        tickfont=dict(size=16, color=NAVY, family="Arial"),
+                por_cat_ano["participacao_pct"] = (
+                    por_cat_ano["quantidade_alterados"]
+                    .div(total_por_ano.where(total_por_ano > 0))
+                    .mul(100)
+                )
+                visual_anual = st.selectbox(
+                    "Visualizar composição anual",
+                    ["Quantidade de exames", "Participação por categoria (%)"],
+                    key="q5_categoria_anual_visual",
+                )
+                percentual_anual = visual_anual == "Participação por categoria (%)"
+                coluna_grafico_anual = (
+                    "participacao_pct" if percentual_anual else "quantidade_alterados"
+                )
+                # Mantém os percentuais calculados a partir dos registros filtrados,
+                # sem somar os totais repetidos em cada linha da tabela Gold.
+                por_cat_ano["rotulo_exportacao"] = por_cat_ano[
+                    "participacao_pct"
+                ].map(
+                    lambda valor: f"{valor:.2f}%"
+                    if pd.notna(valor) and valor >= 6 else ""
+                )
+                fig_cat = px.bar(
+                    por_cat_ano, x="ano", y=coluna_grafico_anual,
+                    color="categoria", barmode="stack",
+                    text="rotulo_exportacao",
+                    custom_data=["quantidade_alterados", "participacao_pct"],
+                    color_discrete_map=mapa_cores,
+                    category_orders={"categoria": categorias_ordenadas},
+                    labels={
+                        "ano": "Ano",
+                        "quantidade_alterados": "Exames por categoria",
+                        "participacao_pct": "Participação (%)",
+                        "categoria": "Categoria citopatológica",
+                    },
+                )
+                fig_cat.update_traces(
+                    hovertemplate=(
+                        "Ano: %{x}<br>Exames: %{customdata[0]:,.0f}"
+                        "<br>Participação: %{customdata[1]:.2f}%"
+                        "<extra>%{fullData.name}</extra>"
+                    ),
+                    marker_line_color="#FFFFFF",
+                    marker_line_width=0.6,
+                    textposition="none",  # os rótulos aparecem apenas no PNG
+                )
+                fig_cat.update_xaxes(type="category", showgrid=False)
+                fig_cat.update_yaxes(
+                    rangemode="tozero",
+                    tickformat=".0f" if percentual_anual else ",d",
+                    ticksuffix="%" if percentual_anual else "",
+                    range=[0, 100] if percentual_anual else None,
+                    gridcolor="#E4EBF1",
+                )
+                fig_cat.update_layout(
+                    height=500, plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                    font=dict(color=NAVY),
+                    legend=dict(
                         title_text="Categoria citopatológica",
-                        title_font=dict(size=18, color=NAVY, family="Arial"),
-                        title_standoff=35, automargin=True,
+                        x=1.02, xanchor="left", y=1, yanchor="top",
+                        font=dict(size=11, color=NAVY),
+                        bgcolor="rgba(255,255,255,0)",
+                    ),
+                    margin=dict(l=70, r=225, t=35, b=65),
+                )
+                # O texto já foi associado a cada registro pelo Plotly Express.
+                # Nenhuma conversão ou comparação de arrays durante a exportação.
+                export_cat = copy.deepcopy(fig_cat)
+                export_cat.update_traces(
+                    textposition="inside",
+                    textfont=dict(size=13, color="#FFFFFF"),
+                    insidetextanchor="middle",
+                )
+                # PNG contém apenas o gráfico. Segmentos pequenos continuam
+                # consultáveis no tooltip do site e na exportação CSV.
+                export_cat.update_layout(
+                    title=dict(
+                        text=("Composição percentual por categoria e ano"
+                              if percentual_anual
+                              else "Exames alterados por categoria e ano"),
+                        x=0.5,
+                    ),
+                    height=650, width=1600,
+                    margin=dict(l=90, r=265, t=110, b=90),
+                    uniformtext=dict(mode="hide", minsize=12),
+                )
+                chart_with_right_click_download(
+                    fig_cat, filename="alterados_categorias_ano.png",
+                    height=480, export_fig=export_cat,
+                )
+                with st.expander("Ver dados de categorias por ano", expanded=False):
+                    tabela_cat = por_cat_ano[
+                        ["ano", "categoria", "quantidade_alterados", "participacao_pct"]
+                    ].rename(columns={
+                        "ano": "Ano", "categoria": "Categoria",
+                        "quantidade_alterados": "Exames na categoria",
+                        "participacao_pct": "Participação entre categorias (%)",
+                    })
+                    export_table(tabela_cat, "siscan_categoria_anual.csv")
+            else:
+                st.info("Não há registros por categoria nos filtros selecionados.")
+
+            st.markdown("### Composição dos exames alterados por município e categoria")
+            st.markdown(
+                "Mostra **quantos exames alterados foram registrados em cada categoria** "
+                "e **qual a participação de cada categoria no total de alterados** "
+                "de cada município, conforme os filtros selecionados."
+            )
+            with st.expander("ℹ️ Como interpretar a composição por município", expanded=False):
+                st.markdown(
+                    "**Como ler:** cada **linha** representa um município e cada "
+                    "**coluna**, uma categoria citopatológica. As cores mais escuras "
+                    "indicam valores maiores na medida escolhida.\n\n"
+                    "**Quantidade de exames:** mostra o número de registros daquela "
+                    "categoria no município, somando os anos selecionados. "
+                    "Exemplo: **70** significa 70 exames classificados nessa categoria.\n\n"
+                    "**Participação (%):** mostra quanto a categoria representa "
+                    "**entre todos os exames alterados do mesmo município**. "
+                    "É calculada por **exames da categoria ÷ total de exames alterados "
+                    "classificados no município × 100**. Exemplo: se 70 dos 100 exames "
+                    "alterados forem ASC-US, a célula exibirá **70.00%**. "
+                    "As participações das categorias de cada município somam 100% "
+                    "quando há registros.\n\n"
+                    "**Atenção:** o percentual **não** representa a proporção de "
+                    "alterações entre todos os exames válidos nem a porcentagem de "
+                    "mulheres com a alteração. **0** ou **0.00%** indica nenhum "
+                    "registro da categoria na grade consultada; **—** indica que "
+                    "o percentual não pôde ser calculado por falta de denominador. "
+                    "Os resultados citopatológicos não equivalem, por si só, "
+                    "a diagnósticos de câncer."
+                )
+            medida_municipal = st.selectbox(
+                "Visualizar composição municipal",
+                ["Participação (%)", "Quantidade de exames"],
+                key="q5_categoria_municipal_visual",
+            )
+            st.caption(
+                "**Leitura atual:** "
+                + (
+                    "cada célula apresenta a **participação percentual** da categoria "
+                    "entre os exames alterados do município (total da linha = 100%, "
+                    "quando há registros)."
+                    if medida_municipal == "Participação (%)"
+                    else "cada célula apresenta a **quantidade de exames** da categoria "
+                    "registrada no município, nos anos selecionados."
+                )
+            )
+            dados_municipais = cat_anual.dropna(
+                subset=["municipio", "categoria", "quantidade_alterados"]
+            ).groupby(["municipio", "categoria"], as_index=False)[
+                "quantidade_alterados"
+            ].sum(min_count=1)
+            if not dados_municipais.empty:
+                denominador_municipio = dados_municipais.groupby("municipio")[
+                    "quantidade_alterados"
+                ].transform("sum")
+                dados_municipais["participacao_pct"] = (
+                    dados_municipais["quantidade_alterados"]
+                    .div(denominador_municipio.where(denominador_municipio > 0))
+                    .mul(100)
+                )
+                coluna_municipal = (
+                    "participacao_pct"
+                    if medida_municipal == "Participação (%)"
+                    else "quantidade_alterados"
+                )
+                nomes_municipios = sorted(
+                    dados_municipais["municipio"].unique(), key=str.casefold
+                )
+                categorias_municipais = sorted(
+                    dados_municipais["categoria"].unique(), key=str.casefold
+                )
+                quadro_municipal = dados_municipais.pivot(
+                    index="municipio", columns="categoria",
+                    values=coluna_municipal,
+                ).reindex(
+                    index=nomes_municipios, columns=categorias_municipais
+                )
+                if quadro_municipal.notna().any().any():
+                    st.caption(
+                        "Para facilitar a leitura, a matriz utiliza células maiores. "
+                        "Em telas menores, deslize horizontalmente para ver todas "
+                        "as categorias; no PNG, todos os valores ficam visíveis."
                     )
-                    fig_faixas.update_layout(
-                        height=710, bargap=0.24,
-                        plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
-                        font=dict(color=NAVY),
-                        legend=dict(
-                            title_text="", orientation="v",
-                            x=1.02, xanchor="left", y=1, yanchor="top",
-                            font=dict(size=14, color=NAVY),
-                            bgcolor="rgba(255,255,255,0)",
+                    grafico_municipal = px.imshow(
+                        quadro_municipal,
+                        aspect="auto",
+                        color_continuous_scale="Blues",
+                        labels={
+                            "x": "Categoria citopatológica",
+                            "y": "Município",
+                            "color": (
+                                "Participação (%)"
+                                if coluna_municipal == "participacao_pct"
+                                else "Exames alterados"
+                            ),
+                        },
+                        title=None,
+                    )
+                    grafico_municipal.update_traces(
+                        xgap=4, ygap=4,
+                        hovertemplate=(
+                            "Município: %{y}<br>Categoria: %{x}<br>"
+                            + (
+                                "Participação: %{z:.2f}%"
+                                if coluna_municipal == "participacao_pct"
+                                else "Exames: %{z:,.0f}"
+                            )
+                            + "<extra></extra>"
                         ),
-                        margin=dict(l=85, r=135, t=60, b=300),
                     )
-                    # O próprio Plotly Express preserva a relação entre cada
-                    # percentual, categoria e grupo, sem conversão de arrays.
-                    img_faixas = copy.deepcopy(fig_faixas)
-                    img_faixas.update_traces(
-                        textposition="inside",
-                        textfont=dict(color="#FFFFFF", size=13),
-                        insidetextanchor="middle",
+                    maior_valor = quadro_municipal.max().max()
+                    # Mesmo padrão da matriz territorial Q5: valores no centro
+                    # das células, contraste automático e rótulo — para N/D.
+                    for municipio in nomes_municipios:
+                        for categoria in categorias_municipais:
+                            valor = quadro_municipal.at[municipio, categoria]
+                            valido = pd.notna(valor)
+                            rotulo = (
+                                (
+                                    f"{valor:.2f}%"
+                                    if coluna_municipal == "participacao_pct"
+                                    else f"{valor:,.0f}"
+                                )
+                                if valido else "—"
+                            )
+                            texto_claro = (
+                                valido and pd.notna(maior_valor)
+                                and float(maior_valor) > 0
+                                and float(valor) / float(maior_valor) >= 0.55
+                            )
+                            grafico_municipal.add_annotation(
+                                x=categoria, y=municipio,
+                                text=rotulo, showarrow=False,
+                                font=dict(
+                                    size=15, family="Arial",
+                                    color="#FFFFFF" if texto_claro else NAVY,
+                                ),
+                                xanchor="center", yanchor="middle",
+                            )
+                    if coluna_municipal == "participacao_pct":
+                        grafico_municipal.update_coloraxes(
+                            colorbar_tickformat=".2f",
+                            colorbar_ticksuffix="%",
+                        )
+                    else:
+                        grafico_municipal.update_coloraxes(
+                            colorbar_tickformat=",.0f",
+                        )
+                    # As categorias são longas: rótulos verticais preservam
+                    # os nomes completos e seguem o padrão dos gráficos Q5.
+                    grafico_municipal.update_xaxes(
+                        tickangle=-90,
+                        tickfont=dict(color=NAVY, size=16, family="Arial"),
+                        title_text="Categoria citopatológica",
+                        title_font=dict(color=NAVY, size=18, family="Arial"),
+                        title_standoff=35,
+                        automargin=True,
+                        showgrid=False,
                     )
-                    # PNG contém somente o gráfico e os rótulos legíveis.
-                    img_faixas.update_layout(
+                    grafico_municipal.update_yaxes(
+                        tickfont=dict(color=NAVY, size=17, family="Arial"),
+                        title_text="Municípios",
+                        title_font=dict(color=NAVY, size=18, family="Arial"),
+                        title_standoff=20,
+                        automargin=True,
+                        showgrid=False,
+                    )
+                    grafico_municipal.update_layout(
+                        template="plotly_white",
+                        height=max(825, 51 * len(nomes_municipios) + 255),
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="#FFFFFF",
+                        font=dict(color=NAVY, family="Arial"),
+                        margin=dict(l=65, r=65, t=35, b=245),
+                    )
+                    export_municipal = copy.deepcopy(grafico_municipal)
+                    export_municipal.update_layout(
                         title=dict(
-                            text="Composição etária por categoria (2020–2025)",
-                            x=0.5, font=dict(size=21, color=NAVY),
+                            text="Composição de exames alterados por município",
+                            x=0.5, font=dict(size=22, color=NAVY),
                         ),
-                        width=1650, height=870,
-                        margin=dict(l=110, r=200, t=130, b=325),
-                        uniformtext=dict(mode="hide", minsize=12),
+                        width=1750,
+                        height=max(960, 51 * len(nomes_municipios) + 375),
+                        margin=dict(l=160, r=110, t=105, b=290),
                     )
                     chart_with_right_click_download(
-                        fig_faixas, filename="alterados_categorias_faixas.png",
-                        height=710, min_chart_width=1450, export_fig=img_faixas,
+                        grafico_municipal,
+                        filename="alterados_composicao_municipio_categoria.png",
+                        height=grafico_municipal.layout.height,
+                        min_chart_width=1450,
+                        export_fig=export_municipal,
                     )
-                    with st.expander("Ver dados de categorias por faixa etária"):
-                        export_table(
-                            comp.rename(columns={
-                                "categoria": "Categoria", "grupo_3": "Grupo etário",
-                                "quantidade_alterados": "Exames na categoria",
-                                "participacao_pct": "Participação na categoria (%)",
-                            }), "siscan_categoria_faixa_etaria.csv",
-                        )
                 else:
-                    st.info("Não há categorias com registros para esta visualização.")
+                    st.info("Não há valores calculáveis para a composição municipal.")
+                with st.expander(
+                    "Ver dados por município e categoria", expanded=False
+                ):
+                    detalhe_municipal = dados_municipais.rename(columns={
+                        "municipio": "Município",
+                        "categoria": "Categoria citopatológica",
+                        "quantidade_alterados": "Exames na categoria",
+                        "participacao_pct": "Participação (%)",
+                    }).sort_values(["Município", "Categoria citopatológica"])
+                    export_table(
+                        detalhe_municipal,
+                        "siscan_composicao_municipio_categoria.csv",
+                    )
             else:
-                st.info("Não há registros por categoria e faixa etária.")
+                st.info("Não há registros por município e categoria neste recorte.")
         else:
-            st.info("A tabela Gold de categorias por faixa etária está indisponível.")
+            st.info("A tabela Gold de categorias anuais está vazia ou incompleta.")
+
+        st.markdown("### Distribuição etária dos exames alterados por categoria")
+        st.markdown(
+            "Compara a **distribuição dos registros de cada categoria** entre "
+            "os grupos etários no consolidado de 2020–2025."
+        )
+        with st.expander("ℹ️ Como interpretar a distribuição por faixa etária", expanded=False):
+            st.markdown(
+                "Cada barra corresponde a uma categoria e os segmentos representam "
+                "a participação de cada grupo etário **dentro daquela categoria**. "
+                "A distribuição não mede o risco de alteração em cada faixa. "
+                "**A Gold não possui ano nessa tabela:** o cruzamento representa "
+                "todo o período 2020–2025, e não pode ser filtrado por ano."
+            )
+        if selected_years() != list(range(2020, 2026)):
+            st.info(
+                "Este cruzamento foi consolidado na Gold para 2020–2025, sem "
+                "detalhamento anual. Selecione todos os anos para visualizá-lo."
+            )
+        else:
+            cat_faixa = filtered("categoria_faixa")
+            if not cat_faixa.empty and {
+                "categoria", "grupo_etario_3", "quantidade_alterados"
+            }.issubset(cat_faixa.columns):
+                cat_faixa["grupo_3"] = (
+                    cat_faixa["grupo_etario_3"].astype("string").str.strip()
+                    .map(grupo_para_rotulo)
+                )
+                cat_faixa["quantidade_alterados"] = pd.to_numeric(
+                    cat_faixa["quantidade_alterados"], errors="coerce"
+                )
+                comp = (
+                    cat_faixa.dropna(subset=["grupo_3", "quantidade_alterados"])
+                    .groupby(["categoria", "grupo_3"], as_index=False)[
+                        "quantidade_alterados"
+                    ].sum(min_count=1)
+                )
+                if not comp.empty:
+                    base = comp.groupby("categoria")[
+                        "quantidade_alterados"
+                    ].transform("sum")
+                    comp["participacao_pct"] = comp[
+                        "quantidade_alterados"
+                    ].div(base.where(base > 0)).mul(100)
+                    comp = comp.dropna(subset=["participacao_pct"])
+                    if not comp.empty:
+                        # Barras verticais 100% com rótulos quebrados em duas linhas.
+                        # Mantém os nomes originais nos dados e no hover.
+                        categorias_presentes = sorted(
+                            comp["categoria"].unique(), key=str.casefold
+                        )
+                        cores_faixa = {
+                            "<25 anos": "#169B62",
+                            "25–64 anos": ROYAL_BLUE,
+                            "≥65 anos": "#E85D2A",
+                        }
+                        # Prepara rótulos no DataFrame para evitar comparações
+                        # com arrays internos retornados pelos traces do Plotly.
+                        comp["rotulo_exportacao"] = comp["participacao_pct"].map(
+                            lambda valor: f"{valor:.2f}%"
+                            if pd.notna(valor) and valor >= 6 else ""
+                        )
+                        fig_faixas = px.bar(
+                            comp, x="categoria", y="participacao_pct",
+                            color="grupo_3", barmode="stack",
+                            color_discrete_map=cores_faixa,
+                            category_orders={
+                                "grupo_3": ordem_grupos,
+                                "categoria": categorias_presentes,
+                            },
+                            labels={
+                                "categoria": "Categoria citopatológica",
+                                "participacao_pct": "Participação (%)",
+                                "grupo_3": "Grupo etário",
+                            },
+                            custom_data=["quantidade_alterados"],
+                            text="rotulo_exportacao",
+                        )
+                        fig_faixas.update_traces(
+                            marker_line_color="#FFFFFF", marker_line_width=0.8,
+                            textposition="none",  # rótulos apenas na exportação
+                            hovertemplate=(
+                                "Categoria: %{x}<br>Participação: %{y:.2f}%"
+                                "<br>Exames: %{customdata[0]:,.0f}"
+                                "<extra>%{fullData.name}</extra>"
+                            ),
+                        )
+                        fig_faixas.update_yaxes(
+                            range=[0, 100], ticksuffix="%", dtick=20,
+                            gridcolor="#E4EBF1",
+                            title_text="Participação (%)",
+                        )
+                        fig_faixas.update_xaxes(
+                            type="category", categoryorder="array",
+                            categoryarray=categorias_presentes,
+                            tickmode="array", tickvals=categorias_presentes,
+                            ticktext=[
+                                str(nome).replace("_", " ")
+                                for nome in categorias_presentes
+                            ],
+                            tickangle=-90,
+                            tickfont=dict(size=16, color=NAVY, family="Arial"),
+                            title_text="Categoria citopatológica",
+                            title_font=dict(size=18, color=NAVY, family="Arial"),
+                            title_standoff=35, automargin=True,
+                        )
+                        fig_faixas.update_layout(
+                            height=710, bargap=0.24,
+                            plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+                            font=dict(color=NAVY),
+                            legend=dict(
+                                title_text="", orientation="v",
+                                x=1.02, xanchor="left", y=1, yanchor="top",
+                                font=dict(size=14, color=NAVY),
+                                bgcolor="rgba(255,255,255,0)",
+                            ),
+                            margin=dict(l=85, r=135, t=60, b=300),
+                        )
+                        # O próprio Plotly Express preserva a relação entre cada
+                        # percentual, categoria e grupo, sem conversão de arrays.
+                        img_faixas = copy.deepcopy(fig_faixas)
+                        img_faixas.update_traces(
+                            textposition="inside",
+                            textfont=dict(color="#FFFFFF", size=13),
+                            insidetextanchor="middle",
+                        )
+                        # PNG contém somente o gráfico e os rótulos legíveis.
+                        img_faixas.update_layout(
+                            title=dict(
+                                text="Composição etária por categoria (2020–2025)",
+                                x=0.5, font=dict(size=21, color=NAVY),
+                            ),
+                            width=1650, height=870,
+                            margin=dict(l=110, r=200, t=130, b=325),
+                            uniformtext=dict(mode="hide", minsize=12),
+                        )
+                        chart_with_right_click_download(
+                            fig_faixas, filename="alterados_categorias_faixas.png",
+                            height=710, min_chart_width=1450, export_fig=img_faixas,
+                        )
+                        with st.expander("Ver dados de categorias por faixa etária"):
+                            export_table(
+                                comp.rename(columns={
+                                    "categoria": "Categoria", "grupo_3": "Grupo etário",
+                                    "quantidade_alterados": "Exames na categoria",
+                                    "participacao_pct": "Participação na categoria (%)",
+                                }), "siscan_categoria_faixa_etaria.csv",
+                            )
+                    else:
+                        st.info("Não há categorias com registros para esta visualização.")
+                else:
+                    st.info("Não há registros por categoria e faixa etária.")
+            else:
+                st.info("A tabela Gold de categorias por faixa etária está indisponível.")
 
