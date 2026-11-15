@@ -2,9 +2,9 @@ import copy
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,page_header,indicator_context,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,SKY,ORANGE,NAVY
+from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,SKY,ORANGE,NAVY
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered,require,sidebar_filters,selected_years,years_label
+from utils.data_loader import filtered,require,sidebar_filters,selected_years
 
 # Cores com maior contraste entre os grupos etários (PET-Saúde).
 BABY_BLUE = "#A9DDF4"   # <25 anos
@@ -91,21 +91,11 @@ if require(df,["municipio","faixa_etaria","grupo_etario_3","quantidade_alterados
         'Panorama dos exames alterados</h2>',
         unsafe_allow_html=True,
     )
-    indicator_context(
-        f"Indicadores gerais · {years_label()}",
-        "Somatório dos municípios selecionados, considerando apenas faixas etárias identificadas. "
-        "O denominador é a estimativa de exames válidos disponível na Gold Q5.",
-    )
     metric_row([
         ("Exames alterados", fmt_num(num)),
         ("Proporção operacional", fmt_pct(pct(num, den)) if pd.notna(den) and den > 0 else "N/D"),
         ("Exames válidos (denominador)", fmt_num(den) if pd.notna(den) else "N/D"),
     ])
-    st.markdown(
-        "**Proporção operacional:** de cada 100 exames considerados válidos na Gold Q5, "
-        "indica quantos tiveram resultado citopatológico alterado. "
-        "É uma proporção de **exames registrados**, não de mulheres ou diagnósticos de câncer."
-    )
     with st.expander("ℹ️ Como é calculada a proporção operacional?", expanded=False):
         st.markdown(
             "**Fórmula:** (soma de exames alterados ÷ soma dos exames válidos) × 100. "
