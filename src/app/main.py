@@ -91,6 +91,104 @@ st.markdown("""
 .exec-metric .exec-metric-value,.exec-metric.blue .exec-metric-value,
 .exec-metric.orange .exec-metric-value{color:#1A3B5C!important;}
 .exec-metric-desc,.exec-metric.orange .exec-metric-desc{color:#8192a5!important;}
+
+/* feature: revisão visual da Visão Executiva — hierarquia, respiro e cartões. */
+.exec-hero {
+  position:relative;
+  background:radial-gradient(125% 155% at 100% 0%,#006C9A 0%,#1A3B5C 72%)!important;
+  border-radius:20px!important;
+  padding:38px 40px 34px!important;
+  margin:14px 0 22px!important;
+  min-height:0!important;
+  box-shadow:0 15px 32px -25px rgba(26,59,92,.44);
+}
+.exec-kicker {
+  font-family:Manrope,Arial,sans-serif!important;
+  font-size:.73rem!important;
+  font-weight:800!important;
+  letter-spacing:.17em!important;
+  line-height:1.5!important;
+  color:#a8d5eb!important;
+}
+.exec-title {
+  max-width:900px!important;
+  font-family:Manrope,Arial,sans-serif!important;
+  font-size:clamp(2rem,3.25vw,2.85rem)!important;
+  font-weight:800!important;
+  line-height:1.19!important;
+  letter-spacing:-.035em!important;
+  margin:17px 0 18px!important;
+  color:#fff!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+}
+.exec-title em {
+  font-family:inherit!important;
+  font-style:normal!important;
+  font-weight:800!important;
+  color:#b5dcef!important;
+}
+.exec-sub {
+  max-width:920px!important;
+  font:500 clamp(.98rem,1.2vw,1.12rem)/1.65 Manrope,Arial,sans-serif!important;
+  margin:0 0 18px!important;
+  color:#f5faff!important;
+  overflow-wrap:normal!important;
+}
+.exec-hero .pet-active-scope {
+  margin-top:18px!important;
+  gap:9px!important;
+  flex-wrap:wrap!important;
+}
+.exec-hero .pet-scope-label {
+  font-size:.74rem!important;
+  letter-spacing:.13em!important;
+}
+.exec-hero .pet-scope-chip {
+  background:rgba(255,255,255,.15)!important;
+  font-size:.85rem!important;
+  padding:7px 12px!important;
+}
+.exec-metric,.exec-metric.blue,.exec-metric.orange {
+  min-height:132px!important;
+  height:auto!important;
+  padding:20px 17px!important;
+  border-radius:13px!important;
+  box-shadow:0 8px 22px -17px rgba(26,59,92,.4)!important;
+}
+.exec-metric-label {
+  padding-right:19px!important;
+  font:800 .69rem/1.5 Manrope,Arial,sans-serif!important;
+  letter-spacing:.035em!important;
+}
+.exec-metric-value {
+  font:800 clamp(1.48rem,2vw,1.95rem)/1.2 Manrope,Arial,sans-serif!important;
+  margin:12px 0 4px!important;
+  letter-spacing:-.025em!important;
+}
+.exec-card-title,.exec-links strong {
+  font-family:Manrope,Arial,sans-serif!important;
+  font-weight:800!important;
+  letter-spacing:-.025em!important;
+}
+.exec-card-title {font-size:1.15rem!important;}
+@media(max-width:1100px) {
+  .exec-hero {padding:29px 30px 27px!important;margin-top:10px!important;}
+  .exec-title {font-size:clamp(1.85rem,3.4vw,2.5rem)!important;}
+}
+@media(max-width:768px) {
+  .exec-hero {padding:25px 21px!important;border-radius:16px!important;margin:8px 0 18px!important;}
+  .exec-title {font-size:clamp(1.65rem,5.3vw,2.25rem)!important;line-height:1.22!important;}
+  .exec-sub {font-size:.98rem!important;line-height:1.58!important;}
+  .exec-metric {min-height:118px!important;padding:17px 15px!important;}
+}
+@media(max-width:480px) {
+  .exec-hero {padding:22px 17px!important;border-radius:14px!important;}
+  .exec-title {font-size:1.65rem!important;}
+  .exec-hero .pet-active-scope {gap:7px!important;}
+  .exec-hero .pet-scope-label {flex-basis:100%!important;}
+  .exec-metric-value {font-size:1.55rem!important;}
+}
 </style>
 """, unsafe_allow_html=True)
 
