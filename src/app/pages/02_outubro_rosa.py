@@ -464,30 +464,19 @@ if not menos_anos.empty:
     )
 
 section("02", "Faixa etária · participação na população-alvo")
-indicator_context(
-    f"Perfil etário mensal · {periodo}",
-    "Somente setembro a dezembro dos anos selecionados, em toda a 10ª CRS "
-    "(11 municípios juntos). Esta base não permite filtro municipal individual.",
-)
 st.markdown(
-    "Avalia a participação de exames realizados em mulheres de "
-    "**25 a 64 anos** nos meses de setembro a dezembro dos anos "
-    "selecionados. O cruzamento mensal é **regional (11 municípios)**."
+    f"Exames de **25 a 64 anos** entre setembro e dezembro de **{periodo}** "
+    "· recorte regional (11 municípios)."
 )
 chart_help(
-    "**Quantidade de exames (25–64 anos):** total registrado nessa "
-    "faixa etária de **setembro a dezembro** dos anos selecionados.\n\n"
-    "**Participação da população-alvo (%):** percentual desses exames "
-    "em relação ao total regional com idade identificada, "
-    "também de **setembro a dezembro**.\n\n"
-    "**Diferença entre setembro e outubro:** mostra quanto a "
-    "**participação de 25–64 anos mudou de setembro para outubro**, "
-    "considerando apenas esses dois meses. "
-    "O resultado é expresso em **pontos percentuais**, não em "
-    "quantidade de exames.\n\n"
-    "**Importante:** os indicadores etários incluem somente exames "
-    "com idade identificada dos 11 municípios; por isso, podem "
-    "diferir dos totais gerais apresentados na seção 01.",
+    "**Exames (set.–dez.):** quantidade registrada na faixa de 25 a 64 anos.\n\n"
+    "**Participação (set.–dez.):** percentual desses exames entre todos os "
+    "exames com idade identificada.\n\n"
+    "**Outubro × setembro:** diferença da participação entre os meses, "
+    "em **pontos percentuais (p.p.)**, não variação na quantidade.\n\n"
+    "**Base:** somente exames com idade classificável dos 11 municípios. "
+    "O dado mensal por idade é regional, sem filtro individual por município; "
+    "não representa mulheres distintas.",
     chave="etaria",
 )
 todos_municipios_or = set(data_loader.MUNICIPIOS.values())
@@ -626,12 +615,6 @@ else:
                 ) if pd.notna(p_sep_or) and pd.notna(p_out_or)
                 else "Não há dados suficientes de setembro e outubro "
                      "para calcular a diferença de participação.",
-            )
-            st.caption(
-                "**Recorte dos indicadores:** os dois primeiros acumulam setembro–dezembro "
-                f"de {periodo}; o terceiro compara **somente setembro e outubro** de "
-                f"{periodo}, pela diferença entre participações (pontos percentuais), "
-                "não pela variação do número de exames."
             )
             modo_etario_or = st.radio(
                 "Exibir no gráfico",
