@@ -113,6 +113,38 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, marge
                 cliponaxis=False,
                 constraintext="none",
             )
+        if rotulos_exportacao == "percentual_horizontal":
+            # Em barras empilhadas, percentuais muito pequenos não
+            # comportam um rótulo horizontal. Ex.: <25 anos em Itaqui.
+            # Retira apenas aquele rótulo de dentro da faixa verde e
+            # escreve-o sobre o início da faixa azul adjacente, onde há
+            # contraste e espaço suficientes. Não altera os valores.
+            for traco in imagem.data:
+                if str(getattr(traco, "name", "")) != "<25 anos":
+                    continue
+                valores = list(traco.x)
+                municipios = list(traco.y)
+                templates = []
+                for valor, municipio in zip(valores, municipios):
+                    largura_faixa = float(valor)
+                    if 0 < largura_faixa < 4:
+                        templates.append("")
+                        imagem.add_annotation(
+                            x=largura_faixa + 2.7,
+                            y=str(municipio),
+                            xref="x", yref="y",
+                            text=f"<b>{largura_faixa:.1f}%</b>",
+                            showarrow=False,
+                            font=dict(
+                                family="Arial Black, Arial, sans-serif",
+                                size=13, color="#FFFFFF",
+                            ),
+                            align="center",
+                            xanchor="center", yanchor="middle",
+                        )
+                    else:
+                        templates.append("<b>%{x:.1f}%</b>")
+                traco.update(texttemplate=templates)
         if rotulos_exportacao == "percentual_vertical":
             # Deixa espaço acima dos 100% para as etiquetas laranja,
             # mas não cria marcas percentuais acima de 100 no eixo.
