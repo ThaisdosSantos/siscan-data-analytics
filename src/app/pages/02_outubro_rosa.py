@@ -84,7 +84,7 @@ def section(index, title):
 
 
 
-def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, margem_esquerda=75, margem_inferior=70, rotulos_exportacao=None, titulo_exportacao=None):
+def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, margem_esquerda=75, margem_inferior=70, rotulos_exportacao=None, titulo_exportacao=None, min_chart_width=0):
     """Gráfico interativo e cópia independente para exportação PNG."""
     fig.update_layout(
         template="plotly_white", height=altura,
@@ -198,7 +198,7 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, marge
     )
     chart_with_right_click_download(
         fig, filename=nome, height=altura,
-        min_chart_width=0, export_fig=imagem,
+        min_chart_width=min_chart_width, export_fig=imagem,
     )
 
 
@@ -744,7 +744,7 @@ else:
                 "outubro_rosa_perfil_mensal_grupo_etario.png",
                 altura=altura_etario_or, largura=1600,
                 margem_superior=125, margem_esquerda=120,
-                margem_inferior=150,
+                margem_inferior=150, min_chart_width=740,
                 rotulos_exportacao=(
                     "percentual_vertical" if modo_percentual_or
                     else "quantidade_vertical"
@@ -957,6 +957,7 @@ else:
                 "outubro_rosa_perfil_etario_consolidado_municipio.png",
                 altura=max(520, 43 * len(municipios_etarios_or) + 155),
                 largura=1600,
+                min_chart_width=690,
                 rotulos_exportacao="percentual_horizontal",
                 titulo_exportacao=(
                     "Outubro Rosa — Perfil etário por município (%)"
