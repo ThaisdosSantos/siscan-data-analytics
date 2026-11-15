@@ -653,17 +653,21 @@ else:
 
 section("03", "Perfil etário municipal · consolidado 2020–2025")
 st.markdown(
-    "Compare o percentual de exames na população-alvo (25–64 anos) "
-    "entre municípios. Dados de setembro a dezembro, "
-    "**consolidados de 2020 a 2025**, sem separação mensal ou anual."
+    "Mostra como os exames citopatológicos se distribuem entre os grupos "
+    "etários em cada município, com destaque para a **população-alvo "
+    "de 25 a 64 anos**. Os resultados reúnem os registros de "
+    "**setembro a dezembro de 2020–2025**, sem distinção por ano ou mês."
 )
 with st.expander("ℹ️ Como interpretar o gráfico", expanded=False):
     st.markdown(
-        "Cada barra equivale a **100% dos exames com idade classificada** "
-        "do município, divididos em **<25, 25–64 e ≥65 anos**. "
-        "A barra não expressa a quantidade de mulheres rastreadas. "
-        "O recorte é consolidado de setembro a dezembro de 2020–2025: "
-        "não permite observar outubro isoladamente."
+        "Cada barra representa **100% dos exames com idade identificada** "
+        "em um município. As cores indicam a participação de **menores "
+        "de 25 anos, 25–64 anos e 65 anos ou mais**. "
+        "Quanto maior a parcela de 25–64 anos, maior a participação "
+        "da população-alvo entre os exames registrados. "
+        "O gráfico **não mede quantas mulheres distintas foram atendidas** "
+        "nem permite avaliar exclusivamente o mês de outubro, pois "
+        "os dados estão consolidados para todo o período."
     )
 
 anos_totais_q02 = set(range(2020, 2026))
