@@ -86,17 +86,22 @@ def download_plot(fig, nome, altura=450, largura=1400, margem_superior=45, marge
             percentual = rotulos_exportacao != "quantidade_vertical"
             traco.update(
                 texttemplate=(
-                    "%{x:.1f}%" if horizontal
-                    else ("%{y:.1f}%" if percentual else "%{y:,.0f}")
+                    "<b>%{x:.1f}%</b>" if horizontal
+                    else ("<b>%{y:.1f}%</b>" if percentual
+                          else "<b>%{y:,.0f}</b>")
                 ),
                 textposition="inside",
                 insidetextanchor="middle",
-                textfont=dict(size=11, color="#FFFFFF"),
+                textfont=dict(
+                    family="Arial Black, Arial, sans-serif",
+                    size=13,
+                    color="#FFFFFF",
+                ),
                 cliponaxis=False,
                 constraintext="none",
             )
         # Mantém todos os rótulos, inclusive em segmentos estreitos.
-        imagem.update_layout(uniformtext_minsize=9, uniformtext_mode="show")
+        imagem.update_layout(uniformtext_minsize=11, uniformtext_mode="show")
     imagem.update_layout(
         width=largura,
         height=max(altura + 100, 650),
