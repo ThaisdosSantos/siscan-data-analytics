@@ -1,0 +1,22 @@
+name: Validar sintaxe do Streamlit
+
+on:
+  push:
+    branches:
+      - main
+      - ui/padronizacao-q5-outubro-20261115
+  pull_request:
+    paths:
+      - "src/app/**/*.py"
+      - ".github/workflows/streamlit-syntax.yml"
+
+jobs:
+  python-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compilar módulos Python sem executar consultas Gold
+        run: python -m compileall -q src/app
