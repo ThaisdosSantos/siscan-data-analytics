@@ -532,13 +532,19 @@ else:
                 f"{pct_alvo_or:.2f}%" if pd.notna(pct_alvo_or) else "N/D",
             )
             kpi_alvo_c.metric(
-                "Diferença em pontos percentuais (out. − set.)",
+                "Participação da população-alvo: outubro × setembro",
                 f"{delta_pp_or:+.2f}"
                 if pd.notna(delta_pp_or) else "N/D",
-                help="Pontos percentuais (p.p.) = participação percentual "
-                     "de 25–64 anos em outubro menos a participação "
-                     "em setembro, nos anos selecionados. Não é a "
-                     "variação da quantidade de exames.",
+                help=(
+                    "A participação dos exames em mulheres de 25 a 64 anos "
+                    f"passou de {p_sep_or:.2f}% em setembro para "
+                    f"{p_out_or:.2f}% em outubro, considerando os anos "
+                    "selecionados. A diferença é medida em pontos "
+                    "percentuais, não representa a variação na quantidade "
+                    "de exames."
+                ) if pd.notna(p_sep_or) and pd.notna(p_out_or)
+                else "Não há dados suficientes de setembro e outubro "
+                     "para calcular a diferença de participação.",
             )
             modo_etario_or = st.radio(
                 "Exibir no gráfico",
