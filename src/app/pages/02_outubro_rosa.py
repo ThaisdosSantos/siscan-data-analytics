@@ -647,7 +647,7 @@ else:
             # Os meses e as escalas permanecem em cada ano, sem
             # repetir "Meses" ou a unidade em cada pequeno gráfico.
             fig_mes_idade_or.add_annotation(
-                text="Competência (mês / ano)", x=0.5, y=-0.17,
+                text="Meses/ano", x=0.5, y=-0.17,
                 xref="paper", yref="paper",
                 showarrow=False, font=dict(size=13, color=NAVY),
             )
