@@ -395,16 +395,19 @@ st.markdown(
     "selecionados. O cruzamento mensal é **regional (11 municípios)**."
 )
 chart_help(
-    "**Exames e participação (25–64 anos):** consideram setembro a "
-    "dezembro dos anos selecionados. A participação é a quantidade "
-    "de exames desse grupo dividida pelo total com idade classificada.\n\n"
-    "**Diferença outubro − setembro:** compara somente a participação "
-    "do grupo de 25–64 anos nesses dois meses. "
-    "Exemplo: de 80,00% para 80,50% = **+0,50 ponto percentual**; "
-    "não significa 0,50% a mais de exames.\n\n"
-    "**Por que pode diferir da seção 01?** Aqui são considerados "
-    "apenas exames com idade classificada, de toda a 10ª CRS. "
-    "A seção 01 utiliza os registros gerais e permite filtrar municípios."
+    "**Quantidade de exames (25–64 anos):** total registrado nessa "
+    "faixa etária de **setembro a dezembro** dos anos selecionados.\n\n"
+    "**Participação da população-alvo (%):** percentual desses exames "
+    "em relação ao total regional com idade identificada, "
+    "também de **setembro a dezembro**.\n\n"
+    "**Diferença entre setembro e outubro:** mostra quanto a "
+    "**participação de 25–64 anos mudou de setembro para outubro**, "
+    "considerando apenas esses dois meses. "
+    "O resultado é expresso em **pontos percentuais**, não em "
+    "quantidade de exames.\n\n"
+    "**Importante:** os indicadores etários incluem somente exames "
+    "com idade identificada dos 11 municípios; por isso, podem "
+    "diferir dos totais gerais apresentados na seção 01."
 )
 todos_municipios_or = set(data_loader.MUNICIPIOS.values())
 municipios_selecionados_or = set(
