@@ -97,17 +97,6 @@ page_header(
     "Apresenta a distribuição dos exames por faixa etária, as diferenças entre municípios e a evolução da produção, incluindo indicadores que relacionam o volume de exames à população feminina de 25 a 64 anos.",
 )
 
-# Fontes resumidas no topo; detalhes técnicos acessíveis sob demanda.
-st.markdown(
-    '<div style="margin:12px 0 8px;padding:10px 15px;'
-    'background:#EEF5FA;border-left:4px solid #006C9A;'
-    'border-radius:8px;color:#1A3B5C;font-family:Manrope,Arial,sans-serif;'
-    'font-size:14px;line-height:1.5;">'
-    '<strong>Fontes:</strong> exames — SISCAN/DATASUS '
-    '&nbsp;·&nbsp; população feminina (25–64 anos) — IBGE, Censo 2022.'
-    '</div>',
-    unsafe_allow_html=True,
-)
 with st.expander("ℹ️ Fontes e critérios de cálculo", expanded=False):
     st.markdown(
         "**Exames citopatológicos:** SISCAN/DATASUS. "
