@@ -1,64 +1,203 @@
+"""Adequabilidade das amostras citopatológicas na 10ª CRS.
+
+Apresenta contagens e proporções das categorias classificadas na Gold.
+Amostras insatisfatórias e rejeitadas não são resultados citológicos
+alterados; os registros não representam mulheres distintas.
+"""
+
 import copy
-import streamlit as st
+import unicodedata
+
 import pandas as pd
 import plotly.express as px
-from utils.theme import apply_custom_css,page_header,display_chart,metric_row,export_table,fmt_num,fmt_pct,pct,format_percent_chart,OCEAN,ORANGE,SKY
+import streamlit as st
+
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered,require,sidebar_filters
-st.set_page_config(page_title="Adequabilidade | SISCAN",layout="wide")
-apply_custom_css()
-sidebar_filters()
-page_header(
-    "Qualidade da amostra",
-    "Adequabilidade das amostras",
-    "Apresenta a distribuição das amostras citopatológicas segundo sua "
-    "adequabilidade, a evolução anual das amostras insatisfatórias e rejeitadas "
-    "e a comparação dos resultados entre os municípios selecionados.",
+from utils.data_loader import filtered, require, sidebar_filters
+from utils.theme import (
+    ORANGE,
+    SKY,
+    apply_custom_css,
+    export_table,
+    fmt_num,
+    fmt_pct,
+    metric_row,
+    page_header,
+    pct,
 )
-# Mesmo padrão de hierarquia e espaçamento das páginas Faixa Etária e Panorama Geral.
-# Impede que o primeiro título fique sobreposto ao cabeçalho azul.
-st.markdown(
+
+SATISFATORIA = "Satisfatória"
+INSATISFATORIA = "Insatisfatória"
+REJEITADA = "Rejeitada"
+CATEGORIAS = (INSATISFATORIA, REJEITADA, SATISFATORIA)
+CATEGORIAS_INADEQUADAS = (INSATISFATORIA, REJEITADA)
+CORES_INADEQUADAS = {INSATISFATORIA: ORANGE, REJEITADA: SKY}
+COLUNAS_OBRIGATORIAS = ("municipio", "ano", "categoria_adequabilidade", "quantidade_amostras")
+COLUNAS_TOTAL = (*CATEGORIAS, "total")
+
+
+def classificar_categoria(valor: object) -> str | None:
+    """Normaliza os rótulos Gold, sem atribuir categoria a valores desconhecidos."""
+    texto = unicodedata.normalize("NFKD", str(valor)).encode("ascii", "ignore").decode()
+    categorias = {
+        "satisfatoria": SATISFATORIA,
+        "insatisfatoria": INSATISFATORIA,
+        "rejeitada": REJEITADA,
+    }
+    return categorias.get(texto.strip().casefold())
+
+
+def preparar_adequabilidade(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    """Seleciona registros classificados e valida suas quantidades.
+
+    Args:
+        df: Fato Gold filtrado por município e ano.
+
+    Returns:
+        Cópia dos registros classificados e número de linhas não reconhecidas.
+
+    Raises:
+        ValueError: Quando uma contagem classificada é ausente, negativa
+            ou não inteira, ou quando município/ano é inválido.
     """
-    <style>
-    .pet-hero {margin-bottom:0 !important;}
-    .adequabilidade-section-title {
-      margin:30px 0 17px; padding:9px 0 12px;
-      border-bottom:2px solid #D8E5EF;
-      font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
-      color:#1A3B5C;
-    }
-    .adequabilidade-section-title .adequabilidade-section-index {
-      color:#006C9A; margin-right:10px;
-    }
-    @media(max-width:768px) {
-      .adequabilidade-section-title {margin-top:23px;}
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-df=filtered("adequabilidade")
-if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras"]):
-    def cat(s):
-        s=str(s).lower()
-        if "insatisfat" in s:return "Insatisfatória"
-        if "rejeitad" in s:return "Rejeitada"
-        if "satisfat" in s:return "Satisfatória"
-        return "Outra"
-    df["categoria"]=df.categoria_adequabilidade.map(cat)
-    g=df.groupby("categoria").quantidade_amostras.sum(min_count=1)
-    tot=g.sum(min_count=1)
-    ruim=g.get("Insatisfatória",0)+g.get("Rejeitada",0)
+    dados = df.copy()
+    dados["categoria"] = dados["categoria_adequabilidade"].map(classificar_categoria)
+    desconhecidas = int(dados["categoria"].isna().sum())
+    dados = dados.loc[dados["categoria"].notna()].copy()
+    dados["quantidade_amostras"] = pd.to_numeric(
+        dados["quantidade_amostras"], errors="coerce"
+    )
+    dados["ano"] = pd.to_numeric(dados["ano"], errors="coerce")
+
+    quantidades = dados["quantidade_amostras"]
+    anos = dados["ano"]
+    if (
+        quantidades.isna().any()
+        or (quantidades < 0).any()
+        or (quantidades % 1 != 0).any()
+        or anos.isna().any()
+        or (anos % 1 != 0).any()
+        or dados["municipio"].isna().any()
+        or dados["municipio"].astype(str).str.strip().eq("").any()
+    ):
+        raise ValueError(
+            "A Gold de adequabilidade contém campos inválidos. "
+            "Revise as quantidades, os anos e os municípios."
+        )
+
+    dados["ano"] = anos.astype(int)
+    return dados, desconhecidas
+
+
+def agregar_categorias(dados: pd.DataFrame) -> pd.Series:
+    """Soma contagens classificadas, incluindo categorias sem registros como zero."""
+    return (
+        dados.groupby("categoria")["quantidade_amostras"]
+        .sum(min_count=1)
+        .reindex(CATEGORIAS, fill_value=0)
+    )
+
+
+def agregar_evolucao_anual(dados: pd.DataFrame) -> pd.DataFrame:
+    """Retorna quantidades observadas de insatisfatórias e rejeitadas por ano."""
+    return (
+        dados.loc[dados["categoria"].isin(CATEGORIAS_INADEQUADAS)]
+        .groupby(["ano", "categoria"], as_index=False)["quantidade_amostras"]
+        .sum(min_count=1)
+        .sort_values(["ano", "categoria"], kind="stable")
+    )
+
+
+def calcular_taxas(tabela: pd.DataFrame) -> pd.DataFrame:
+    """Recalcula taxas sobre o total classificado, mantendo NaN para total zero."""
+    resultado = tabela.copy()
+    base = resultado["total"].where(resultado["total"].gt(0))
+    resultado["taxa_insatisfatorias_pct"] = resultado[INSATISFATORIA].div(base).mul(100)
+    resultado["taxa_rejeitadas_pct"] = resultado[REJEITADA].div(base).mul(100)
+    return resultado
+
+
+def agregar_municipios(dados: pd.DataFrame) -> pd.DataFrame:
+    """Consolida contagens e taxas municipais no período selecionado.
+
+    Uma categoria omitida na tabulação de um município com registros
+    classificados contribui com zero; não são criados municípios sem dados.
+    """
+    contagens = (
+        dados.groupby(["municipio", "categoria"])["quantidade_amostras"]
+        .sum(min_count=1)
+        .unstack("categoria", fill_value=0)
+        .reindex(columns=CATEGORIAS, fill_value=0)
+    )
+    contagens["total"] = contagens[list(CATEGORIAS)].sum(axis=1)
+    return calcular_taxas(contagens.reset_index())
+
+
+def adicionar_totalizador(tabela: pd.DataFrame) -> pd.DataFrame:
+    """Acrescenta o total das contagens e recalcula as taxas regionais.
+
+    Não soma nem calcula a média simples dos percentuais municipais.
+    """
+    totais = tabela[list(COLUNAS_TOTAL)].sum()
+    linha_total = pd.DataFrame([{"municipio": "Total", **totais.to_dict()}])
+    return pd.concat([tabela, calcular_taxas(linha_total)], ignore_index=True)
+
+
+def configurar_pagina() -> None:
+    """Configura os filtros, a identidade visual e o cabeçalho da página."""
+    st.set_page_config(page_title="Adequabilidade | SISCAN", layout="wide")
+    apply_custom_css()
+    sidebar_filters()
+    page_header(
+        "Qualidade da amostra",
+        "Adequabilidade das amostras",
+        "Apresenta a distribuição das amostras citopatológicas segundo sua "
+        "adequabilidade, a evolução anual das amostras insatisfatórias e rejeitadas "
+        "e a comparação dos resultados entre os municípios selecionados.",
+    )
+    st.markdown(
+        """
+        <style>
+        .pet-hero {margin-bottom:0 !important;}
+        .adequabilidade-section-title {
+          margin:30px 0 17px; padding:9px 0 12px;
+          border-bottom:2px solid #D8E5EF;
+          font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
+          color:#1A3B5C;
+        }
+        .adequabilidade-section-title .adequabilidade-section-index {
+          color:#006C9A; margin-right:10px;
+        }
+        @media(max-width:768px) {
+          .adequabilidade-section-title {margin-top:23px;}
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def renderizar_perfil(dados: pd.DataFrame) -> None:
+    """Exibe os indicadores regionais e a proporção de amostras inadequadas."""
+    totais = agregar_categorias(dados)
+    total = totais.sum(min_count=1)
+    inadequadas = totais[list(CATEGORIAS_INADEQUADAS)].sum()
     st.markdown(
         '<h2 class="adequabilidade-section-title">'
         '<span class="adequabilidade-section-index">01</span>'
         'Perfil de adequabilidade das amostras</h2>',
         unsafe_allow_html=True,
     )
-    metric_row([("Amostras avaliadas",fmt_num(tot)),("Satisfatórias",fmt_pct(pct(g.get("Satisfatória",0),tot))),
-                ("Insatisfatórias e rejeitadas",fmt_pct(pct(ruim,tot)))])
+    metric_row([
+        ("Amostras avaliadas", fmt_num(total)),
+        ("Satisfatórias", fmt_pct(pct(totais[SATISFATORIA], total))),
+        ("Insatisfatórias e rejeitadas", fmt_pct(pct(inadequadas, total))),
+    ])
+    renderizar_guia_categorias()
 
-    # As definições ficam disponíveis sob demanda, como nos demais gráficos.
+
+def renderizar_guia_categorias() -> None:
+    """Apresenta as definições de adequabilidade e a referência metodológica."""
     with st.expander("ℹ️ Entenda as categorias de adequabilidade", expanded=False):
         st.markdown(
             """
@@ -118,14 +257,16 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
             unsafe_allow_html=True,
         )
 
+
+def renderizar_evolucao_anual(dados: pd.DataFrame) -> None:
+    """Exibe a evolução anual das amostras inadequadas em quantidade absoluta."""
     st.markdown(
         '<h2 class="adequabilidade-section-title">'
         '<span class="adequabilidade-section-index">02</span>'
         'Evolução anual da adequabilidade</h2>',
         unsafe_allow_html=True,
     )
-    series=df.groupby(["ano","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
-    series=series[series.categoria.isin(["Insatisfatória","Rejeitada"])]
+    series = agregar_evolucao_anual(dados)
     if not series.empty:
         st.subheader("Evolução anual de amostras insatisfatórias e rejeitadas")
         st.markdown(
@@ -143,19 +284,18 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
                 "o volume total de exames também pode ter mudado. "
                 "Os resultados não indicam quantas mulheres distintas foram atendidas."
             )
-        fig=px.line(
+        fig = px.line(
             series, x="ano", y="quantidade_amostras", color="categoria", markers=True,
-            color_discrete_map={"Insatisfatória":ORANGE,"Rejeitada":SKY},
+            color_discrete_map=CORES_INADEQUADAS,
             title="Quantidade anual de amostras por categoria",
-            labels={"quantidade_amostras":"Quantidade de amostras","ano":"Ano","categoria":""},
+            labels={"quantidade_amostras": "Quantidade de amostras", "ano": "Ano", "categoria": ""},
         )
         fig.update_xaxes(type="category")
         fig.update_yaxes(tickformat=",d", rangemode="tozero")
         fig.update_traces(
             hovertemplate="Ano: %{x}<br>Quantidade: %{y:,.0f} amostras<extra>%{fullData.name}</extra>"
         )
-        # Na imagem PNG, mostra explicitamente os valores dos pontos.
-        # Mantém a versão do site sem rótulos, com tooltip interativo.
+        # Os rótulos de valores são exclusivos do PNG exportado.
         export_fig = copy.deepcopy(fig)
         for trace in export_fig.data:
             values = (
@@ -165,7 +305,7 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
             trace.update(
                 mode="lines+markers+text",
                 text=[f"{int(value):,}" if pd.notna(value) else "—" for value in values],
-                textposition="top center" if trace.name == "Insatisfatória" else "bottom center",
+                textposition="top center" if trace.name == INSATISFATORIA else "bottom center",
                 textfont=dict(size=16, color="#1A3B5C"),
             )
         export_fig.update_layout(
@@ -179,19 +319,16 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
             height=430,
             export_fig=export_fig,
         )
+
+
+def renderizar_comparacao_municipal(dados: pd.DataFrame) -> None:
+    """Exibe a tabela municipal com totalizador destacado e exportação CSV."""
     st.markdown(
         '<h2 class="adequabilidade-section-title">'
         '<span class="adequabilidade-section-index">03</span>'
         'Comparação municipal da adequabilidade</h2>',
         unsafe_allow_html=True,
     )
-    bycity=df.groupby(["municipio","categoria"],as_index=False).quantidade_amostras.sum(min_count=1)
-    pivot=bycity.pivot(index="municipio",columns="categoria",values="quantidade_amostras").fillna(0)
-    for name in ["Satisfatória","Insatisfatória","Rejeitada"]:
-        if name not in pivot:pivot[name]=0
-    pivot["total"]=pivot[["Satisfatória","Insatisfatória","Rejeitada"]].sum(axis=1)
-    pivot["taxa_insatisfatorias_pct"]=pivot["Insatisfatória"]/pivot.total.replace(0,float("nan"))*100
-    pivot["taxa_rejeitadas_pct"]=pivot["Rejeitada"]/pivot.total.replace(0,float("nan"))*100
     st.subheader("Adequabilidade das amostras por município")
     st.markdown(
         "Compara a **quantidade e a proporção de amostras insatisfatórias e "
@@ -208,23 +345,7 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
             "sem somar percentuais municipais. "
             "As taxas descrevem adequabilidade da amostra, não alterações citológicas."
         )
-    # Linha consolidada ao final: soma contagens e recalcula taxas pelo total,
-    # evitando a soma incorreta de percentuais entre municípios.
-    table = pivot.reset_index()
-    columns_to_sum = ["Insatisfatória", "Rejeitada", "Satisfatória", "total"]
-    totals = table[columns_to_sum].sum()
-    denominator = totals["total"]
-    total_row = {
-        "municipio": "Total",
-        **{column: totals[column] for column in columns_to_sum},
-        "taxa_insatisfatorias_pct": (
-            totals["Insatisfatória"] / denominator * 100 if denominator > 0 else float("nan")
-        ),
-        "taxa_rejeitadas_pct": (
-            totals["Rejeitada"] / denominator * 100 if denominator > 0 else float("nan")
-        ),
-    }
-    table = pd.concat([table, pd.DataFrame([total_row])], ignore_index=True)
+    table = adicionar_totalizador(agregar_municipios(dados))
     st.markdown(
         """
         <style>
@@ -241,3 +362,34 @@ if require(df,["municipio","ano","categoria_adequabilidade","quantidade_amostras
         unsafe_allow_html=True,
     )
     export_table(table, "siscan_adequabilidade.csv")
+
+
+def main() -> None:
+    """Orquestra as três seções após verificar a integridade dos dados Gold."""
+    configurar_pagina()
+    df = filtered("adequabilidade")
+    if not require(df, COLUNAS_OBRIGATORIAS):
+        return
+
+    try:
+        dados, desconhecidas = preparar_adequabilidade(df)
+    except ValueError as exc:
+        st.error(str(exc))
+        return
+
+    if desconhecidas:
+        st.warning(
+            f"Há {fmt_num(desconhecidas)} registros com categoria não reconhecida; "
+            "eles não entram nos totais e percentuais classificados."
+        )
+    if dados.empty:
+        st.info("Não há amostras classificadas para os filtros selecionados.")
+        return
+
+    renderizar_perfil(dados)
+    renderizar_evolucao_anual(dados)
+    renderizar_comparacao_municipal(dados)
+
+
+if __name__ == "__main__":
+    main()
