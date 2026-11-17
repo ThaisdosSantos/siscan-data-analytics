@@ -92,6 +92,21 @@ def test_navegacao_preserva_menu(dashboard: Page) -> None:
     sem_erros(dashboard)
 
 
+def test_interpretacao_kpis_outubro_rosa(dashboard: Page) -> None:
+    """Verifica as explicações visíveis da comparação mensal."""
+    navegar(dashboard, "Outubro Rosa", "Outubro Rosa: produção e perfil etário dos exames")
+    expect(dashboard.get_by_text(
+        "Total de setembro, base de referência da comparação.", exact=True
+    )).to_be_visible()
+    expect(dashboard.get_by_text(
+        "Total de outubro no mesmo recorte selecionado.", exact=True
+    )).to_be_visible()
+    expect(dashboard.get_by_text(
+        "Outubro registrou 20,00% mais exames que setembro.", exact=True
+    )).to_be_visible()
+    sem_erros(dashboard)
+
+
 def test_lacuna_agosto_2022(dashboard: Page) -> None:
     """Confirma a identificação visual da competência sem dados no gráfico."""
     navegar(dashboard, "Panorama geral", "Volume de exames por competência e município")

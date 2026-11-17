@@ -86,3 +86,14 @@ def test_lacunas_mensais(carregar_modulo):
 def test_classificacao_etaria(carregar_modulo, rotulo, esperado):
     faixa = carregar_modulo("pages/03_faixa_etaria.py")
     assert faixa.q3_group(rotulo) == esperado
+
+
+@pytest.mark.parametrize(("variacao", "esperado"), [
+    (37.70, "Outubro registrou 37,70% mais exames que setembro."),
+    (-12.5, "Outubro registrou 12,50% menos exames que setembro."),
+    (0.0, "Outubro e setembro tiveram o mesmo volume de exames."),
+    (float("nan"), "Comparação indisponível no recorte."),
+])
+def test_interpretacao_variacao_outubro(carregar_modulo, variacao, esperado):
+    outubro = carregar_modulo("pages/02_outubro_rosa.py")
+    assert outubro.interpretar_variacao_mensal(variacao) == esperado

@@ -22,6 +22,7 @@ from utils.theme import (
     NAVY,
     display_table,
     fmt_num,
+    fmt_pct,
     indicator_context,
     page_header,
 )
@@ -299,6 +300,16 @@ def variacao_percentual(outubro: float, setembro: float) -> float:
     return (outubro - setembro) / setembro * 100
 
 
+def interpretar_variacao_mensal(variacao: float) -> str:
+    """Descreve a direção da variação de outubro em relação a setembro."""
+    if pd.isna(variacao):
+        return "Comparação indisponível no recorte."
+    if variacao == 0:
+        return "Outubro e setembro tiveram o mesmo volume de exames."
+    direcao = "mais" if variacao > 0 else "menos"
+    return f"Outubro registrou {fmt_pct(abs(variacao))} {direcao} exames que setembro."
+
+
 def calcular_pares_municipais(dados: pd.DataFrame) -> pd.DataFrame:
     """Compara os totais de setembro e outubro de anos pareados.
 
@@ -431,11 +442,8 @@ def renderizar_producao_mensal(mensal: pd.DataFrame) -> None:
         "os municípios selecionados."
     )
     chart_help(
-        "Os cartões apresentam os totais de exames de setembro e outubro "
-        "nos anos e municípios selecionados. O percentual indica quanto a "
-        "produção de outubro aumentou ou diminuiu em relação a setembro, "
-        "considerando os totais acumulados, e não a média das variações anuais. "
-        "O valor em exames indica a diferença absoluta entre os dois meses. "
+        "A comparação utiliza os totais acumulados de setembro e outubro "
+        "no recorte selecionado, e não a média das variações anuais. "
         "**Cálculo:** (Outubro − Setembro) ÷ Setembro × 100.",
         chave="producao",
     )
@@ -448,12 +456,15 @@ def renderizar_producao_mensal(mensal: pd.DataFrame) -> None:
     variacao = variacao_percentual(outubro, setembro)
     c1, c2, c3 = st.columns(3)
     c1.metric("Exames em setembro", fmt_num(setembro) if pd.notna(setembro) else "N/D")
+    c1.caption("Total de setembro, base de referência da comparação.")
     c2.metric("Exames em outubro", fmt_num(outubro) if pd.notna(outubro) else "N/D")
+    c2.caption("Total de outubro no mesmo recorte selecionado.")
     c3.metric(
         "Variação setembro → outubro",
-        f"{variacao:+.2f}%" if pd.notna(variacao) else "N/D",
+        f"{variacao:+.2f}%".replace(".", ",") if pd.notna(variacao) else "N/D",
         delta=f"{diferenca:+,.0f} exames".replace(",", ".") if pd.notna(variacao) else None,
     )
+    c3.caption(interpretar_variacao_mensal(variacao))
     anos_set_or = set(mensal.loc[mensal["mes"] == 9, "ano"])
     anos_out_or = set(mensal.loc[mensal["mes"] == 10, "ano"])
     if anos_set_or != anos_out_or:
