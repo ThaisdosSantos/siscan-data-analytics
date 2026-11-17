@@ -37,12 +37,16 @@ def _norm(value):
     return re.sub(r"[^a-z0-9]","",text)
 
 def _from_csv(name):
-    roots=[ROOT/"data"/"3_gold",ROOT/"data"/"gold"]
+    """Carrega a Gold local; um diretório explícito não usa fallback."""
+    fixture_dir = os.getenv("SISCAN_GOLD_CSV_DIR")
+    roots = [Path(fixture_dir)] if fixture_dir else [ROOT/"data"/"3_gold", ROOT/"data"/"gold"]
     for folder in roots:
         f=folder/f"{name}.csv"
         if f.is_file():
             try: return pd.read_csv(f,sep=None,engine="python",encoding="utf-8-sig")
             except UnicodeDecodeError: return pd.read_csv(f,sep=None,engine="python",encoding="latin-1")
+    if fixture_dir:
+        raise FileNotFoundError(f"Tabela CSV não encontrada: {name}")
     return pd.DataFrame()
 
 def _from_databricks(name):
@@ -75,6 +79,10 @@ def load_table(table_key, source="CSV local"):
     try:
         df=_from_databricks(name) if source=="Databricks SQL" else _from_csv(name)
     except Exception as exc:
+        if source == "CSV local":
+            raise GoldConsultaIndisponivel(
+                f"Não foi possível carregar a tabela CSV {name}."
+            ) from exc
         mensagem = str(exc).lower()
         if "free daily limit" in mensagem or "hit your free daily limit" in mensagem:
             raise GoldConsultaIndisponivel(
@@ -109,8 +117,8 @@ def load_table(table_key, source="CSV local"):
     return df
 
 def selected_source():
-    """Fonte persistente, independente da vida útil dos widgets multipágina."""
-    return "Databricks SQL"
+    """Usa Databricks por padrão e CSV apenas com configuração explícita."""
+    return "CSV local" if os.getenv("SISCAN_GOLD_CSV_DIR") else "Databricks SQL"
 
 def filtered(table_key):
     try:

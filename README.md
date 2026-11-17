@@ -1,5 +1,6 @@
 # SISCAN Data Analytics
 
+[![CI](https://github.com/ThaisdosSantos/siscan-data-analytics/actions/workflows/streamlit-syntax.yml/badge.svg)](https://github.com/ThaisdosSantos/siscan-data-analytics/actions/workflows/streamlit-syntax.yml)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![PySpark](https://img.shields.io/badge/PySpark-Apache%20Spark-E25A1C?style=flat&logo=apachespark&logoColor=white)](https://spark.apache.org/docs/latest/api/python/)
 [![Databricks](https://img.shields.io/badge/Databricks-Data%20Platform-FF3621?style=flat&logo=databricks&logoColor=white)](https://www.databricks.com/)
@@ -84,4 +85,6 @@ Para reconstruir as tabelas principais no Databricks, disponibilize o dataset no
 - A proporção de alterados por idade é uma estimativa operacional, pois as exclusões de amostras insatisfatórias e rejeitadas são distribuídas proporcionalmente por faixa etária.
 - As análises são descritivas e não demonstram impacto causal da campanha Outubro Rosa.
 
-A verificação automatizada de sintaxe da aplicação é realizada pelo [GitHub Actions](.github/workflows/streamlit-syntax.yml).
+## Testes automatizados
+
+O [GitHub Actions](.github/workflows/streamlit-syntax.yml) executa validação de sintaxe, testes unitários (pytest) e testes E2E (Playwright/Chromium) com dados sintéticos. Consulte as [instruções de execução](tests/e2e/README.md).

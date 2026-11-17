@@ -1,4 +1,4 @@
-name: Validar sintaxe do Streamlit
+name: CI - Streamlit e Playwright
 
 on:
   push:
@@ -6,9 +6,21 @@ on:
       - main
       - ui/padronizacao-q5-outubro-20261115
   pull_request:
+    branches: [main]
     paths:
-      - "src/app/**/*.py"
+      - "src/app/**"
+      - "src/assets/**"
+      - "tests/**"
+      - "requirements-test.txt"
       - ".github/workflows/streamlit-syntax.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: streamlit-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   python-syntax:
@@ -18,5 +30,38 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Compilar módulos Python sem executar consultas Gold
-        run: python -m compileall -q src/app
+      - name: Compilar módulos Python
+        run: python -m compileall -q src/app tests
+
+  automated-tests:
+    needs: python-syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            src/app/requirements.txt
+            requirements-test.txt
+      - name: Instalar dependências
+        run: python -m pip install -r requirements-test.txt
+      - name: Instalar Chromium
+        run: python -m playwright install --with-deps chromium
+      - name: Testes unitários
+        run: python -m pytest tests/test_metrics.py -v --junitxml=test-results/unit.xml
+      - name: Testes end-to-end
+        run: |
+          python -m pytest tests/e2e -v --browser chromium \
+            --tracing retain-on-failure --screenshot only-on-failure \
+            --output=test-results/playwright --junitxml=test-results/e2e.xml
+      - name: Publicar evidências
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamlit-test-results
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 14
