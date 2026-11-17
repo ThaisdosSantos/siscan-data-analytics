@@ -454,7 +454,10 @@ def renderizar_evolucao_municipal(df: pd.DataFrame) -> None:
                 plot_bgcolor="white",
                 font=dict(color="#1A3B5C", size=11),
             )
-            st.caption("No celular, deslize o gráfico para os lados. No computador, clique com o botão direito para baixar em PNG.")
+            st.caption(
+                "No computador, passe o mouse sobre os pontos para consultar os valores. "
+                "No celular, toque nos pontos e deslize o gráfico para os lados."
+            )
             chart_with_right_click_download(
                 fig_yearly, filename="exames_alterados_anuais_municipios.png",
                 height=fig_yearly.layout.height, min_chart_width=820
@@ -695,8 +698,8 @@ def renderizar_evolucao_por_grupo(df: pd.DataFrame) -> None:
                 font=dict(color=NAVY, size=12),
             )
             st.caption(
-                "No celular, deslize o gráfico para os lados. "
-                "O PNG mostra valores nas três linhas, sem tabelas."
+                "No computador, passe o mouse sobre os pontos para consultar os valores. "
+                "No celular, toque nos pontos e deslize o gráfico para os lados."
             )
             chart_with_right_click_download(
                 fig_lines,

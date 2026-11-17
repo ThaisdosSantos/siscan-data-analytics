@@ -761,6 +761,10 @@ def renderizar_evolucao_anual(cob: pd.DataFrame) -> None:
         height=max(850, 430 * qtd_linhas_cob),
         margin=dict(l=115, r=65, t=135, b=170),
     )
+    st.caption(
+        "No computador, passe o mouse sobre os pontos para consultar os valores. "
+        "No celular, toque nos pontos e deslize o gráfico para os lados."
+    )
     chart_with_right_click_download(
         fig_cob,
         filename="faixa_etaria_quantidade_anual_exames_25_64_municipios.png",
