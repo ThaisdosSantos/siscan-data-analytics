@@ -141,7 +141,7 @@ def test_analises_avancadas(dashboard: Page) -> None:
     seletor = dashboard.locator(".st-key-q5_categoria_anual_visual")
     seletor.get_by_role("combobox").click()
     dashboard.get_by_role("option", name="Participação por categoria (%)", exact=True).click()
-    expect(seletor).to_contain_text("Participação por categoria (%)")
+    expect(seletor.get_by_role("combobox")).to_have_value("Participação por categoria (%)")
     expect(dashboard.get_by_role("heading", name="Distribuição etária dos exames alterados por categoria")).to_be_visible()
     sem_erros(dashboard)
 
