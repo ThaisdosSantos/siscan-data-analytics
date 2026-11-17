@@ -2,8 +2,6 @@
 
 Plataforma analítica para exploração de exames citopatológicos do colo do útero nos 11 municípios da 10ª Coordenadoria Regional de Saúde do Rio Grande do Sul (10ª CRS), entre 2020 e 2025.
 
-Desenvolvida no contexto do Trabalho de Conclusão de Curso em Engenharia de Software do Instituto Federal Farroupilha (IFFar), com dados públicos de saúde e população.
-
 **[Acessar o dashboard](https://siscan-data-analytics-rmvxtnyhxnphdaygum54uy.streamlit.app/)**
 
 ## Funcionalidades
