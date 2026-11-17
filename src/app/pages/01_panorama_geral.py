@@ -439,7 +439,10 @@ def renderizar_evolucao_anual(
             plot_bgcolor="white",
             font=dict(color="#1A3B5C", size=11),
         )
-        st.caption("No celular, deslize o gráfico para os lados. No computador, clique com o botão direito para baixar em PNG.")
+        st.caption(
+            "No computador, passe o mouse sobre os pontos para consultar os valores. "
+            "No celular, toque nos pontos e deslize o gráfico para os lados."
+        )
         chart_with_right_click_download(
             fig, filename="panorama_exames_anuais_municipios.png",
             height=fig.layout.height, min_chart_width=820
