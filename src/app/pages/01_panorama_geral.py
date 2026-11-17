@@ -272,7 +272,7 @@ def renderizar_volume_municipal(bycity: pd.DataFrame) -> None:
         ordem_volume = st.selectbox(
             "Ordenar por",
             ["A–Z", "Maior para menor"],
-            index=0,
+            index=1,
             key="ordenacao_volume_municipios_panorama",
         )
     if ordem_volume == "A–Z":
