@@ -1,81 +1,192 @@
-"""Panorama territorial e temporal de exames citopatológicos registrados."""
+"""Panorama territorial e temporal de exames citopatológicos registrados.
+
+Consome a Gold temporal filtrada e apresenta volumes, participação municipal
+e variações anuais. Exames registrados não equivalem a pessoas distintas.
+"""
+
 from html import escape
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from utils.theme import apply_custom_css, page_header, display_chart, display_table, export_table, fmt_num, fmt_pct, pct, OCEAN
-from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered, require, sidebar_filters, MUNICIPIOS, selected_years, years_label, year_month_index
 
-st.set_page_config(page_title="Panorama geral | SISCAN", layout="wide")
-apply_custom_css()
-# Mantém a descrição do cabeçalho alinhada ao padrão visual da página Faixa Etária.
-st.markdown("""
-<style>
-/* O tema global usa margem negativa no hero para sobrepor cartões.
-   Nesta página, o primeiro conteúdo é um título de seção, então
-   removemos a sobreposição apenas no Panorama Geral. */
-.pet-hero {
-    margin-bottom: 0 !important;
-}
-.pet-hero .pet-hero-desc {
-    font-family: Manrope, Arial, sans-serif !important;
-    font-size: 1.15rem !important;
-    line-height: 1.65 !important;
-    font-weight: 500 !important;
-    color: #FFFFFF !important;
-    max-width: 920px !important;
-}
-@media (max-width: 768px) {
-    .pet-hero .pet-hero-desc {
-        font-size: 1rem !important;
-        line-height: 1.55 !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-sidebar_filters()
-page_header(
-    "",
-    "Volume de exames por competência e município",
-    "Apresenta a quantidade de exames citopatológicos registrados "
-    "no período selecionado, sua evolução mensal e anual, a distribuição entre os "
-    "municípios e as variações percentuais de um ano para o seguinte. "
-    "Permite comparar os volumes de exames ao longo do tempo e identificar "
-    "diferenças na produção registrada entre os municípios.",
+from utils.chart_download import chart_with_right_click_download
+from utils.data_loader import (
+    filtered, require, selected_years, sidebar_filters, year_month_index, years_label,
+)
+from utils.theme import (
+    OCEAN, apply_custom_css, display_chart, display_table, fmt_num, fmt_pct,
+    page_header, pct,
 )
 
-# Títulos de seção alinhados à hierarquia visual da página Faixa Etária.
-st.markdown(
-    """
+MESES_PT = (
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+)
+MESES_ABREV = ("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez")
+COMPETENCIA_AUSENTE = pd.Timestamp("2022-08-01")
+COLUNAS_OBRIGATORIAS = ("municipio", "ano", "mes", "quantidade")
+COR_AUMENTO = "#006C9A"
+COR_REDUCAO = "#A83A20"
+
+
+def configurar_pagina() -> None:
+    """Configura os estilos locais, os filtros e o cabeçalho da página."""
+    st.set_page_config(page_title="Panorama geral | SISCAN", layout="wide")
+    apply_custom_css()
+    st.markdown("""
     <style>
-    .panorama-section-title {
-      margin:30px 0 17px;padding:9px 0 12px;
-      border-bottom:2px solid #D8E5EF;
-      font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
-      color:#1A3B5C;
+    /* O tema global usa margem negativa no hero para sobrepor cartões.
+       Nesta página, o primeiro conteúdo é um título de seção, então
+       removemos a sobreposição apenas no Panorama Geral. */
+    .pet-hero {
+        margin-bottom: 0 !important;
     }
-    .panorama-section-title .panorama-section-index {
-      color:#006C9A;margin-right:10px;
+    .pet-hero .pet-hero-desc {
+        font-family: Manrope, Arial, sans-serif !important;
+        font-size: 1.15rem !important;
+        line-height: 1.65 !important;
+        font-weight: 500 !important;
+        color: #FFFFFF !important;
+        max-width: 920px !important;
+    }
+    @media (max-width: 768px) {
+        .pet-hero .pet-hero-desc {
+            font-size: 1rem !important;
+            line-height: 1.55 !important;
+        }
     }
     </style>
-    """,
-    unsafe_allow_html=True,
-)
+    """, unsafe_allow_html=True)
+    sidebar_filters()
+    page_header(
+        "",
+        "Volume de exames por competência e município",
+        "Apresenta a quantidade de exames citopatológicos registrados "
+        "no período selecionado, sua evolução mensal e anual, a distribuição entre os "
+        "municípios e as variações percentuais de um ano para o seguinte. "
+        "Permite comparar os volumes de exames ao longo do tempo e identificar "
+        "diferenças na produção registrada entre os municípios.",
+    )
 
-df = filtered("temporal")
-if require(df, ["municipio", "ano", "mes", "quantidade"]):
-    years = selected_years()
-    places = st.session_state.get("city_preference", list(MUNICIPIOS.values()))
+    st.markdown(
+        """
+        <style>
+        .panorama-section-title {
+          margin:30px 0 17px;padding:9px 0 12px;
+          border-bottom:2px solid #D8E5EF;
+          font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
+          color:#1A3B5C;
+        }
+        .panorama-section-title .panorama-section-index {
+          color:#006C9A;margin-right:10px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def agregar_mensal(df: pd.DataFrame) -> pd.DataFrame:
+    """Soma os exames por competência, preservando totais ausentes.
+
+    Args:
+        df: Registros temporais Gold filtrados por município e ano.
+
+    Returns:
+        Série mensal ordenada, com data no primeiro dia de cada mês.
+    """
+    mensal = (
+        df.groupby(["ano", "mes"], as_index=False)["quantidade"]
+        .sum(min_count=1)
+        .sort_values(["ano", "mes"])
+    )
+    mensal["data"] = pd.to_datetime(
+        dict(year=mensal["ano"], month=mensal["mes"], day=1)
+    )
+    return mensal
+
+
+def agregar_municipios(df: pd.DataFrame) -> pd.DataFrame:
+    """Retorna o volume acumulado por município, em ordem decrescente."""
+    return (
+        df.groupby("municipio", as_index=False)["quantidade"]
+        .sum(min_count=1)
+        .sort_values("quantidade", ascending=False)
+    )
+
+
+def agregar_anual(df: pd.DataFrame) -> pd.DataFrame:
+    """Soma os exames por município e ano sem imputar zeros."""
+    return (
+        df.dropna(subset=["municipio", "ano"])
+        .groupby(["municipio", "ano"], as_index=False)["quantidade"]
+        .sum(min_count=1)
+    )
+
+
+def preparar_serie_mensal(
+    monthly: pd.DataFrame, years: list[int]
+) -> tuple[pd.DataFrame, pd.DatetimeIndex, pd.DatetimeIndex]:
+    """Reindexa a série no calendário completo e identifica lacunas.
+
+    Anos não selecionados interrompem a linha, mas não entram na
+    contagem de competências ausentes do recorte.
+    """
+    complete = year_month_index(years)
+    selected_dates = pd.DatetimeIndex(
+        [date for date in complete if date.year in years]
+    )
+    series = monthly.set_index("data").reindex(complete)
+    missing = selected_dates[series.loc[selected_dates, "quantidade"].isna()]
+    return series, complete, missing
+
+
+def calcular_variacao_anual(annual: pd.DataFrame) -> pd.DataFrame:
+    """Calcula a variação percentual entre anos consecutivos.
+
+    Args:
+        annual: Totais observados por município e ano, sem grade artificial.
+
+    Returns:
+        Dados anuais com ano anterior, volume anterior, transição e variação.
+        Comparações sem referência positiva ou não consecutivas ficam nulas.
+    """
+    var_ano = annual.copy()
+    var_ano["ano"] = pd.to_numeric(var_ano["ano"], errors="coerce")
+    var_ano = var_ano.dropna(subset=["municipio", "ano", "quantidade"])
+    var_ano["ano"] = var_ano["ano"].astype(int)
+    var_ano = var_ano.sort_values(["municipio", "ano"]).reset_index(drop=True)
+
+    var_ano["ano_anterior"] = var_ano.groupby("municipio", sort=False)["ano"].shift(1)
+    var_ano["quantidade_anterior"] = var_ano.groupby("municipio", sort=False)["quantidade"].shift(1)
+    consecutivos = var_ano["ano"].sub(var_ano["ano_anterior"]).eq(1)
+    var_ano["variacao_pct"] = (
+        (var_ano["quantidade"] - var_ano["quantidade_anterior"])
+        .div(var_ano["quantidade_anterior"].where(var_ano["quantidade_anterior"].gt(0)))
+        .mul(100)
+        .where(consecutivos)
+    )
+    var_ano["transicao"] = [
+        f"{int(a)}→{int(b)}" if cons else None
+        for a, b, cons in zip(var_ano["ano_anterior"], var_ano["ano"], consecutivos)
+    ]
+    return var_ano
+
+
+def fmt_delta(valor: float) -> str:
+    """Formata a diferença percentual com sinal e duas casas decimais."""
+    return "—" if pd.isna(valor) else f"{valor:+.2f}%"
+
+
+def renderizar_indicadores(
+    df: pd.DataFrame, monthly: pd.DataFrame, bycity: pd.DataFrame, years: list[int]
+) -> None:
+    """Exibe volume total, média mensal e participação do município líder."""
     period = years_label(years)
     total = df.quantidade.sum(min_count=1)
-    monthly = (df.groupby(["ano", "mes"], as_index=False)
-               .quantidade.sum(min_count=1).sort_values(["ano", "mes"]))
-    monthly["data"] = pd.to_datetime(dict(year=monthly.ano, month=monthly.mes, day=1))
     months_count = len(monthly)
     expected = 12 * len(years)
-    bycity = (df.groupby("municipio", as_index=False).quantidade.sum(min_count=1)
-              .sort_values("quantidade", ascending=False))
     top = bycity.iloc[0] if not bycity.empty else None
 
     st.markdown(
@@ -96,23 +207,23 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         if top is not None:
             st.caption(f"**{top.municipio}** · percentual dos exames dos municípios selecionados em {period}.")
 
-    # Constrói a série mensal completa antes de plotar: ausência permanece NaN.
-    complete = year_month_index(years)
-    selected_dates = pd.DatetimeIndex(
-        [date for date in complete if date.year in years]
-    )
-    series = monthly.set_index("data").reindex(complete)
-    missing = selected_dates[series.loc[selected_dates, "quantidade"].isna()]
-    agosto_2022_ausente = pd.Timestamp("2022-08-01") in missing
+
+def renderizar_disponibilidade(
+    missing: pd.DatetimeIndex, months_count: int, expected: int
+) -> None:
+    """Informa competências sem registros, sem tratá-las como zeros."""
     if len(missing):
-        months_pt = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
-                     "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
-        missing_label = ", ".join(f"{months_pt[d.month - 1]}/{d.year}" for d in missing)
+        missing_label = ", ".join(f"{MESES_PT[d.month - 1].lower()}/{d.year}" for d in missing)
         st.warning(f"**Disponibilidade temporal:** {months_count} de {expected} meses com registros. "
                    f"Sem dados em **{missing_label}**.")
     else:
         st.caption(f"Disponibilidade temporal: **{months_count} de {expected} meses** com registros.")
 
+
+def renderizar_evolucao_mensal(
+    series: pd.DataFrame, complete: pd.DatetimeIndex
+) -> None:
+    """Renderiza a série regional com lacunas e exportação em PNG."""
     st.subheader("Evolução mensal")
     st.markdown(
         "Apresenta a **quantidade de exames registrada a cada mês** no recorte "
@@ -132,13 +243,14 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     fig.update_traces(connectgaps=False,
                       hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>")
     axis_dates = complete[::max(1, len(complete)//12)]
-    short_pt = ["jan", "fev", "mar", "abr", "mai", "jun",
-                "jul", "ago", "set", "out", "nov", "dez"]
     fig.update_xaxes(tickmode="array", tickvals=axis_dates,
-                     ticktext=[f"{short_pt[d.month-1]}/{str(d.year)[2:]}" for d in axis_dates])
+                     ticktext=[f"{MESES_ABREV[d.month-1]}/{str(d.year)[2:]}" for d in axis_dates])
     fig.update_yaxes(tickformat=",d")
     display_chart(fig, filename="panorama_evolucao_mensal.png")
 
+
+def renderizar_volume_municipal(bycity: pd.DataFrame) -> None:
+    """Exibe o ranking territorial com ordenação e download do gráfico."""
     st.markdown(
         '<h2 class="panorama-section-title"><span class="panorama-section-index">02</span>'
         'Distribuição e evolução municipal</h2>', unsafe_allow_html=True,
@@ -171,8 +283,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         bars = bycity.sort_values(
             ["quantidade", "municipio"], ascending=[False, True], kind="stable"
         )
-    # Em barras horizontais o Plotly apresenta o último item no topo.
-    # Inverter o eixo mantém A–Z ou maior volume primeiro de cima para baixo.
+    # Em barras horizontais, a última categoria é exibida no topo.
     ordem_eixo = list(reversed(bars["municipio"].tolist()))
     fig = px.bar(bars, x="quantidade", y="municipio", orientation="h",
                  color_discrete_sequence=[OCEAN],
@@ -185,6 +296,14 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     fig.update_yaxes(categoryorder="array", categoryarray=ordem_eixo)
     display_chart(fig, filename="panorama_volume_municipio.png")
 
+
+def renderizar_evolucao_anual(
+    annual: pd.DataFrame, years: list[int], agosto_2022_ausente: bool
+) -> None:
+    """Exibe facetas anuais por município, com ordenação e eixos independentes.
+
+    A grade usa os anos selecionados e mantém NaN onde não há registro.
+    """
     st.subheader("Evolução anual de exames por município")
     st.markdown(
         "Mostra a **evolução anual do volume de exames em cada município**, "
@@ -203,11 +322,6 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 "Agosto/2022 não possui registros no recorte: o total anual de 2022 "
                 "pode ficar subestimado em comparações com outros anos."
             )
-    annual = (
-        df.dropna(subset=["municipio", "ano"])
-        .groupby(["municipio", "ano"], as_index=False)["quantidade"]
-        .sum(min_count=1)
-    )
     if not annual.empty:
         st.markdown("""
             <style>
@@ -255,7 +369,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 )
             )
 
-        # Grade completa apenas para manter os anos sem registros como lacunas.
+        # A grade preserva anos ausentes como lacunas nas facetas.
         years_axis = sorted(years)
         grid = pd.MultiIndex.from_product(
             [municipalities, years_axis], names=["municipio", "ano"]
@@ -305,8 +419,6 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             rangemode="tozero", tickformat=",d",
             gridcolor="#E9EDF1", zeroline=False,
         )
-        # Um título por eixo para o conjunto completo de facetas.
-        # Os valores e os anos continuam visíveis em cada município.
         fig.add_annotation(
             x=-0.065, y=0.5, xref="paper", yref="paper",
             text="Exames registrados", textangle=-90, showarrow=False,
@@ -333,13 +445,106 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             height=fig.layout.height, min_chart_width=820
         )
 
-    # ------------------------------------------------------------------
-    # Cruzamento ano × ano: variação percentual (Δ%) por município.
-    # Δ% = (exames do ano − exames do ano anterior) ÷ exames do ano
-    # anterior × 100. Calculado apenas entre anos consecutivos presentes
-    # no recorte; anos sem registro não geram variação (evita interpretar
-    # dado ausente como crescimento ou queda).
-    # ------------------------------------------------------------------
+
+def construir_matriz_html(pivo_var: pd.DataFrame) -> str:
+    """Gera a matriz acessível com classes de sinal e rótulos escapados."""
+    cabecalhos_var = (
+        '<th scope="col">Município</th>'
+        + "".join(
+            f'<th scope="col">{escape(str(col))}</th>'
+            for col in pivo_var.columns
+        )
+    )
+    linhas_var = []
+    for municipio, valores in pivo_var.iterrows():
+        celulas = []
+        for valor in valores:
+            if pd.isna(valor):
+                classe = "sem-dado"
+            elif valor > 0:
+                classe = "aumento"
+            elif valor < 0:
+                classe = "reducao"
+            else:
+                classe = "estavel"
+            celulas.append(
+                f'<td class="{classe}">{fmt_delta(valor)}</td>'
+            )
+        linhas_var.append(
+            '<tr><th scope="row">'
+            + escape(str(municipio)) + '</th>'
+            + "".join(celulas) + '</tr>'
+        )
+    tabela_var_html = (
+        '<div class="pet-var-scroller" role="region" tabindex="0" '
+        'aria-label="Matriz de variação anual de exames por município">'
+        '<table class="pet-var-table"><thead><tr>'
+        + cabecalhos_var + '</tr></thead><tbody>'
+        + "".join(linhas_var) + '</tbody></table></div>'
+    )
+    return tabela_var_html
+
+
+def renderizar_ranking_variacao(
+    ranking_var: pd.DataFrame, transicao_atual: str
+) -> None:
+    """Renderiza uma transição anual, com os volumes no tooltip."""
+    ranking_plot = ranking_var.sort_values("variacao_pct", ascending=True)
+    ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
+        lambda valor: "Aumento" if valor >= 0 else "Redução"
+    )
+    # Os rótulos pertencem ao DataFrame, pois cada cor gera um trace Plotly.
+    ranking_plot["rotulo_variacao"] = ranking_plot["variacao_pct"].map(fmt_delta)
+    fig_var = px.bar(
+        ranking_plot,
+        x="variacao_pct", y="municipio", orientation="h",
+        color="cor",
+        color_discrete_map={"Aumento": COR_AUMENTO, "Redução": COR_REDUCAO},
+        text="rotulo_variacao",
+        labels={"variacao_pct": "Variação anual (%)",
+                "municipio": "Município"},
+        category_orders={"municipio": ranking_plot["municipio"].tolist()},
+        custom_data=["quantidade_anterior", "quantidade"],
+    )
+    fig_var.update_traces(
+        texttemplate="%{text}", textposition="outside",
+        textfont=dict(size=13, color="#1A3B5C"),
+        cliponaxis=False,
+        hovertemplate=(
+            "<b>%{y}</b><br>" + transicao_atual
+            + "<br>Variação: %{x:+.2f}%"
+            + "<br>Anterior: %{customdata[0]:,.0f} exames"
+            + "<br>Atual: %{customdata[1]:,.0f} exames<extra></extra>"
+        ),
+    )
+    minimo = min(float(ranking_plot["variacao_pct"].min()), 0)
+    maximo = max(float(ranking_plot["variacao_pct"].max()), 0)
+    margem = max(4, (maximo - minimo) * 0.22)
+    fig_var.update_xaxes(
+        title="Variação anual (%)",
+        range=[minimo - margem, maximo + margem],
+        ticksuffix="%", tickfont=dict(size=12, color="#334E68"),
+        showgrid=True, gridcolor="#E8F0F6",
+        zeroline=True, zerolinecolor="#7C8FA0", zerolinewidth=1.5,
+    )
+    fig_var.update_yaxes(
+        title=None, tickfont=dict(size=13, color="#1A3B5C"),
+        automargin=True,
+    )
+    fig_var.update_layout(
+        height=max(440, 41 * len(ranking_plot) + 110),
+        margin=dict(l=18, r=60, t=28, b=55),
+        plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+        showlegend=False, font=dict(color="#1A3B5C", size=13),
+        bargap=0.28,
+    )
+    display_chart(fig_var, filename=f"panorama_variacao_{transicao_atual.replace('→', '_')}.png")
+
+
+def renderizar_variacao_anual(
+    var_ano: pd.DataFrame, agosto_2022_ausente: bool
+) -> None:
+    """Exibe matriz, rankings independentes e dados de variação anual."""
     st.markdown(
         '<h2 class="panorama-section-title"><span class="panorama-section-index">03</span>'
         'Variação anual da produção</h2>', unsafe_allow_html=True,
@@ -353,42 +558,12 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
         "quantidade de mulheres atendidas nem na cobertura do rastreamento."
     )
 
-    var_ano = (
-        df.dropna(subset=["municipio", "ano"])
-        .groupby(["municipio", "ano"], as_index=False)["quantidade"]
-        .sum(min_count=1)
-    )
-    var_ano["ano"] = pd.to_numeric(var_ano["ano"], errors="coerce")
-    var_ano = var_ano.dropna(subset=["municipio", "ano", "quantidade"])
-    var_ano["ano"] = var_ano["ano"].astype(int)
-    var_ano = var_ano.sort_values(["municipio", "ano"]).reset_index(drop=True)
-
-    var_ano["ano_anterior"] = var_ano.groupby("municipio", sort=False)["ano"].shift(1)
-    var_ano["quantidade_anterior"] = var_ano.groupby("municipio", sort=False)["quantidade"].shift(1)
-    consecutivos = var_ano["ano"].sub(var_ano["ano_anterior"]).eq(1)
-    var_ano["variacao_pct"] = (
-        (var_ano["quantidade"] - var_ano["quantidade_anterior"])
-        .div(var_ano["quantidade_anterior"].where(var_ano["quantidade_anterior"].gt(0)))
-        .mul(100)
-        .where(consecutivos)
-    )
-    var_ano["transicao"] = [
-        f"{int(a)}→{int(b)}" if cons else None
-        for a, b, cons in zip(var_ano["ano_anterior"], var_ano["ano"], consecutivos)
-    ]
-
-    def fmt_delta(v):
-        return "—" if pd.isna(v) else f"{v:+.2f}%"
-
     if not var_ano["variacao_pct"].notna().any():
         st.info(
             "Selecione pelo menos dois anos consecutivos nos filtros para "
             "calcular a variação anual por município."
         )
     else:
-        # Identidade PET-Saúde: azul para crescimento, vermelho suave para queda,
-        # fundo claro para valores próximos de zero; sem gradiente arco-íris.
-        positivo, negativo = "#006C9A", "#A83A20"
         pivo_var = var_ano.pivot_table(
             index="municipio", columns="transicao",
             values="variacao_pct", aggfunc="mean",
@@ -434,42 +609,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 kind="stable",
             )
 
-        # Mesma linguagem visual de display_table: cabeçalho azul-marinho,
-        # primeira coluna destacada, linhas alternadas e rolagem horizontal.
-        cabecalhos_var = (
-            '<th scope="col">Município</th>'
-            + "".join(
-                f'<th scope="col">{escape(str(col))}</th>'
-                for col in pivo_var.columns
-            )
-        )
-        linhas_var = []
-        for municipio, valores in pivo_var.iterrows():
-            celulas = []
-            for valor in valores:
-                if pd.isna(valor):
-                    classe = "sem-dado"
-                elif valor > 0:
-                    classe = "aumento"
-                elif valor < 0:
-                    classe = "reducao"
-                else:
-                    classe = "estavel"
-                celulas.append(
-                    f'<td class="{classe}">{fmt_delta(valor)}</td>'
-                )
-            linhas_var.append(
-                '<tr><th scope="row">'
-                + escape(str(municipio)) + '</th>'
-                + "".join(celulas) + '</tr>'
-            )
-        tabela_var_html = (
-            '<div class="pet-var-scroller" role="region" tabindex="0" '
-            'aria-label="Matriz de variação anual de exames por município">'
-            '<table class="pet-var-table"><thead><tr>'
-            + cabecalhos_var + '</tr></thead><tbody>'
-            + "".join(linhas_var) + '</tbody></table></div>'
-        )
+        tabela_var_html = construir_matriz_html(pivo_var)
         st.markdown(
             """
             <style>
@@ -556,8 +696,6 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 "separadamente; os percentuais não são somados nem calculados "
                 "como uma média entre anos."
             )
-        # "Todas" apresenta um ranking independente para cada transição,
-        # sem combinar percentuais de períodos diferentes.
         transicoes_disponiveis = list(pivo_var.columns)
         todas_transicoes = "Todas as transições"
         transicao_ranking = st.selectbox(
@@ -589,59 +727,7 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
             if ranking_var.empty:
                 st.info("Não há valores calculáveis para esta transição no recorte.")
                 continue
-            # Reutiliza o mesmo padrão do ranking individual para cada período.
-            ranking_plot = ranking_var.sort_values("variacao_pct", ascending=True)
-            ranking_plot["cor"] = ranking_plot["variacao_pct"].apply(
-                lambda valor: "Aumento" if valor >= 0 else "Redução"
-            )
-            # Plotly Express divide as barras em traces por categoria de cor.
-            # O rótulo deve ser uma coluna do DataFrame para acompanhar cada
-            # município corretamente, em vez de uma lista aplicada a todos os traces.
-            ranking_plot["rotulo_variacao"] = ranking_plot["variacao_pct"].map(fmt_delta)
-            fig_var = px.bar(
-                ranking_plot,
-                x="variacao_pct", y="municipio", orientation="h",
-                color="cor",
-                color_discrete_map={"Aumento": positivo, "Redução": negativo},
-                text="rotulo_variacao",
-                labels={"variacao_pct": "Variação anual (%)",
-                        "municipio": "Município"},
-                category_orders={"municipio": ranking_plot["municipio"].tolist()},
-                custom_data=["quantidade_anterior", "quantidade"],
-            )
-            fig_var.update_traces(
-                texttemplate="%{text}", textposition="outside",
-                textfont=dict(size=13, color="#1A3B5C"),
-                cliponaxis=False,
-                hovertemplate=(
-                    "<b>%{y}</b><br>" + transicao_atual
-                    + "<br>Variação: %{x:+.2f}%"
-                    + "<br>Anterior: %{customdata[0]:,.0f} exames"
-                    + "<br>Atual: %{customdata[1]:,.0f} exames<extra></extra>"
-                ),
-            )
-            minimo = min(float(ranking_plot["variacao_pct"].min()), 0)
-            maximo = max(float(ranking_plot["variacao_pct"].max()), 0)
-            margem = max(4, (maximo - minimo) * 0.22)
-            fig_var.update_xaxes(
-                title="Variação anual (%)",
-                range=[minimo - margem, maximo + margem],
-                ticksuffix="%", tickfont=dict(size=12, color="#334E68"),
-                showgrid=True, gridcolor="#E8F0F6",
-                zeroline=True, zerolinecolor="#7C8FA0", zerolinewidth=1.5,
-            )
-            fig_var.update_yaxes(
-                title=None, tickfont=dict(size=13, color="#1A3B5C"),
-                automargin=True,
-            )
-            fig_var.update_layout(
-                height=max(440, 41 * len(ranking_plot) + 110),
-                margin=dict(l=18, r=60, t=28, b=55),
-                plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
-                showlegend=False, font=dict(color="#1A3B5C", size=13),
-                bargap=0.28,
-            )
-            display_chart(fig_var, filename=f"panorama_variacao_{transicao_atual.replace('→', '_')}.png")
+            renderizar_ranking_variacao(ranking_var, transicao_atual)
 
         with st.expander("Ver dados detalhados da variação anual", expanded=False):
             detalhe_var = var_ano.loc[
@@ -691,12 +777,11 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
                 key="exportar_detalhe_variacao_panorama",
             )
 
+
+def renderizar_detalhamento(df: pd.DataFrame) -> None:
+    """Exibe a produção detalhada com ordenação e exportação CSV."""
     detail = df[["municipio", "ano", "mes", "quantidade"]].copy()
-    detail["mes"] = detail["mes"].astype(int).map({
-        i+1: month for i, month in enumerate(
-            ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-             "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"])
-    })
+    detail["mes"] = detail["mes"].astype(int).map(dict(enumerate(MESES_PT, start=1)))
     detail = detail.rename(columns={
         "municipio":"Município", "ano":"Ano", "mes":"Mês", "quantidade":"Exames registrados"
     })
@@ -731,3 +816,30 @@ if require(df, ["municipio", "ano", "mes", "quantidade"]):
     st.caption("**Como interpretar:** maior volume não significa necessariamente maior cobertura "
                "populacional ou melhor desempenho. A participação municipal usa como denominador "
                "o total de exames dos municípios selecionados.")
+
+
+def main() -> None:
+    """Orquestra a página após validar a disponibilidade da Gold temporal."""
+    configurar_pagina()
+    df = filtered("temporal")
+    if not require(df, COLUNAS_OBRIGATORIAS):
+        return
+
+    years = selected_years()
+    monthly = agregar_mensal(df)
+    bycity = agregar_municipios(df)
+    annual = agregar_anual(df)
+    series, complete, missing = preparar_serie_mensal(monthly, years)
+    agosto_2022_ausente = COMPETENCIA_AUSENTE in missing
+
+    renderizar_indicadores(df, monthly, bycity, years)
+    renderizar_disponibilidade(missing, len(monthly), 12 * len(years))
+    renderizar_evolucao_mensal(series, complete)
+    renderizar_volume_municipal(bycity)
+    renderizar_evolucao_anual(annual, years, agosto_2022_ausente)
+    renderizar_variacao_anual(calcular_variacao_anual(annual), agosto_2022_ausente)
+    renderizar_detalhamento(df)
+
+
+if __name__ == "__main__":
+    main()
