@@ -1,4 +1,11 @@
-"""Conformidade etária (Q3): distribuição e composição por município."""
+"""Perfil etário e produção de exames citopatológicos na 10ª CRS.
+
+Consome a Gold etária e a dimensão analítica de produção relativa à
+população feminina de 25 a 64 anos do Censo 2022. Os indicadores medem
+exames registrados, não cobertura de mulheres distintas.
+"""
+
+import copy
 import unicodedata
 from html import escape
 
@@ -6,21 +13,33 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from utils.theme import (
-    apply_custom_css, page_header, display_chart, display_table, export_table,
-    fmt_num, fmt_pct, pct, style_chart, OCEAN, SKY, ORANGE, NAVY,
-)
+from utils import data_loader as gold_loader
 from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import filtered, sidebar_filters, require
+from utils.theme import (
+    NAVY, OCEAN, ORANGE, SKY,
+    apply_custom_css, display_table, export_table, fmt_num, fmt_pct,
+    page_header, pct, style_chart,
+)
+
+GRUPOS_ETARIOS = ("<25 anos", "25–64 anos", "≥65 anos")
+GRUPO_ALVO = "25–64 anos"
+CORES_GRUPOS = {"<25 anos": SKY, GRUPO_ALVO: OCEAN, "≥65 anos": ORANGE}
+REFERENCIA_ANUAL = 0.33
+LIMIAR_INFERIOR_PCT = 3.0
+LIMIAR_SUPERIOR_PCT = REFERENCIA_ANUAL * 100
+COLUNAS_ETARIA = ("municipio", "grupo_etario_diretriz", "quantidade_exames")
+COLUNAS_RAZAO = ("municipio", "ano", "total_exames_25_64", "mulheres_25_64_anos")
 
 
-def normalize(value):
+def normalize(value: object) -> str:
+    """Normaliza acentos e caixa para comparar nomes e rótulos."""
     return unicodedata.normalize("NFKD", str(value)).encode("ascii", "ignore").decode().lower().strip()
 
 
-def q3_group(label):
-    """Mapeia somente grupos etários inequivocamente identificados na Q3."""
-    text = normalize(label).replace("–", "-").replace("—", "-")
+def q3_group(label: object) -> str | None:
+    """Identifica os três grupos etários sem classificar categorias ambíguas."""
+    text = normalize(str(label).replace("–", "-").replace("—", "-").replace("≥", ">="))
     if "25 a 64" in text or "25-64" in text or "populacao-alvo" in text:
         return "25–64 anos"
     if "<25" in text or "< 25" in text or "menores de 25" in text or "menor de 25" in text:
@@ -30,231 +49,291 @@ def q3_group(label):
     return None
 
 
-def safe_percent(numerator, denominator):
+def safe_percent(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
+    """Calcula percentuais e preserva NaN quando não há base positiva."""
     return numerator.div(denominator.where(denominator.gt(0))).mul(100)
 
 
-st.set_page_config(page_title="Faixa etária | SISCAN", layout="wide")
-apply_custom_css()
-# Sobrescreve apenas a descrição do cabeçalho da página Q3.
-st.markdown("""
-<style>
-.pet-hero .pet-hero-desc {
-    font-family: Manrope, Arial, sans-serif !important;
-    font-size: 1.15rem !important;
-    line-height: 1.65 !important;
-    font-weight: 500 !important;
-    color: #FFFFFF !important;
-    max-width: 920px !important;
-}
-/* Destaque legível do período e municípios no recorte ativo. */
-.pet-hero .pet-active-scope {
-    gap: 12px !important;
-    margin-top: 22px !important;
-    align-items: center !important;
-}
-.pet-hero .pet-active-scope .pet-scope-label {
-    color: #FFFFFF !important;
-    font-size: 0.85rem !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.11em !important;
-}
-.pet-hero .pet-active-scope .pet-scope-chip {
-    color: #FFFFFF !important;
-    background: rgba(255, 255, 255, 0.19) !important;
-    border: 1px solid rgba(255, 255, 255, 0.48) !important;
-    font-size: 0.95rem !important;
-    font-weight: 700 !important;
-    line-height: 1.4 !important;
-    padding: 9px 14px !important;
-    gap: 8px !important;
-}
-.pet-hero .pet-active-scope .pet-scope-icon {
-    color: #FFFFFF !important;
-}
-@media (max-width: 768px) {
-    .pet-hero .pet-active-scope {gap: 8px !important;}
+def preparar_grupos(df: pd.DataFrame) -> tuple[pd.DataFrame, float]:
+    """Classifica a Gold etária e contabiliza exames sem grupo reconhecido.
+
+    Returns:
+        Registros classificáveis e quantidade excluída dos percentuais.
+    """
+    groups = df.copy()
+    groups["grupo"] = groups["grupo_etario_diretriz"].map(q3_group)
+    unknown = groups.loc[groups.grupo.isna(), "quantidade_exames"].sum()
+    groups = groups.loc[groups.grupo.notna()].copy()
+    return groups, float(unknown)
+
+
+def agregar_perfil_municipal(groups: pd.DataFrame) -> pd.DataFrame:
+    """Consolida a composição de exames por município e grupo etário."""
+    agg = groups.groupby(["municipio", "grupo"], as_index=False)["quantidade_exames"].sum()
+    total_city = agg.groupby("municipio")["quantidade_exames"].transform("sum")
+    agg["percentual"] = safe_percent(agg["quantidade_exames"], total_city)
+    return agg
+
+
+def preparar_razao_anual(df_cob: pd.DataFrame) -> pd.DataFrame:
+    """Calcula exames por 100 mulheres usando o denominador do Censo 2022.
+
+    Args:
+        df_cob: Fato Gold filtrado por municípios e anos.
+
+    Returns:
+        Registros com população positiva, razão arredondada e anos ordenados.
+    """
+    cob = df_cob.copy()
+    for coluna in ("ano", "total_exames_25_64", "mulheres_25_64_anos"):
+        cob[coluna] = pd.to_numeric(cob[coluna], errors="coerce")
+    cob = cob.dropna(
+        subset=["municipio", "ano", "total_exames_25_64", "mulheres_25_64_anos"]
+    )
+    cob = cob.loc[cob["mulheres_25_64_anos"] > 0].copy()
+    cob["razao_anual_exames_pct"] = (
+        cob["total_exames_25_64"] / cob["mulheres_25_64_anos"] * 100
+    ).round(2)
+    cob["ano"] = cob["ano"].astype(int)
+    # Plotly conecta os pontos na ordem do DataFrame, não do category_orders.
+    cob = cob.sort_values(["municipio", "ano"], kind="stable").reset_index(drop=True)
+    cob["ano_label"] = cob["ano"].astype(str)
+    return cob
+
+
+def agregar_base_populacional(cob: pd.DataFrame) -> pd.DataFrame:
+    """Agrega o numerador e mantém um denominador por município e ano."""
+    return (
+        cob.groupby(["municipio", "ano"], as_index=False)
+        .agg(
+            exames=("total_exames_25_64", "sum"),
+            populacao=("mulheres_25_64_anos", "max"),
+        )
+    )
+
+
+def calcular_razao_regional(base: pd.DataFrame) -> pd.Series:
+    """Calcula a razão de exames pela soma das populações de cada ano.
+
+    Não utiliza a média simples das razões municipais.
+    """
+    totais = base.groupby("ano").agg(
+        exames=("exames", "sum"),
+        populacao=("populacao", "sum"),
+    )
+    return safe_percent(totais["exames"], totais["populacao"]).round(2)
+
+
+def calcular_resumo_consolidado(base_consolidada: pd.DataFrame) -> pd.DataFrame:
+    """Compara a produção anual média à referência exploratória de 33%.
+
+    Considera somente anos observados e um denominador fixo por município.
+    A referência não representa uma meta oficial de cobertura do SISCAN.
+    """
+    resumo_consolidado = (
+        base_consolidada.groupby("municipio", as_index=False)
+        .agg(
+            populacao=("populacao", "max"),
+            media_exames=("exames", "mean"),
+        )
+    )
+    resumo_consolidado["referencia_anual"] = resumo_consolidado["populacao"] * REFERENCIA_ANUAL
+    resumo_consolidado["diferenca_anual"] = (
+        resumo_consolidado["media_exames"] - resumo_consolidado["referencia_anual"]
+    )
+    resumo_consolidado["atingimento_pct"] = (
+        resumo_consolidado["media_exames"]
+        / resumo_consolidado["referencia_anual"].where(
+            resumo_consolidado["referencia_anual"].gt(0)
+        ) * 100
+    )
+    return resumo_consolidado
+
+
+def calcular_total_consolidado(resumo_consolidado: pd.DataFrame) -> dict[str, object]:
+    """Agrega volumes e populações, sem calcular média dos percentuais."""
+    linha_total_consolidado = {
+        "municipio": (
+            "TOTAL 10ª CRS" if resumo_consolidado["municipio"].nunique() == 11
+            else "TOTAL MUNICÍPIOS SELECIONADOS"
+        ),
+        "populacao": resumo_consolidado["populacao"].sum(),
+        "referencia_anual": resumo_consolidado["referencia_anual"].sum(),
+        "media_exames": resumo_consolidado["media_exames"].sum(),
+        "diferenca_anual": resumo_consolidado["diferenca_anual"].sum(),
+    }
+    linha_total_consolidado["atingimento_pct"] = (
+        linha_total_consolidado["media_exames"]
+        / linha_total_consolidado["referencia_anual"] * 100
+        if linha_total_consolidado["referencia_anual"] > 0 else float("nan")
+    )
+    return linha_total_consolidado
+
+
+def configurar_pagina() -> None:
+    """Configura tema, filtros, cabeçalho e fontes metodológicas."""
+    st.set_page_config(page_title="Faixa etária | SISCAN", layout="wide")
+    apply_custom_css()
+    st.markdown("""
+    <style>
+    .pet-hero .pet-hero-desc {
+        font-family: Manrope, Arial, sans-serif !important;
+        font-size: 1.15rem !important;
+        line-height: 1.65 !important;
+        font-weight: 500 !important;
+        color: #FFFFFF !important;
+        max-width: 920px !important;
+    }
+    /* Destaque legível do período e municípios no recorte ativo. */
+    .pet-hero .pet-active-scope {
+        gap: 12px !important;
+        margin-top: 22px !important;
+        align-items: center !important;
+    }
     .pet-hero .pet-active-scope .pet-scope-label {
-        font-size: 0.78rem !important;
+        color: #FFFFFF !important;
+        font-size: 0.85rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.11em !important;
     }
     .pet-hero .pet-active-scope .pet-scope-chip {
-        font-size: 0.86rem !important;
-        padding: 8px 11px !important;
+        color: #FFFFFF !important;
+        background: rgba(255, 255, 255, 0.19) !important;
+        border: 1px solid rgba(255, 255, 255, 0.48) !important;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        line-height: 1.4 !important;
+        padding: 9px 14px !important;
+        gap: 8px !important;
     }
-}
-@media (max-width: 768px) {
-    .pet-hero .pet-hero-desc {
-        font-size: 1rem !important;
-        line-height: 1.55 !important;
+    .pet-hero .pet-active-scope .pet-scope-icon {
+        color: #FFFFFF !important;
     }
-}
-/* Painel de fontes: cartão claro e texto legível, sem sobreposição ao hero. */
-.st-key-q3_sources_panel {
-    margin-top: 52px !important;
-    margin-bottom: 16px !important;
-}
-.st-key-q3_sources_panel [data-testid="stExpander"] details {
-    background: #FFFFFF !important;
-    border: 1px solid #D5E3ED !important;
-    border-radius: 12px !important;
-    overflow: hidden !important;
-}
-.st-key-q3_sources_panel [data-testid="stExpander"] summary,
-.st-key-q3_sources_panel [data-testid="stExpander"] summary:hover {
-    background: #F1F7FB !important;
-    color: #1A3B5C !important;
-    padding: 12px 16px !important;
-}
-.st-key-q3_sources_panel [data-testid="stExpander"] summary *,
-.st-key-q3_sources_panel [data-testid="stExpander"] summary svg {
-    color: #1A3B5C !important;
-    fill: currentColor !important;
-    font-weight: 700 !important;
-}
-.st-key-q3_sources_panel [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
-    background: #FFFFFF !important;
-    color: #1A3B5C !important;
-}
-@media (max-width: 768px) {
-    .st-key-q3_sources_panel {margin-top: 12px !important;}
-}
-</style>
-""", unsafe_allow_html=True)
-sidebar_filters()
-page_header(
-    "Faixa etária · Q3",
-    "Faixa etária e produção de exames",
-    "Apresenta a distribuição dos exames por faixa etária, as diferenças entre municípios e a evolução da produção, incluindo indicadores que relacionam o volume de exames à população feminina de 25 a 64 anos.",
-)
-
-with st.container(key="q3_sources_panel"):
-    with st.expander("ℹ️ Fontes e critérios de cálculo", expanded=False):
-        st.markdown(
-            "**Exames citopatológicos:** SISCAN/DATASUS. "
-            "**População feminina de 25 a 64 anos:** Censo Demográfico IBGE 2022, "
-            "utilizado como denominador fixo em todos os anos por ser o censo "
-            "mais recente.\n\n"
-            "**Referência técnica:** indicador 1.5 do IDSS/ANS (ano-base 2023). "
-            "O parâmetro de 33 exames por 100 mulheres/ano foi adaptado à "
-            "produção municipal do SISCAN, sem desduplicação das pacientes. "
-            "Portanto, a medida apresentada não corresponde à taxa oficial "
-            "de beneficiárias da ANS."
-        )
-
-st.markdown("""
-<style>
-div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff;}
-</style>
-""", unsafe_allow_html=True)
-
-df = filtered("etaria")
-if not require(df, ["municipio", "grupo_etario_diretriz", "quantidade_exames"]):
-    st.stop()
-
-groups = df.copy()
-groups["grupo"] = groups["grupo_etario_diretriz"].map(q3_group)
-unknown = groups.loc[groups.grupo.isna(), "quantidade_exames"].sum()
-groups = groups.loc[groups.grupo.notna()].copy()
-if groups.empty:
-    st.warning("Não foi possível identificar os grupos etários na tabela Gold da Q3.")
-    st.stop()
-if unknown:
-    st.warning(f"Há {fmt_num(unknown)} exames em categorias etárias não classificáveis; esses registros não entram nos percentuais apresentados.")
-
-st.markdown(
-    """
-    <style>
-    .q3-section-title {
-      margin:30px 0 17px;padding:9px 0 12px;
-      border-bottom:2px solid #D8E5EF;
-      font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
-      color:#1A3B5C;
+    @media (max-width: 768px) {
+        .pet-hero .pet-active-scope {gap: 8px !important;}
+        .pet-hero .pet-active-scope .pet-scope-label {
+            font-size: 0.78rem !important;
+        }
+        .pet-hero .pet-active-scope .pet-scope-chip {
+            font-size: 0.86rem !important;
+            padding: 8px 11px !important;
+        }
     }
-    .q3-section-title .q3-section-index {color:#006C9A;margin-right:10px;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    '<h2 class="q3-section-title"><span class="q3-section-index">01</span>'
-    'Perfil etário dos exames</h2>', unsafe_allow_html=True,
-)
-
-sums = groups.groupby("grupo")["quantidade_exames"].sum()
-total = sums.sum()
-# Indicadores em ordem crescente de idade e com quantidades legíveis.
-labels = ["<25 anos", "25–64 anos", "≥65 anos"]
-titles = ["Menores de 25 anos", "População-alvo (25–64 anos)", "65 anos ou mais"]
-descriptions = [
-    "Abaixo da faixa-alvo",
-    "Na faixa-alvo",
-    "Acima da faixa-alvo",
-]
-st.markdown(
-    """
-    <style>
-    .q3-kpi-detail {
-        color:#1A3B5C; font:500 16px/1.5 Manrope,Arial,sans-serif;
-        margin:8px 0 16px; overflow-wrap:anywhere;
+    @media (max-width: 768px) {
+        .pet-hero .pet-hero-desc {
+            font-size: 1rem !important;
+            line-height: 1.55 !important;
+        }
     }
-    .q3-kpi-detail strong {
-        font-weight:800; color:#143650;
+    /* Painel de fontes: cartão claro e texto legível, sem sobreposição ao hero. */
+    .st-key-q3_sources_panel {
+        margin-top: 52px !important;
+        margin-bottom: 16px !important;
     }
-    @media(max-width:768px) {
-        .q3-kpi-detail {font-size:15px;line-height:1.45;}
+    .st-key-q3_sources_panel [data-testid="stExpander"] details {
+        background: #FFFFFF !important;
+        border: 1px solid #D5E3ED !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+    }
+    .st-key-q3_sources_panel [data-testid="stExpander"] summary,
+    .st-key-q3_sources_panel [data-testid="stExpander"] summary:hover {
+        background: #F1F7FB !important;
+        color: #1A3B5C !important;
+        padding: 12px 16px !important;
+    }
+    .st-key-q3_sources_panel [data-testid="stExpander"] summary *,
+    .st-key-q3_sources_panel [data-testid="stExpander"] summary svg {
+        color: #1A3B5C !important;
+        fill: currentColor !important;
+        font-weight: 700 !important;
+    }
+    .st-key-q3_sources_panel [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+        background: #FFFFFF !important;
+        color: #1A3B5C !important;
+    }
+    @media (max-width: 768px) {
+        .st-key-q3_sources_panel {margin-top: 12px !important;}
     }
     </style>
-    """,
-    unsafe_allow_html=True,
-)
-for col, label, title, desc in zip(st.columns(3), labels, titles, descriptions):
-    with col:
-        value = sums.get(label, 0)
-        st.metric(title, fmt_pct(pct(value, total)), help=f"{fmt_num(value)} exames. {desc}")
-        st.markdown(
-            f'<p class="q3-kpi-detail"><strong>{fmt_num(value)} exames</strong>'
-            f' · {desc}</p>',
-            unsafe_allow_html=True,
-        )
+    """, unsafe_allow_html=True)
+    sidebar_filters()
+    page_header(
+        "Faixa etária · Q3",
+        "Faixa etária e produção de exames",
+        "Apresenta a distribuição dos exames por faixa etária, as diferenças entre municípios e a evolução da produção, incluindo indicadores que relacionam o volume de exames à população feminina de 25 a 64 anos.",
+    )
 
-agg = groups.groupby(["municipio", "grupo"], as_index=False)["quantidade_exames"].sum()
-total_city = agg.groupby("municipio")["quantidade_exames"].transform("sum")
-agg["percentual"] = safe_percent(agg["quantidade_exames"], total_city)
-a, b = st.columns([2, 3], gap="medium")
+    with st.container(key="q3_sources_panel"):
+        with st.expander("ℹ️ Fontes e critérios de cálculo", expanded=False):
+            st.markdown(
+                "**Exames citopatológicos:** SISCAN/DATASUS. "
+                "**População feminina de 25 a 64 anos:** Censo Demográfico IBGE 2022, "
+                "utilizado como denominador fixo em todos os anos por ser o censo "
+                "mais recente.\n\n"
+                "**Referência técnica:** indicador 1.5 do IDSS/ANS (ano-base 2023). "
+                "O parâmetro de 33 exames por 100 mulheres/ano foi adaptado à "
+                "produção municipal do SISCAN, sem desduplicação das pacientes. "
+                "Portanto, a medida apresentada não corresponde à taxa oficial "
+                "de beneficiárias da ANS."
+            )
 
-st.markdown("""
-<style>
-.st-key-age_donut_card {
-  min-height:670px;
-  box-sizing:border-box;
-  background:#fff;
-  border:1px solid #dce4eb;
-  border-radius:14px;
-  padding:16px 18px 22px;
-  box-shadow:0 2px 8px rgba(26,59,92,.04);
-}
-.st-key-age_donut_card [data-testid="stPlotlyChart"] {
-  border:0!important;box-shadow:none!important;padding:0!important;
-  background:transparent!important;
-}
-.st-key-age_donut_card .age-legend {padding:0 4px 4px;}
-.st-key-age_bar_card {margin-top:0;min-height:670px;box-sizing:border-box;background:#fff;border:1px solid #dce4eb;border-radius:14px;padding:16px 18px 22px;box-shadow:0 2px 8px rgba(26,59,92,.04);}
-.st-key-age_bar_card [data-testid="stPlotlyChart"] {border:0!important;box-shadow:none!important;padding:0!important;background:transparent!important;}
-@media(max-width:900px) {
-  .st-key-age_donut_card,.st-key-age_bar_card {min-height:0!important;padding:14px!important;}
-  .st-key-age_bar_card {margin-top:0!important;}
-  .age-legend-row {font-size:.8rem!important;}
-}
-</style>
-""", unsafe_allow_html=True)
-with a:
+    st.markdown("""
+    <style>
+    div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff;}
+    </style>
+    """, unsafe_allow_html=True)
+
+
+def renderizar_indicadores(sums: pd.Series, total: float) -> None:
+    """Exibe a distribuição regional e as quantidades dos três grupos."""
+    st.markdown(
+        '<h2 class="q3-section-title"><span class="q3-section-index">01</span>'
+        'Perfil etário dos exames</h2>', unsafe_allow_html=True,
+    )
+
+    labels = GRUPOS_ETARIOS
+    titles = ["Menores de 25 anos", "População-alvo (25–64 anos)", "65 anos ou mais"]
+    descriptions = [
+        "Abaixo da faixa-alvo",
+        "Na faixa-alvo",
+        "Acima da faixa-alvo",
+    ]
+    st.markdown(
+        """
+        <style>
+        .q3-kpi-detail {
+            color:#1A3B5C; font:500 16px/1.5 Manrope,Arial,sans-serif;
+            margin:8px 0 16px; overflow-wrap:anywhere;
+        }
+        .q3-kpi-detail strong {
+            font-weight:800; color:#143650;
+        }
+        @media(max-width:768px) {
+            .q3-kpi-detail {font-size:15px;line-height:1.45;}
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    for col, label, title, desc in zip(st.columns(3), labels, titles, descriptions):
+        with col:
+            value = sums.get(label, 0)
+            st.metric(title, fmt_pct(pct(value, total)), help=f"{fmt_num(value)} exames. {desc}")
+            st.markdown(
+                f'<p class="q3-kpi-detail"><strong>{fmt_num(value)} exames</strong>'
+                f' · {desc}</p>',
+                unsafe_allow_html=True,
+            )
+
+
+def renderizar_rosca(sums: pd.Series, total: float) -> None:
+    """Exibe a rosca regional e uma versão independente para exportação."""
     with st.container(border=True, key="age_donut_card"):
-        # Rosca e legenda conforme referência visual; valores são calculados da Gold.
-        donut_order = ["<25 anos", "25–64 anos", "≥65 anos"]
-        donut_colors = {"<25 anos": SKY, "25–64 anos": OCEAN, "≥65 anos": ORANGE}
+        donut_order = list(GRUPOS_ETARIOS)
+        donut_colors = CORES_GRUPOS
         donut_values = [float(sums.get(group, 0)) for group in donut_order]
-        target_percent = pct(sums.get("25–64 anos", 0), total)
+        target_percent = pct(sums.get(GRUPO_ALVO, 0), total)
         fig = px.pie(
             names=donut_order,
             values=donut_values,
@@ -285,9 +364,7 @@ with a:
         )
         st.markdown('<div style="font-size:1.12rem;color:#1A3B5C;font-weight:700">Distribuição dos exames</div>'
                     '<div style="color:#7C8FA0;font-size:.77rem">Por grupo etário</div>', unsafe_allow_html=True)
-        # A legenda HTML fica fora do Plotly e não é capturada no PNG.
-        # Criamos uma cópia exclusiva para exportação com legenda incorporada.
-        import copy
+        # A legenda HTML não faz parte do PNG; a cópia incorpora a legenda.
         styled_donut = style_chart(fig, height=320)
         export_donut = copy.deepcopy(styled_donut)
         export_donut.update_traces(
@@ -350,7 +427,10 @@ with a:
             + '<div class="age-legend">' + "".join(legend_rows) + '</div>',
             unsafe_allow_html=True,
         )
-with b:
+
+
+def renderizar_composicao_municipal(agg: pd.DataFrame) -> None:
+    """Exibe barras empilhadas e ordenação pela participação da faixa-alvo."""
     with st.container(border=True, key="age_bar_card"):
         st.markdown(
             '<div style="font-size:1.12rem;color:#1A3B5C;font-weight:700">'
@@ -358,8 +438,7 @@ with b:
             '<div style="color:#7C8FA0;font-size:.77rem">Percentual (%)</div>',
             unsafe_allow_html=True,
         )
-        # Barras horizontais empilhadas 100%, alinhadas à referência visual.
-        bar_order = ["<25 anos", "25–64 anos", "≥65 anos"]
+        bar_order = list(GRUPOS_ETARIOS)
         st.markdown("""
         <style>
         .st-key-sort_composicao_etaria [data-testid="stSelectbox"] label p {
@@ -388,7 +467,7 @@ with b:
         cities_order = sorted(agg["municipio"].dropna().unique(), key=normalize)
         if sort_mode == "Maior para menor":
             target_shares = (
-                agg.loc[agg["grupo"].eq("25–64 anos")]
+                agg.loc[agg["grupo"].eq(GRUPO_ALVO)]
                 .set_index("municipio")["percentual"]
             )
             cities_order.sort(
@@ -403,7 +482,7 @@ with b:
             agg, x="percentual", y="municipio", color="grupo",
             orientation="h", barmode="stack",
             category_orders={"grupo": bar_order, "municipio": cities_order},
-            color_discrete_map=donut_colors,
+            color_discrete_map=CORES_GRUPOS,
             labels={"municipio": "", "percentual": "Participação (%)", "grupo": "Faixa etária"},
         )
         fig.update_traces(
@@ -412,8 +491,7 @@ with b:
         fig.update_xaxes(range=[0, 103], tickmode="array", tickvals=[0, 25, 50, 75, 100],
                          ticktext=["0%", "25%", "50%", "75%", "100%"],
                          showgrid=True, gridcolor="#e9edf1", title=None)
-        # Plotly Express já organiza as categorias horizontais de cima para baixo.
-        # Inverter novamente o eixo fazia A–Z e Maior para menor aparecerem ao contrário.
+        # A ordem horizontal do Plotly Express já corresponde ao seletor.
         fig.update_yaxes(title=None, automargin=True,
                          tickfont=dict(size=12, color="#405a70"))
         fig.update_layout(
@@ -423,16 +501,13 @@ with b:
                         font=dict(size=12)),
             bargap=0.12,
         )
-        # Exportação específica: rótulos centralizados nas barras com contraste
-        # adaptado à cor de cada grupo. O gráfico interativo permanece intacto.
-        import copy
         chart_height = max(480, 40 * len(cities_order) + 90)
         styled_fig = style_chart(fig, height=chart_height)
         export_fig = copy.deepcopy(styled_fig)
         text_colors = {
-            "25–64 anos": "#FFFFFF",  # branco sobre azul oceano
-            "<25 anos": "#143650",    # azul-marinho sobre azul-claro
-            "≥65 anos": "#FFFFFF",    # branco sobre laranja
+            "25–64 anos": "#FFFFFF",
+            "<25 anos": "#143650",
+            "≥65 anos": "#FFFFFF",
         }
         for trace in export_fig.data:
             trace.update(
@@ -464,589 +539,620 @@ with b:
             export_fig=export_fig,
         )
 
-st.markdown(
-    "Os gráficos mostram **a distribuição dos exames por faixa etária** no "
-    "recorte selecionado e como essa composição varia entre os municípios."
-)
-with st.expander("ℹ️ Como interpretar os gráficos de distribuição etária", expanded=False):
+
+def renderizar_perfil_etario(groups: pd.DataFrame) -> None:
+    """Coordena indicadores, gráficos e detalhamento da composição etária."""
     st.markdown(
-        "**Gráfico de rosca:** mostra a participação de cada grupo no total "
-        "de exames selecionados; o centro destaca a faixa-alvo de 25 a 64 anos. "
-        "**Barras por município:** cada barra representa 100% dos exames "
-        "daquele município, divididos entre as três faixas etárias. "
-        "Compare os percentuais, não somente as quantidades absolutas. "
-        "Os dados representam registros de exames, e não mulheres distintas."
+        """
+        <style>
+        .q3-section-title {
+          margin:30px 0 17px;padding:9px 0 12px;
+          border-bottom:2px solid #D8E5EF;
+          font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
+          color:#1A3B5C;
+        }
+        .q3-section-title .q3-section-index {color:#006C9A;margin-right:10px;}
+        </style>
+        """,
+        unsafe_allow_html=True,
     )
+    sums = groups.groupby("grupo")["quantidade_exames"].sum()
+    total = sums.sum()
+    renderizar_indicadores(sums, total)
+    agg = agregar_perfil_municipal(groups)
+    a, b = st.columns([2, 3], gap="medium")
 
-with st.expander("Ver tabela detalhada de exames por município e faixa etária"):
-    export_table(agg, "siscan_faixa_etaria.csv")
+    st.markdown("""
+    <style>
+    .st-key-age_donut_card {
+      min-height:670px;
+      box-sizing:border-box;
+      background:#fff;
+      border:1px solid #dce4eb;
+      border-radius:14px;
+      padding:16px 18px 22px;
+      box-shadow:0 2px 8px rgba(26,59,92,.04);
+    }
+    .st-key-age_donut_card [data-testid="stPlotlyChart"] {
+      border:0!important;box-shadow:none!important;padding:0!important;
+      background:transparent!important;
+    }
+    .st-key-age_donut_card .age-legend {padding:0 4px 4px;}
+    .st-key-age_bar_card {margin-top:0;min-height:670px;box-sizing:border-box;background:#fff;border:1px solid #dce4eb;border-radius:14px;padding:16px 18px 22px;box-shadow:0 2px 8px rgba(26,59,92,.04);}
+    .st-key-age_bar_card [data-testid="stPlotlyChart"] {border:0!important;box-shadow:none!important;padding:0!important;background:transparent!important;}
+    @media(max-width:900px) {
+      .st-key-age_donut_card,.st-key-age_bar_card {min-height:0!important;padding:14px!important;}
+      .st-key-age_bar_card {margin-top:0!important;}
+      .age-legend-row {font-size:.8rem!important;}
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    with a:
+        renderizar_rosca(sums, total)
+    with b:
+        renderizar_composicao_municipal(agg)
 
-# ---------------------------------------------------------------------------
-# Razão anual de exames (Q3): exames registrados 25–64 / população feminina IBGE 2022 × 100.
-# Indicador de produção relativa à população, sem meta ou classificação.
-# ---------------------------------------------------------------------------
-import copy
-
-st.markdown(
-    '<h2 class="q3-section-title"><span class="q3-section-index">02</span>'
-    'Evolução da produção</h2>', unsafe_allow_html=True,
-)
-st.markdown("### Quantidade anual de exames na população-alvo (25–64 anos)")
-st.markdown(
-    "Apresenta a **evolução anual dos exames registrados em mulheres de "
-    "25 a 64 anos** em cada município do período selecionado."
-)
-with st.expander("ℹ️ Como interpretar a evolução anual na população-alvo", expanded=False):
     st.markdown(
-        "Cada painel corresponde a um município. No eixo horizontal estão "
-        "os **anos** e, no vertical, o **número de exames registrados na faixa "
-        "de 25 a 64 anos**. Linhas ascendentes indicam aumento de registros; "
-        "descendentes, redução. A quantidade de exames não equivale ao "
-        "número de mulheres distintas rastreadas. A tabela seguinte relaciona "
-        "essa produção à população feminina do Censo IBGE 2022."
+        "Os gráficos mostram **a distribuição dos exames por faixa etária** no "
+        "recorte selecionado e como essa composição varia entre os municípios."
     )
+    with st.expander("ℹ️ Como interpretar os gráficos de distribuição etária", expanded=False):
+        st.markdown(
+            "**Gráfico de rosca:** mostra a participação de cada grupo no total "
+            "de exames selecionados; o centro destaca a faixa-alvo de 25 a 64 anos. "
+            "**Barras por município:** cada barra representa 100% dos exames "
+            "daquele município, divididos entre as três faixas etárias. "
+            "Compare os percentuais, não somente as quantidades absolutas. "
+            "Os dados representam registros de exames, e não mulheres distintas."
+        )
 
-# Compatibilidade com instâncias do Streamlit que mantenham em memória
-# uma versão anterior do data_loader.TABLES, sem a chave "cobertura".
-# A tabela já existe na Gold (11 municípios × 6 anos).
-from utils import data_loader as gold_loader
-gold_loader.TABLES.setdefault("cobertura", "fato_evolucao_cobertura_municipios")
+    with st.expander("Ver tabela detalhada de exames por município e faixa etária"):
+        export_table(agg, "siscan_faixa_etaria.csv")
 
-try:
-    df_cob = gold_loader.filtered("cobertura")
-except ValueError:
-    st.error(
-        "Não foi possível carregar o indicador de razão anual de exames. "
-        "Atualize a aplicação para sincronizar o catálogo de tabelas Gold."
+
+def carregar_razao_anual() -> pd.DataFrame:
+    """Carrega a Gold da razão anual e valida seu contrato de dados."""
+    # Mantém compatibilidade com versões anteriores do catálogo no Streamlit.
+    gold_loader.TABLES.setdefault("cobertura", "fato_evolucao_cobertura_municipios")
+    try:
+        df_cob = gold_loader.filtered("cobertura")
+    except ValueError:
+        st.error(
+            "Não foi possível carregar o indicador de razão anual de exames. "
+            "Atualize a aplicação para sincronizar o catálogo de tabelas Gold."
+        )
+        return pd.DataFrame()
+
+    if not require(df_cob, COLUNAS_RAZAO):
+        return pd.DataFrame()
+    cob = preparar_razao_anual(df_cob)
+    if cob.empty:
+        st.info("Não há registros para calcular a razão anual nos filtros selecionados.")
+    return cob
+
+
+def renderizar_cabecalho_evolucao() -> None:
+    """Apresenta a seção de evolução anual e a interpretação do indicador."""
+    st.markdown(
+        '<h2 class="q3-section-title"><span class="q3-section-index">02</span>'
+        'Evolução da produção</h2>', unsafe_allow_html=True,
     )
-    st.stop()
-
-if not require(df_cob, ["municipio", "ano", "total_exames_25_64",
-                        "mulheres_25_64_anos"]):
-    st.stop()
-
-cob = df_cob.copy()
-for coluna in ("ano", "total_exames_25_64", "mulheres_25_64_anos"):
-    cob[coluna] = pd.to_numeric(cob[coluna], errors="coerce")
-cob = cob.dropna(
-    subset=["municipio", "ano", "total_exames_25_64", "mulheres_25_64_anos"]
-)
-cob = cob.loc[cob["mulheres_25_64_anos"] > 0].copy()
-# A razão é obtida diretamente da fórmula solicitada (não da classificação Gold).
-cob["razao_anual_exames_pct"] = (
-    cob["total_exames_25_64"] / cob["mulheres_25_64_anos"] * 100
-).round(2)
-cob["ano"] = cob["ano"].astype(int)
-if cob.empty:
-    st.info("Não há registros para calcular a razão anual nos filtros selecionados.")
-    st.stop()
-
-# Plotly conecta pontos na ordem das linhas do DataFrame, não os ordena
-# automaticamente pelo category_orders. Ordenar antes do px.line elimina
-# os segmentos que voltavam de 2023 para 2021, por exemplo.
-cob = cob.sort_values(["municipio", "ano"], kind="stable").reset_index(drop=True)
-cob["ano_label"] = cob["ano"].astype(str)
-municipios_cob = sorted(cob["municipio"].dropna().unique(), key=normalize)
-anos_cob = sorted(cob["ano"].unique().tolist())
-
-ordenar_quantidade_25_64 = st.selectbox(
-    "Ordenar por",
-    options=["A–Z", "Maior para menor"],
-    index=0,
-    key="ordenacao_quantidade_anual_25_64",
-    help=(
-        "Maior para menor ordena os municípios pelo total de exames "
-        "registrados entre 25 e 64 anos nos anos selecionados."
-    ),
-)
-if ordenar_quantidade_25_64 == "Maior para menor":
-    totais_cob = cob.groupby("municipio")["total_exames_25_64"].sum()
-    municipios_cob.sort(
-        key=lambda municipio: (-float(totais_cob.loc[municipio]), normalize(municipio))
+    st.markdown("### Quantidade anual de exames na população-alvo (25–64 anos)")
+    st.markdown(
+        "Apresenta a **evolução anual dos exames registrados em mulheres de "
+        "25 a 64 anos** em cada município do período selecionado."
     )
+    with st.expander("ℹ️ Como interpretar a evolução anual na população-alvo", expanded=False):
+        st.markdown(
+            "Cada painel corresponde a um município. No eixo horizontal estão "
+            "os **anos** e, no vertical, o **número de exames registrados na faixa "
+            "de 25 a 64 anos**. Linhas ascendentes indicam aumento de registros; "
+            "descendentes, redução. A quantidade de exames não equivale ao "
+            "número de mulheres distintas rastreadas. A tabela seguinte relaciona "
+            "essa produção à população feminina do Censo IBGE 2022."
+        )
 
-fig_cob = px.line(
-    cob,
-    x="ano_label",
-    y="total_exames_25_64",
-    facet_col="municipio",
-    facet_col_wrap=3,
-    facet_col_spacing=0.055,
-    facet_row_spacing=0.09,
-    category_orders={
-        "municipio": municipios_cob,
-        "ano_label": [str(ano) for ano in anos_cob],
-    },
-    markers=True,
-    color_discrete_sequence=[OCEAN],
-    labels={
-        "ano_label": "Anos",
-        "total_exames_25_64": "Exames registrados (quantidade)",
-        "municipio": "Município",
-    },
-)
-fig_cob.for_each_annotation(
-    lambda annotation: annotation.update(
-        text=annotation.text.split("=", 1)[-1],
+
+def renderizar_evolucao_anual(cob: pd.DataFrame) -> None:
+    """Exibe facetas de produção anual por município e exportação PNG."""
+    municipios_cob = sorted(cob["municipio"].dropna().unique(), key=normalize)
+    anos_cob = sorted(cob["ano"].unique().tolist())
+
+    ordenar_quantidade_25_64 = st.selectbox(
+        "Ordenar por",
+        options=["A–Z", "Maior para menor"],
+        index=0,
+        key="ordenacao_quantidade_anual_25_64",
+        help=(
+            "Maior para menor ordena os municípios pelo total de exames "
+            "registrados entre 25 e 64 anos nos anos selecionados."
+        ),
+    )
+    if ordenar_quantidade_25_64 == "Maior para menor":
+        totais_cob = cob.groupby("municipio")["total_exames_25_64"].sum()
+        municipios_cob.sort(
+            key=lambda municipio: (-float(totais_cob.loc[municipio]), normalize(municipio))
+        )
+
+    fig_cob = px.line(
+        cob,
+        x="ano_label",
+        y="total_exames_25_64",
+        facet_col="municipio",
+        facet_col_wrap=3,
+        facet_col_spacing=0.055,
+        facet_row_spacing=0.09,
+        category_orders={
+            "municipio": municipios_cob,
+            "ano_label": [str(ano) for ano in anos_cob],
+        },
+        markers=True,
+        color_discrete_sequence=[OCEAN],
+        labels={
+            "ano_label": "Anos",
+            "total_exames_25_64": "Exames registrados (quantidade)",
+            "municipio": "Município",
+        },
+    )
+    fig_cob.for_each_annotation(
+        lambda annotation: annotation.update(
+            text=annotation.text.split("=", 1)[-1],
+            font=dict(size=13, color=NAVY),
+        )
+    )
+    fig_cob.update_traces(
+        line=dict(width=2.7),
+        marker=dict(size=7),
+        mode="lines+markers",
+        connectgaps=False,
+        hovertemplate=(
+            "Ano: %{x}<br>Exames registrados: %{y:,.0f}<extra></extra>"
+        ),
+    )
+    fig_cob.update_xaxes(
+        matches=None,
+        type="category",
+        categoryorder="array",
+        categoryarray=[str(ano) for ano in anos_cob],
+        showticklabels=True,
+        title_text=None,
+    )
+    fig_cob.update_yaxes(
+        matches=None, showticklabels=True, title_text=None,
+        rangemode="tozero", ticksuffix="", tickformat=",.0f",
+        gridcolor="#E9EDF1", zeroline=False,
+    )
+    fig_cob.add_annotation(
+        x=-0.065, y=0.5, xref="paper", yref="paper",
+        text="Exames registrados", textangle=-90, showarrow=False,
         font=dict(size=13, color=NAVY),
     )
-)
-fig_cob.update_traces(
-    line=dict(width=2.7),
-    marker=dict(size=7),
-    mode="lines+markers",
-    connectgaps=False,
-    hovertemplate=(
-        "Ano: %{x}<br>Exames registrados: %{y:,.0f}<extra></extra>"
-    ),
-)
-fig_cob.update_xaxes(
-    matches=None,
-    type="category",
-    categoryorder="array",
-    categoryarray=[str(ano) for ano in anos_cob],
-    showticklabels=True,
-    title_text=None,
-)
-fig_cob.update_yaxes(
-    matches=None, showticklabels=True, title_text=None,
-    rangemode="tozero", ticksuffix="", tickformat=",.0f",
-    gridcolor="#E9EDF1", zeroline=False,
-)
-fig_cob.add_annotation(
-    x=-0.065, y=0.5, xref="paper", yref="paper",
-    text="Exames registrados", textangle=-90, showarrow=False,
-    font=dict(size=13, color=NAVY),
-)
-fig_cob.add_annotation(
-    x=0.5, y=-0.075, xref="paper", yref="paper",
-    text="Anos", showarrow=False,
-    xanchor="center", yanchor="top",
-    font=dict(size=13, color=NAVY),
-)
-qtd_linhas_cob = (len(municipios_cob) + 2) // 3
-fig_cob.update_layout(
-    height=max(520, 330 * qtd_linhas_cob),
-    showlegend=False,
-    margin=dict(l=100, r=25, t=65, b=140),
-    paper_bgcolor="#FFFFFF",
-    plot_bgcolor="#FFFFFF",
-    font=dict(color=NAVY, size=11),
-)
-export_cob = copy.deepcopy(fig_cob)
-export_cob.update_traces(
-    mode="lines+markers+text",
-    texttemplate="%{y:,.0f}",
-    textposition="top center",
-    textfont=dict(size=13, color=NAVY),
-    cliponaxis=False,
-)
-export_cob.update_yaxes(automargin=True)
-export_cob.update_layout(
-    title=dict(
-        text="Quantidade anual de exames na população-alvo (25–64 anos)",
-        x=0.5, xanchor="center",
-        font=dict(size=24, color=NAVY),
-    ),
-    width=1650,
-    height=max(850, 430 * qtd_linhas_cob),
-    margin=dict(l=115, r=65, t=135, b=170),
-)
-chart_with_right_click_download(
-    fig_cob,
-    filename="faixa_etaria_quantidade_anual_exames_25_64_municipios.png",
-    height=fig_cob.layout.height,
-    min_chart_width=820,
-    export_fig=export_cob,
-)
-
-# Tabela município × ano da razão calculada diretamente pela fórmula.
-st.markdown("#### Razão anual de exames por município e ano (%)")
-st.markdown(
-    "Compara, por município e ano, a **quantidade de exames na população-alvo "
-    "em relação à população feminina de 25 a 64 anos** (IBGE 2022)."
-)
-with st.expander("ℹ️ O que significa a razão anual de exames?", expanded=False):
-    st.markdown(
-        "**Razão anual (%) = exames registrados em mulheres de 25 a 64 anos "
-        "÷ população feminina dessa faixa etária (Censo IBGE 2022) × 100.** "
-        "O denominador populacional é fixo para todos os anos. "
-        "A razão serve para comparar produção relativa à população, "
-        "**não representa a porcentagem de mulheres distintas rastreadas**."
+    fig_cob.add_annotation(
+        x=0.5, y=-0.075, xref="paper", yref="paper",
+        text="Anos", showarrow=False,
+        xanchor="center", yanchor="top",
+        font=dict(size=13, color=NAVY),
     )
-ordenar_tabela_razao = st.selectbox(
-    "Ordenar por",
-    options=["A–Z", "Maior média", "Menor média"],
-    index=0,
-    key="ordenacao_tabela_razao_anual_q3",
-    help="A média dos percentuais anuais considera apenas os anos selecionados.",
-)
-pivo_cob = cob.pivot_table(
-    index="municipio",
-    columns="ano",
-    values="razao_anual_exames_pct",
-    aggfunc="mean",
-)
-medias_razao = pivo_cob.mean(axis=1, skipna=True)
-if ordenar_tabela_razao == "Maior média":
-    ordem_tabela_razao = sorted(
-        pivo_cob.index,
-        key=lambda municipio: (
-            -float(medias_razao.loc[municipio])
-            if pd.notna(medias_razao.loc[municipio]) else float("inf"),
-            normalize(municipio),
+    qtd_linhas_cob = (len(municipios_cob) + 2) // 3
+    fig_cob.update_layout(
+        height=max(520, 330 * qtd_linhas_cob),
+        showlegend=False,
+        margin=dict(l=100, r=25, t=65, b=140),
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        font=dict(color=NAVY, size=11),
+    )
+    export_cob = copy.deepcopy(fig_cob)
+    export_cob.update_traces(
+        mode="lines+markers+text",
+        texttemplate="%{y:,.0f}",
+        textposition="top center",
+        textfont=dict(size=13, color=NAVY),
+        cliponaxis=False,
+    )
+    export_cob.update_yaxes(automargin=True)
+    export_cob.update_layout(
+        title=dict(
+            text="Quantidade anual de exames na população-alvo (25–64 anos)",
+            x=0.5, xanchor="center",
+            font=dict(size=24, color=NAVY),
         ),
+        width=1650,
+        height=max(850, 430 * qtd_linhas_cob),
+        margin=dict(l=115, r=65, t=135, b=170),
     )
-elif ordenar_tabela_razao == "Menor média":
-    ordem_tabela_razao = sorted(
-        pivo_cob.index,
-        key=lambda municipio: (
-            float(medias_razao.loc[municipio])
-            if pd.notna(medias_razao.loc[municipio]) else float("inf"),
-            normalize(municipio),
-        ),
+    chart_with_right_click_download(
+        fig_cob,
+        filename="faixa_etaria_quantidade_anual_exames_25_64_municipios.png",
+        height=fig_cob.layout.height,
+        min_chart_width=820,
+        export_fig=export_cob,
     )
-else:
-    ordem_tabela_razao = sorted(pivo_cob.index, key=normalize)
-pivo_cob = pivo_cob.reindex(ordem_tabela_razao)
-pivo_cob.columns = [str(coluna) for coluna in pivo_cob.columns]
 
-# Razão agregada por ano: Σ exames / Σ população (não média dos percentuais).
-# Deduplicar primeiro o denominador em município × ano.
-base_regional = (
-    cob.groupby(["municipio", "ano"], as_index=False)
-    .agg(
-        exames=("total_exames_25_64", "sum"),
-        populacao=("mulheres_25_64_anos", "max"),
-    )
-)
-totais_anuais = base_regional.groupby("ano").agg(
-    exames=("exames", "sum"),
-    populacao=("populacao", "sum"),
-)
-razao_regional = (
-    totais_anuais["exames"] / totais_anuais["populacao"] * 100
-).round(2)
-nome_linha_regional = (
-    "Razão regional — 10ª CRS"
-    if cob["municipio"].nunique() == 11
-    else "Razão agregada — municípios selecionados"
-)
-tabela_cob = pivo_cob.reset_index().rename(columns={"municipio": "Município"})
-linha_regional_csv = {"Município": nome_linha_regional}
-linha_regional_csv.update({
-    coluna: razao_regional.get(int(coluna), float("nan"))
-    for coluna in pivo_cob.columns
-})
-tabela_cob_exportacao = pd.concat(
-    [tabela_cob, pd.DataFrame([linha_regional_csv])],
-    ignore_index=True,
-)
 
-def cor_heatmap_razao(valor):
+def cor_heatmap_razao(valor: float) -> tuple[str, str]:
+    """Retorna as cores exploratórias de fundo e texto da razão anual."""
     if pd.isna(valor):
         return "#F1F5F9", "#64748B"
-    if valor <= 3:
+    if valor <= LIMIAR_INFERIOR_PCT:
         return "#FDE8E4", "#A83A20"
-    if valor >= 33:
+    if valor >= LIMIAR_SUPERIOR_PCT:
         return "#D8F2E4", "#126B46"
-    # Gradiente azul discreto: de #F0F7FB a #9AC5DC.
-    v = (float(valor) - 3.0) / 30.0
+    v = (float(valor) - LIMIAR_INFERIOR_PCT) / (LIMIAR_SUPERIOR_PCT - LIMIAR_INFERIOR_PCT)
     inicio, fim = (240, 247, 251), (154, 197, 220)
     rgb = tuple(round(i + (j - i) * v) for i, j in zip(inicio, fim))
     return "#{:02X}{:02X}{:02X}".format(*rgb), "#173A56"
 
-cabecalho_heatmap = "<th scope='col'>Município</th>" + "".join(
-    f"<th scope='col'>{escape(str(ano))}</th>" for ano in pivo_cob.columns
-)
-linhas_heatmap = []
-for municipio, valores in pivo_cob.iterrows():
-    celulas = []
-    for valor in valores:
-        fundo, texto = cor_heatmap_razao(valor)
-        rotulo = f"{float(valor):.2f}%" if pd.notna(valor) else "—"
-        celulas.append(
-            f'<td style="background-color:{fundo};color:{texto}" '
-            f'aria-label="{escape(rotulo)}">{escape(rotulo)}</td>'
+
+def construir_heatmap_razao(
+    pivo_cob: pd.DataFrame, linha_regional_csv: dict[str, object], nome_linha_regional: str
+) -> str:
+    """Gera a tabela acessível, escapando os rótulos e mantendo o total anual."""
+    cabecalho_heatmap = "<th scope='col'>Município</th>" + "".join(
+        f"<th scope='col'>{escape(str(ano))}</th>" for ano in pivo_cob.columns
+    )
+    linhas_heatmap = []
+    for municipio, valores in pivo_cob.iterrows():
+        celulas = []
+        for valor in valores:
+            fundo, texto = cor_heatmap_razao(valor)
+            rotulo = f"{float(valor):.2f}%" if pd.notna(valor) else "—"
+            celulas.append(
+                f'<td style="background-color:{fundo};color:{texto}" '
+                f'aria-label="{escape(rotulo)}">{escape(rotulo)}</td>'
+            )
+        linhas_heatmap.append(
+            "<tr><th scope='row'>" + escape(str(municipio)) + "</th>"
+            + "".join(celulas) + "</tr>"
         )
-    linhas_heatmap.append(
-        "<tr><th scope='row'>" + escape(str(municipio)) + "</th>"
-        + "".join(celulas) + "</tr>"
+    celulas_regionais = []
+    for coluna in pivo_cob.columns:
+        valor_regional = linha_regional_csv[coluna]
+        rotulo = f"{valor_regional:.2f}%" if pd.notna(valor_regional) else "—"
+        celulas_regionais.append(f"<td>{escape(rotulo)}</td>")
+    rodape_heatmap = (
+        "<tr class='q3-razao-total'><th scope='row'>"
+        + escape(nome_linha_regional) + "</th>"
+        + "".join(celulas_regionais) + "</tr>"
     )
-# Rodapé da tabela: valor regional ponderado por população em cada ano.
-celulas_regionais = []
-for coluna in pivo_cob.columns:
-    valor_regional = linha_regional_csv[coluna]
-    rotulo = f"{valor_regional:.2f}%" if pd.notna(valor_regional) else "—"
-    celulas_regionais.append(f"<td>{escape(rotulo)}</td>")
-rodape_heatmap = (
-    "<tr class='q3-razao-total'><th scope='row'>"
-    + escape(nome_linha_regional) + "</th>"
-    + "".join(celulas_regionais) + "</tr>"
-)
-html_heatmap = (
-    '<div class="q3-razao-scroll" role="region" tabindex="0" '
-    'aria-label="Razão anual de exames por município e ano">'
-    '<table class="q3-razao-heatmap"><thead><tr>' + cabecalho_heatmap
-    + '</tr></thead><tbody>' + "".join(linhas_heatmap)
-    + '</tbody><tfoot>' + rodape_heatmap + '</tfoot></table></div>'
-)
-st.markdown(
-    """
-    <style>
-    .q3-razao-scroll {
-        width:100%; overflow-x:auto; border-radius:10px;
-        margin:12px 0 16px; box-shadow:0 2px 9px rgba(26,59,92,.12);
-    }
-    .q3-razao-heatmap {
-        width:100%; min-width:690px; border-collapse:collapse;
-        background:#fff; color:#1A3B5C;
-        font:500 15px Manrope,Arial,sans-serif;
-    }
-    .q3-razao-heatmap thead th {
-        background:#1A3B5C; color:#fff; text-align:center;
-        padding:14px 12px; font-weight:700;
-    }
-    .q3-razao-heatmap thead th:first-child {text-align:left;}
-    .q3-razao-heatmap tbody th {
-        background:#FFFFFF; color:#1A3B5C; text-align:left;
-        padding:12px 14px; white-space:nowrap; font-weight:650;
-        border-bottom:1px solid #E6EBF0;
-    }
-    .q3-razao-heatmap tbody td {
-        padding:12px; text-align:center; font-variant-numeric:tabular-nums;
-        font-weight:600; white-space:nowrap;
-        border-bottom:1px solid #E6EBF0;
-    }
-    .q3-razao-heatmap tbody tr:hover th {background:#F4F7FA;}
-    .q3-razao-heatmap tfoot th, .q3-razao-heatmap tfoot td {
-        background:#E8F0F6; color:#1A3B5C; font-weight:750;
-        padding:13px 12px; text-align:center;
-        border-top:2px solid #1A3B5C; white-space:nowrap;
-    }
-    .q3-razao-heatmap tfoot th {text-align:left;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-with st.expander("ℹ️ Como interpretar esta tabela (Razão Anual %)", expanded=False):
+    html_heatmap = (
+        '<div class="q3-razao-scroll" role="region" tabindex="0" '
+        'aria-label="Razão anual de exames por município e ano">'
+        '<table class="q3-razao-heatmap"><thead><tr>' + cabecalho_heatmap
+        + '</tr></thead><tbody>' + "".join(linhas_heatmap)
+        + '</tbody><tfoot>' + rodape_heatmap + '</tfoot></table></div>'
+    )
+    return html_heatmap
+
+
+def renderizar_tabela_razao(cob: pd.DataFrame, base: pd.DataFrame) -> None:
+    """Apresenta a matriz município × ano e a razão regional ponderada."""
+    st.markdown("#### Razão anual de exames por município e ano (%)")
     st.markdown(
-        "**O que mede:** em cada ano, compara a quantidade de exames "
-        "registrados em mulheres de 25–64 anos com a população feminina "
-        "dessa faixa etária no município (Censo IBGE 2022). "
-        "**Razão (%) = exames registrados ÷ população feminina de 25–64 anos × 100.**\n\n"
-        "**Como ler as cores do heatmap:**\n\n"
-        "- 🟠 **Faixa inferior (≤ 3,00%):** razão anual muito baixa no intervalo exploratório.\n"
-        "- 🔵 **Faixa intermediária (> 3,00% e < 33,00%):** gradiente azul; tons mais fortes indicam razões maiores.\n"
-        "- 🟢 **Faixa superior (≥ 33,00%):** razão igual ou superior ao limite visual de 33%.\n\n"
-        "**Comparação temporal:** compare as colunas para acompanhar como a razão "
-        "varia de um ano para outro. A linha regional usa a soma dos exames "
-        "dividida pela soma das populações, não a média simples dos municípios.\n\n"
-
+        "Compara, por município e ano, a **quantidade de exames na população-alvo "
+        "em relação à população feminina de 25 a 64 anos** (IBGE 2022)."
     )
-st.markdown(html_heatmap, unsafe_allow_html=True)
-st.download_button(
-    "⬇️ Exportar razão anual de exames (CSV)",
-    tabela_cob_exportacao.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
-    file_name="siscan_razao_anual_exames_municipio_ano.csv",
-    mime="text/csv",
-    key="exportar_razao_anual_municipio_ano",
-)
-
-# Tabela consolidada: volume anual observado × referência exploratória de 33%.
-# Usar a mesma Gold carregada para a razão anual, respeitando os filtros.
-st.markdown(
-    '<h2 class="q3-section-title"><span class="q3-section-index">03</span>'
-    'Comparação com a referência populacional</h2>', unsafe_allow_html=True,
-)
-st.markdown("#### Tabela consolidada de exames na população-alvo (25–64 anos)")
-st.markdown(
-    "Compara a **média anual de exames registrados** com uma referência "
-    "exploratória equivalente a **33% da população feminina de 25 a 64 anos** "
-    "em cada município."
-)
-with st.expander("ℹ️ Como interpretar a comparação populacional", expanded=False):
-    st.markdown(
-        "**População de referência:** mulheres de 25 a 64 anos no Censo IBGE 2022. "
-        "**Referência anual (33%):** população × 0,33. "
-        "**Média anual de exames:** média dos registros nos anos com dados selecionados. "
-        "**Diferença anual média:** média observada menos o volume de referência "
-        "(negativa quando abaixo; positiva quando acima). "
-        "**Atingimento (%):** média observada ÷ referência × 100; "
-        "100% indica igualdade entre os volumes. "
-        "O parâmetro de 33% é uma adaptação exploratória do indicador 1.5 "
-        "IDSS/ANS (ano-base 2023), não sua aplicação oficial e **não mede "
-        "cobertura de mulheres distintas**. A linha total soma os volumes "
-        "dos municípios selecionados."
+    with st.expander("ℹ️ O que significa a razão anual de exames?", expanded=False):
+        st.markdown(
+            "**Razão anual (%) = exames registrados em mulheres de 25 a 64 anos "
+            "÷ população feminina dessa faixa etária (Censo IBGE 2022) × 100.** "
+            "O denominador populacional é fixo para todos os anos. "
+            "A razão serve para comparar produção relativa à população, "
+            "**não representa a porcentagem de mulheres distintas rastreadas**."
+        )
+    ordenar_tabela_razao = st.selectbox(
+        "Ordenar por",
+        options=["A–Z", "Maior média", "Menor média"],
+        index=0,
+        key="ordenacao_tabela_razao_anual_q3",
+        help="A média dos percentuais anuais considera apenas os anos selecionados.",
     )
-
-# Consolidar primeiro por município e ano: não duplicar população ao somar exames.
-base_consolidada = (
-    cob.groupby(["municipio", "ano"], as_index=False)
-    .agg(
-        exames=("total_exames_25_64", "sum"),
-        populacao=("mulheres_25_64_anos", "max"),
+    pivo_cob = cob.pivot_table(
+        index="municipio",
+        columns="ano",
+        values="razao_anual_exames_pct",
+        aggfunc="mean",
     )
-)
-resumo_consolidado = (
-    base_consolidada.groupby("municipio", as_index=False)
-    .agg(
-        populacao=("populacao", "max"),
-        media_exames=("exames", "mean"),
-    )
-)
-resumo_consolidado["referencia_anual"] = resumo_consolidado["populacao"] * 0.33
-resumo_consolidado["diferenca_anual"] = (
-    resumo_consolidado["media_exames"] - resumo_consolidado["referencia_anual"]
-)
-resumo_consolidado["atingimento_pct"] = (
-    resumo_consolidado["media_exames"]
-    / resumo_consolidado["referencia_anual"].where(
-        resumo_consolidado["referencia_anual"].gt(0)
-    ) * 100
-)
-
-# A linha regional agrega as médias municipais e as populações da seleção.
-# Não calcular a média dos percentuais municipais.
-linha_total_consolidado = {
-    "municipio": (
-        "TOTAL 10ª CRS" if cob["municipio"].nunique() == 11
-        else "TOTAL MUNICÍPIOS SELECIONADOS"
-    ),
-    "populacao": resumo_consolidado["populacao"].sum(),
-    "referencia_anual": resumo_consolidado["referencia_anual"].sum(),
-    "media_exames": resumo_consolidado["media_exames"].sum(),
-    "diferenca_anual": resumo_consolidado["diferenca_anual"].sum(),
-}
-linha_total_consolidado["atingimento_pct"] = (
-    linha_total_consolidado["media_exames"]
-    / linha_total_consolidado["referencia_anual"] * 100
-    if linha_total_consolidado["referencia_anual"] > 0 else float("nan")
-)
-ordenar_tabela_consolidada = st.selectbox(
-    "Ordenar por",
-    options=[
-        "A–Z (município)",
-        "Maior para menor (média anual de exames)",
-        "Atingimento da referência (%) — decrescente",
-    ],
-    index=0,
-    key="ordenacao_tabela_consolidada_q3",
-    help=(
-        "A–Z ordena os municípios alfabeticamente; maior para menor considera "
-        "a média anual de exames; atingimento decrescente começa pelos maiores "
-        "percentuais. A linha TOTAL permanece ao final."
-    ),
-)
-if ordenar_tabela_consolidada == "Maior para menor (média anual de exames)":
-    resumo_consolidado = resumo_consolidado.sort_values(
-        ["media_exames", "municipio"],
-        ascending=[False, True],
-        kind="stable",
-    )
-elif ordenar_tabela_consolidada == "Atingimento da referência (%) — decrescente":
-    resumo_consolidado = resumo_consolidado.sort_values(
-        ["atingimento_pct", "municipio"],
-        ascending=[False, True],
-        na_position="last",
-        kind="stable",
-    )
-else:
-    resumo_consolidado = resumo_consolidado.sort_values(
-        "municipio", key=lambda nomes: nomes.map(normalize), kind="stable"
-    )
-resumo_consolidado = pd.concat(
-    [resumo_consolidado, pd.DataFrame([linha_total_consolidado])],
-    ignore_index=True,
-)
-colunas_consolidadas = {
-    "municipio": "Município",
-    "populacao": "População elegível (25–64 anos)",
-    "referencia_anual": "Referência anual (33% de exames/ano)",
-    "media_exames": "Média anual de exames executados",
-    "diferenca_anual": "Diferença anual média de exames",
-    "atingimento_pct": "Atingimento da referência (%)",
-}
-tabela_consolidada = resumo_consolidado[list(colunas_consolidadas)].rename(
-    columns=colunas_consolidadas
-)
-display_table(
-    tabela_consolidada,
-    integer_columns=[
-        "População elegível (25–64 anos)",
-        "Referência anual (33% de exames/ano)",
-        "Média anual de exames executados",
-        "Diferença anual média de exames",
-    ],
-    percent_columns=["Atingimento da referência (%)"],
-    large=True,
-    consolidated_style=True,
-)
-st.download_button(
-    "⬇️ Exportar tabela consolidada (CSV)",
-    data=tabela_consolidada.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
-    file_name="siscan_tabela_consolidada_exames_25_64.csv",
-    mime="text/csv",
-    key="exportar_tabela_consolidada_25_64",
-)
-# Nota analítica contextual, recalculada pelos filtros ativos.
-# Não atribuir a diferença a adesão, sub-registro ou fluxos assistenciais
-# sem evidência externa que confirme essas hipóteses.
-macambara_consolidado = resumo_consolidado.loc[
-    resumo_consolidado["municipio"].map(normalize).eq("macambara")
-]
-if not macambara_consolidado.empty:
-    caso_macambara = macambara_consolidado.iloc[0]
-    atingimento_macambara = float(caso_macambara["atingimento_pct"])
-    demais_municipios = resumo_consolidado.loc[
-        ~resumo_consolidado["municipio"].str.startswith("TOTAL")
-    ]
-    menor_atingimento = demais_municipios["atingimento_pct"].min()
-    if (
-        len(demais_municipios) > 1
-        and pd.notna(menor_atingimento)
-        and abs(atingimento_macambara - float(menor_atingimento)) < 0.005
-    ):
-        observacao_macambara = (
-            "Maçambará apresenta o menor atingimento da referência "
-            "entre os municípios selecionados."
+    medias_razao = pivo_cob.mean(axis=1, skipna=True)
+    if ordenar_tabela_razao == "Maior média":
+        ordem_tabela_razao = sorted(
+            pivo_cob.index,
+            key=lambda municipio: (
+                -float(medias_razao.loc[municipio])
+                if pd.notna(medias_razao.loc[municipio]) else float("inf"),
+                normalize(municipio),
+            ),
+        )
+    elif ordenar_tabela_razao == "Menor média":
+        ordem_tabela_razao = sorted(
+            pivo_cob.index,
+            key=lambda municipio: (
+                float(medias_razao.loc[municipio])
+                if pd.notna(medias_razao.loc[municipio]) else float("inf"),
+                normalize(municipio),
+            ),
         )
     else:
-        observacao_macambara = (
-            "O resultado de Maçambará deve ser interpretado à luz "
-            "das características locais."
-        )
-
-anos_selecionados_consolidado = sorted(base_consolidada["ano"].unique().tolist())
-with st.expander("ℹ️ Como interpretar a Capacidade Assistencial (Volume de Exames)", expanded=False):
-    st.markdown(
-        "**Referência anual (33%):** população feminina de 25–64 anos "
-        "× 0,33; adaptação municipal do parâmetro de 33 exames por 100 "
-        "beneficiárias/ano previsto no indicador 1.5 do IDSS/ANS (ano-base 2023). "
-        "Não equivale ao cálculo oficial da ANS nem à cobertura de mulheres.\n\n"
-        "**Média executada:** média de exames registrados por ano com dados no período filtrado.\n\n"
-        "**Diferença anual média:** média executada − referência anual. "
-        "Valores negativos indicam quantos exames por ano, em média, "
-        "ficaram abaixo do volume de referência; valores positivos indicam "
-        "quantos ficaram acima.\n\n"
-        "**Atingimento (%):** média executada ÷ referência anual × 100. "
-        "O total regional soma os volumes municipais e não é a média "
-        "simples dos percentuais.\n\n"
-        f"**Anos com dados:** {', '.join(map(str, anos_selecionados_consolidado))}. "
-        "Os valores são contagens de exames, não de mulheres distintas rastreadas."
+        ordem_tabela_razao = sorted(pivo_cob.index, key=normalize)
+    pivo_cob = pivo_cob.reindex(ordem_tabela_razao)
+    pivo_cob.columns = [str(coluna) for coluna in pivo_cob.columns]
+    razao_regional = calcular_razao_regional(base)
+    nome_linha_regional = (
+        "Razão regional — 10ª CRS"
+        if cob["municipio"].nunique() == 11
+        else "Razão agregada — municípios selecionados"
     )
-    if not macambara_consolidado.empty:
+    tabela_cob = pivo_cob.reset_index().rename(columns={"municipio": "Município"})
+    linha_regional_csv = {"Município": nome_linha_regional}
+    linha_regional_csv.update({
+        coluna: razao_regional.get(int(coluna), float("nan"))
+        for coluna in pivo_cob.columns
+    })
+    tabela_cob_exportacao = pd.concat(
+        [tabela_cob, pd.DataFrame([linha_regional_csv])],
+        ignore_index=True,
+    )
+
+    html_heatmap = construir_heatmap_razao(
+        pivo_cob, linha_regional_csv, nome_linha_regional
+    )
+    st.markdown(
+        """
+        <style>
+        .q3-razao-scroll {
+            width:100%; overflow-x:auto; border-radius:10px;
+            margin:12px 0 16px; box-shadow:0 2px 9px rgba(26,59,92,.12);
+        }
+        .q3-razao-heatmap {
+            width:100%; min-width:690px; border-collapse:collapse;
+            background:#fff; color:#1A3B5C;
+            font:500 15px Manrope,Arial,sans-serif;
+        }
+        .q3-razao-heatmap thead th {
+            background:#1A3B5C; color:#fff; text-align:center;
+            padding:14px 12px; font-weight:700;
+        }
+        .q3-razao-heatmap thead th:first-child {text-align:left;}
+        .q3-razao-heatmap tbody th {
+            background:#FFFFFF; color:#1A3B5C; text-align:left;
+            padding:12px 14px; white-space:nowrap; font-weight:650;
+            border-bottom:1px solid #E6EBF0;
+        }
+        .q3-razao-heatmap tbody td {
+            padding:12px; text-align:center; font-variant-numeric:tabular-nums;
+            font-weight:600; white-space:nowrap;
+            border-bottom:1px solid #E6EBF0;
+        }
+        .q3-razao-heatmap tbody tr:hover th {background:#F4F7FA;}
+        .q3-razao-heatmap tfoot th, .q3-razao-heatmap tfoot td {
+            background:#E8F0F6; color:#1A3B5C; font-weight:750;
+            padding:13px 12px; text-align:center;
+            border-top:2px solid #1A3B5C; white-space:nowrap;
+        }
+        .q3-razao-heatmap tfoot th {text-align:left;}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.expander("ℹ️ Como interpretar esta tabela (Razão Anual %)", expanded=False):
         st.markdown(
-            f"**Nota sobre Maçambará:** {observacao_macambara} "
-            "A diferença observada não comprova falha de registro, "
-            "baixa adesão nem encaminhamento para outro município. "
-            "Investigar essas possibilidades requer dados complementares "
-            "sobre registro, fluxo assistencial e acesso aos serviços."
+            "**O que mede:** em cada ano, compara a quantidade de exames "
+            "registrados em mulheres de 25–64 anos com a população feminina "
+            "dessa faixa etária no município (Censo IBGE 2022). "
+            "**Razão (%) = exames registrados ÷ população feminina de 25–64 anos × 100.**\n\n"
+            "**Como ler as cores do heatmap:**\n\n"
+            "- 🟠 **Faixa inferior (≤ 3,00%):** razão anual muito baixa no intervalo exploratório.\n"
+            "- 🔵 **Faixa intermediária (> 3,00% e < 33,00%):** gradiente azul; tons mais fortes indicam razões maiores.\n"
+            "- 🟢 **Faixa superior (≥ 33,00%):** razão igual ou superior ao limite visual de 33%.\n\n"
+            "**Comparação temporal:** compare as colunas para acompanhar como a razão "
+            "varia de um ano para outro. A linha regional usa a soma dos exames "
+            "dividida pela soma das populações, não a média simples dos municípios.\n\n"
+
+        )
+    st.markdown(html_heatmap, unsafe_allow_html=True)
+    st.download_button(
+        "⬇️ Exportar razão anual de exames (CSV)",
+        tabela_cob_exportacao.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
+        file_name="siscan_razao_anual_exames_municipio_ano.csv",
+        mime="text/csv",
+        key="exportar_razao_anual_municipio_ano",
+    )
+
+
+def renderizar_nota_consolidada(
+    resumo_consolidado: pd.DataFrame, base_consolidada: pd.DataFrame
+) -> None:
+    """Contextualiza os volumes sem atribuir causas aos resultados observados."""
+    macambara_consolidado = resumo_consolidado.loc[
+        resumo_consolidado["municipio"].map(normalize).eq("macambara")
+    ]
+    if not macambara_consolidado.empty:
+        caso_macambara = macambara_consolidado.iloc[0]
+        atingimento_macambara = float(caso_macambara["atingimento_pct"])
+        demais_municipios = resumo_consolidado.loc[
+            ~resumo_consolidado["municipio"].str.startswith("TOTAL")
+        ]
+        menor_atingimento = demais_municipios["atingimento_pct"].min()
+        if (
+            len(demais_municipios) > 1
+            and pd.notna(menor_atingimento)
+            and abs(atingimento_macambara - float(menor_atingimento)) < 0.005
+        ):
+            observacao_macambara = (
+                "Maçambará apresenta o menor atingimento da referência "
+                "entre os municípios selecionados."
+            )
+        else:
+            observacao_macambara = (
+                "O resultado de Maçambará deve ser interpretado à luz "
+                "das características locais."
+            )
+
+    anos_selecionados_consolidado = sorted(base_consolidada["ano"].unique().tolist())
+    with st.expander("ℹ️ Como interpretar a Capacidade Assistencial (Volume de Exames)", expanded=False):
+        st.markdown(
+            "**Referência anual (33%):** população feminina de 25–64 anos "
+            "× 0,33; adaptação municipal do parâmetro de 33 exames por 100 "
+            "beneficiárias/ano previsto no indicador 1.5 do IDSS/ANS (ano-base 2023). "
+            "Não equivale ao cálculo oficial da ANS nem à cobertura de mulheres.\n\n"
+            "**Média executada:** média de exames registrados por ano com dados no período filtrado.\n\n"
+            "**Diferença anual média:** média executada − referência anual. "
+            "Valores negativos indicam quantos exames por ano, em média, "
+            "ficaram abaixo do volume de referência; valores positivos indicam "
+            "quantos ficaram acima.\n\n"
+            "**Atingimento (%):** média executada ÷ referência anual × 100. "
+            "O total regional soma os volumes municipais e não é a média "
+            "simples dos percentuais.\n\n"
+            f"**Anos com dados:** {', '.join(map(str, anos_selecionados_consolidado))}. "
+            "Os valores são contagens de exames, não de mulheres distintas rastreadas."
+        )
+        if not macambara_consolidado.empty:
+            st.markdown(
+                f"**Nota sobre Maçambará:** {observacao_macambara} "
+                "A diferença observada não comprova falha de registro, "
+                "baixa adesão nem encaminhamento para outro município. "
+                "Investigar essas possibilidades requer dados complementares "
+                "sobre registro, fluxo assistencial e acesso aos serviços."
+            )
+
+
+def renderizar_tabela_consolidada(base_consolidada: pd.DataFrame) -> None:
+    """Exibe médias anuais, referência populacional, diferenças e total regional."""
+    st.markdown(
+        '<h2 class="q3-section-title"><span class="q3-section-index">03</span>'
+        'Comparação com a referência populacional</h2>', unsafe_allow_html=True,
+    )
+    st.markdown("#### Tabela consolidada de exames na população-alvo (25–64 anos)")
+    st.markdown(
+        "Compara a **média anual de exames registrados** com uma referência "
+        "exploratória equivalente a **33% da população feminina de 25 a 64 anos** "
+        "em cada município."
+    )
+    with st.expander("ℹ️ Como interpretar a comparação populacional", expanded=False):
+        st.markdown(
+            "**População de referência:** mulheres de 25 a 64 anos no Censo IBGE 2022. "
+            "**Referência anual (33%):** população × 0,33. "
+            "**Média anual de exames:** média dos registros nos anos com dados selecionados. "
+            "**Diferença anual média:** média observada menos o volume de referência "
+            "(negativa quando abaixo; positiva quando acima). "
+            "**Atingimento (%):** média observada ÷ referência × 100; "
+            "100% indica igualdade entre os volumes. "
+            "O parâmetro de 33% é uma adaptação exploratória do indicador 1.5 "
+            "IDSS/ANS (ano-base 2023), não sua aplicação oficial e **não mede "
+            "cobertura de mulheres distintas**. A linha total soma os volumes "
+            "dos municípios selecionados."
+        )
+    resumo_consolidado = calcular_resumo_consolidado(base_consolidada)
+    linha_total_consolidado = calcular_total_consolidado(resumo_consolidado)
+
+    ordenar_tabela_consolidada = st.selectbox(
+        "Ordenar por",
+        options=[
+            "A–Z (município)",
+            "Maior para menor (média anual de exames)",
+            "Atingimento da referência (%) — decrescente",
+        ],
+        index=0,
+        key="ordenacao_tabela_consolidada_q3",
+        help=(
+            "A–Z ordena os municípios alfabeticamente; maior para menor considera "
+            "a média anual de exames; atingimento decrescente começa pelos maiores "
+            "percentuais. A linha TOTAL permanece ao final."
+        ),
+    )
+    if ordenar_tabela_consolidada == "Maior para menor (média anual de exames)":
+        resumo_consolidado = resumo_consolidado.sort_values(
+            ["media_exames", "municipio"],
+            ascending=[False, True],
+            kind="stable",
+        )
+    elif ordenar_tabela_consolidada == "Atingimento da referência (%) — decrescente":
+        resumo_consolidado = resumo_consolidado.sort_values(
+            ["atingimento_pct", "municipio"],
+            ascending=[False, True],
+            na_position="last",
+            kind="stable",
+        )
+    else:
+        resumo_consolidado = resumo_consolidado.sort_values(
+            "municipio", key=lambda nomes: nomes.map(normalize), kind="stable"
+        )
+    resumo_consolidado = pd.concat(
+        [resumo_consolidado, pd.DataFrame([linha_total_consolidado])],
+        ignore_index=True,
+    )
+    colunas_consolidadas = {
+        "municipio": "Município",
+        "populacao": "População elegível (25–64 anos)",
+        "referencia_anual": "Referência anual (33% de exames/ano)",
+        "media_exames": "Média anual de exames executados",
+        "diferenca_anual": "Diferença anual média de exames",
+        "atingimento_pct": "Atingimento da referência (%)",
+    }
+    tabela_consolidada = resumo_consolidado[list(colunas_consolidadas)].rename(
+        columns=colunas_consolidadas
+    )
+    display_table(
+        tabela_consolidada,
+        integer_columns=[
+            "População elegível (25–64 anos)",
+            "Referência anual (33% de exames/ano)",
+            "Média anual de exames executados",
+            "Diferença anual média de exames",
+        ],
+        percent_columns=["Atingimento da referência (%)"],
+        large=True,
+        consolidated_style=True,
+    )
+    st.download_button(
+        "⬇️ Exportar tabela consolidada (CSV)",
+        data=tabela_consolidada.to_csv(index=False, sep=";", decimal=".").encode("utf-8-sig"),
+        file_name="siscan_tabela_consolidada_exames_25_64.csv",
+        mime="text/csv",
+        key="exportar_tabela_consolidada_25_64",
+    )
+    renderizar_nota_consolidada(resumo_consolidado, base_consolidada)
+
+
+def renderizar_detalhamento_razao(cob: pd.DataFrame) -> None:
+    """Disponibiliza os valores observados usados no cálculo da razão."""
+    with st.expander("Ver dados detalhados da razão anual (Q3)"):
+        detalhe_cob = cob[
+            ["codigo_municipio", "municipio", "ano", "total_exames_25_64",
+             "mulheres_25_64_anos", "razao_anual_exames_pct"]
+        ].sort_values(["municipio", "ano"])
+        export_table(detalhe_cob, "siscan_razao_anual_exames_populacao.csv")
+
+
+def main() -> None:
+    """Orquestra os três blocos analíticos com as fontes Gold filtradas."""
+    configurar_pagina()
+    df = filtered("etaria")
+    if not require(df, COLUNAS_ETARIA):
+        return
+
+    groups, unknown = preparar_grupos(df)
+    if groups.empty:
+        st.warning("Não foi possível identificar os grupos etários na tabela Gold da Q3.")
+        return
+    if unknown:
+        st.warning(
+            f"Há {fmt_num(unknown)} exames em categorias etárias não classificáveis; "
+            "esses registros não entram nos percentuais apresentados."
         )
 
-with st.expander("Ver dados detalhados da razão anual (Q3)"):
-    detalhe_cob = cob[
-        ["codigo_municipio", "municipio", "ano", "total_exames_25_64",
-         "mulheres_25_64_anos", "razao_anual_exames_pct"]
-    ].sort_values(["municipio", "ano"])
-    export_table(detalhe_cob, "siscan_razao_anual_exames_populacao.csv")
+    renderizar_perfil_etario(groups)
+    renderizar_cabecalho_evolucao()
+    cob = carregar_razao_anual()
+    if cob.empty:
+        return
+
+    base = agregar_base_populacional(cob)
+    renderizar_evolucao_anual(cob)
+    renderizar_tabela_razao(cob, base)
+    renderizar_tabela_consolidada(base)
+    renderizar_detalhamento_razao(cob)
+
+
+if __name__ == "__main__":
+    main()
