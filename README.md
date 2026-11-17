@@ -8,6 +8,8 @@
 [![Pandas](https://img.shields.io/badge/Pandas-2.1%2B-150458?style=flat&logo=pandas&logoColor=white)](https://pandas.pydata.org/)
 [![Plotly](https://img.shields.io/badge/Plotly-5.20%2B-3F4F75?style=flat&logo=plotly&logoColor=white)](https://plotly.com/python/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.40%2B-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![pytest](https://img.shields.io/badge/pytest-8.x-0A9EDC?style=flat&logo=pytest&logoColor=white)](https://docs.pytest.org/)
+[![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat)](https://playwright.dev/python/)
 
 Plataforma analítica para exploração de exames citopatológicos do colo do útero nos 11 municípios da 10ª Coordenadoria Regional de Saúde do Rio Grande do Sul (10ª CRS), entre 2020 e 2025.
 
