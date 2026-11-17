@@ -1,5 +1,13 @@
 # SISCAN Data Analytics
 
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![PySpark](https://img.shields.io/badge/PySpark-Apache%20Spark-E25A1C?style=flat&logo=apachespark&logoColor=white)](https://spark.apache.org/docs/latest/api/python/)
+[![Databricks](https://img.shields.io/badge/Databricks-Data%20Platform-FF3621?style=flat&logo=databricks&logoColor=white)](https://www.databricks.com/)
+[![Delta Lake](https://img.shields.io/badge/Delta%20Lake-Storage-00ADD4?style=flat&logo=delta&logoColor=white)](https://delta.io/)
+[![Pandas](https://img.shields.io/badge/Pandas-2.1%2B-150458?style=flat&logo=pandas&logoColor=white)](https://pandas.pydata.org/)
+[![Plotly](https://img.shields.io/badge/Plotly-5.20%2B-3F4F75?style=flat&logo=plotly&logoColor=white)](https://plotly.com/python/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.40%2B-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io/)
+
 Plataforma analítica para exploração de exames citopatológicos do colo do útero nos 11 municípios da 10ª Coordenadoria Regional de Saúde do Rio Grande do Sul (10ª CRS), entre 2020 e 2025.
 
 **[Acessar o dashboard](https://siscan-data-analytics-rmvxtnyhxnphdaygum54uy.streamlit.app/)**
@@ -29,8 +37,6 @@ SISCAN / DATASUS (CSV) + IBGE / SIDRA
 | Bronze | Ingestão e preservação dos dados brutos. |
 | Silver | Limpeza, padronização e validação dos registros. |
 | Gold | Consolidação das tabelas e indicadores analíticos. |
-
-**Stack:** Python, PySpark, Databricks, Delta Lake, Pandas, Plotly e Streamlit.
 
 ## Estrutura do repositório
 
