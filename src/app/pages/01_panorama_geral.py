@@ -704,7 +704,7 @@ def renderizar_variacao_anual(
         transicao_ranking = st.selectbox(
             "Comparar a transição anual",
             options=[todas_transicoes] + transicoes_disponiveis,
-            index=0,
+            index=1,
             key="transicao_ranking_panorama",
             help="Veja todos os rankings anuais ou escolha uma transição específica. "
                  "Cada comparação utiliza dois anos consecutivos com registros.",
