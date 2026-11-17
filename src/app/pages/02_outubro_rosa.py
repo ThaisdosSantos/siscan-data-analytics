@@ -927,9 +927,10 @@ def renderizar_tabela_etaria_municipal(
 def renderizar_grafico_etario_municipal(perfil_or: pd.DataFrame) -> None:
     """Exibe a composição por município, com ordenação e exportação."""
     st.caption(
-        f"Municípios no gráfico: {perfil_or['municipio'].nunique()} "
-        "selecionado(s). Para alterar, marque os municípios na "
-        "barra lateral e clique em **Aplicar filtros**."
+        f"Municípios no gráfico: {perfil_or['municipio'].nunique()}. "
+        "Para alterar a seleção, utilize os filtros da barra lateral e clique em "
+        "**Aplicar filtros**. Clique ou toque em um segmento da barra para "
+        "consultar a quantidade de exames e a participação percentual."
     )
     perfil_or = calcular_participacao(perfil_or, ["municipio"]).dropna(
         subset=["Participação (%)"]
