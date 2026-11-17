@@ -60,6 +60,19 @@ def test_navegacao(dashboard: Page, nome: str, titulo: str, marco: str) -> None:
     sem_erros(dashboard)
 
 
+def test_lacuna_agosto_2022(dashboard: Page) -> None:
+    """Confirma a identificação visual da competência sem dados no gráfico."""
+    navegar(dashboard, "Panorama geral", "Volume de exames por competência e município")
+    expect(dashboard.get_by_text(
+        "Agosto/2022: sem registros na base analisada.", exact=False
+    )).to_be_visible()
+    frame = dashboard.frame_locator("iframe").first
+    expect(frame.locator(".annotation-text").filter(has_text="Ago/2022")).to_contain_text(
+        "Sem dados", timeout=30_000,
+    )
+    sem_erros(dashboard)
+
+
 def test_filtros_persistem_entre_paginas(dashboard: Page) -> None:
     """Aplica um ano e município e verifica persistência após navegação."""
     abrir_filtro(dashboard, "siscan_year_panel")

@@ -221,9 +221,9 @@ def renderizar_disponibilidade(
 
 
 def renderizar_evolucao_mensal(
-    series: pd.DataFrame, complete: pd.DatetimeIndex
+    series: pd.DataFrame, complete: pd.DatetimeIndex, agosto_2022_ausente: bool
 ) -> None:
-    """Renderiza a série regional com lacunas e exportação em PNG."""
+    """Renderiza a série regional e sinaliza a competência ausente de agosto/2022."""
     st.subheader("Evolução mensal")
     st.markdown(
         "Apresenta a **quantidade de exames registrada a cada mês** no recorte "
@@ -246,6 +246,22 @@ def renderizar_evolucao_mensal(
     fig.update_xaxes(tickmode="array", tickvals=axis_dates,
                      ticktext=[f"{MESES_ABREV[d.month-1]}/{str(d.year)[2:]}" for d in axis_dates])
     fig.update_yaxes(tickformat=",d")
+    if agosto_2022_ausente:
+        competencia = COMPETENCIA_AUSENTE.isoformat()
+        fig.add_shape(
+            type="line", x0=competencia, x1=competencia,
+            y0=0, y1=1, xref="x", yref="paper",
+            line=dict(color="#B7791F", width=1.5, dash="dash"),
+            layer="below",
+        )
+        fig.add_annotation(
+            x=competencia, y=0.98, xref="x", yref="paper",
+            text="Ago/2022<br>Sem dados",
+            showarrow=False, xanchor="center", yanchor="top",
+            font=dict(size=12, color="#854D0E"),
+            bgcolor="#FFF7E6", bordercolor="#E5C78F", borderpad=5,
+        )
+        st.caption("⚠️ Agosto/2022: sem registros na base analisada. A interrupção da linha não representa zero exames.")
     display_chart(fig, filename="panorama_evolucao_mensal.png")
 
 
@@ -837,7 +853,7 @@ def main() -> None:
 
     renderizar_indicadores(df, monthly, bycity, years)
     renderizar_disponibilidade(missing, len(monthly), 12 * len(years))
-    renderizar_evolucao_mensal(series, complete)
+    renderizar_evolucao_mensal(series, complete, agosto_2022_ausente)
     renderizar_volume_municipal(bycity)
     renderizar_evolucao_anual(annual, years, agosto_2022_ausente)
     renderizar_variacao_anual(calcular_variacao_anual(annual), agosto_2022_ausente)
