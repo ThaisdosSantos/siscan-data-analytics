@@ -68,11 +68,6 @@ def configurar_pagina() -> None:
         color:#1A3B5C;
     }
     .or-section-index {color:#006C9A;margin-right:10px}
-    @media(min-width:769px) {
-        .st-key-outubro_producao_kpis [data-testid="stMetric"] {
-            min-height:144px;
-        }
-    }
     /* Explicações da página Outubro Rosa — alinhadas à tipografia de Faixa Etária. */
     [class*="st-key-outubro_ajuda_"] [data-testid="stExpander"] {
         border:1px solid #D8E5EF!important;
@@ -304,6 +299,18 @@ def variacao_percentual(outubro: float, setembro: float) -> float:
     return (outubro - setembro) / setembro * 100
 
 
+def interpretar_diferenca_mensal(diferenca: float) -> str:
+    """Descreve a diferença absoluta de exames de outubro frente a setembro."""
+    if pd.isna(diferenca):
+        return "Comparação indisponível no recorte."
+    if diferenca == 0:
+        return "Mesmo volume de exames de setembro."
+    quantidade = fmt_num(abs(diferenca))
+    unidade = "exame" if abs(diferenca) == 1 else "exames"
+    direcao = "a mais" if diferenca > 0 else "a menos"
+    return f"Outubro registrou {quantidade} {unidade} {direcao} que setembro."
+
+
 def interpretar_variacao_mensal(variacao: float) -> str:
     """Descreve a direção da variação de outubro em relação a setembro."""
     if pd.isna(variacao):
@@ -465,9 +472,8 @@ def renderizar_producao_mensal(mensal: pd.DataFrame) -> None:
         c2.metric(
             "Exames em outubro",
             fmt_num(outubro) if pd.notna(outubro) else "N/D",
-            delta=f"{diferenca:+,.0f} exames".replace(",", ".") if pd.notna(diferenca) else None,
         )
-        c2.caption("Diferença em exames em relação a setembro.")
+        c2.caption(interpretar_diferenca_mensal(diferenca))
         c3.metric(
             "Variação setembro → outubro",
             f"{variacao:+.2f}%".replace(".", ",") if pd.notna(variacao) else "N/D",

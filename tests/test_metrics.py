@@ -97,3 +97,15 @@ def test_classificacao_etaria(carregar_modulo, rotulo, esperado):
 def test_interpretacao_variacao_outubro(carregar_modulo, variacao, esperado):
     outubro = carregar_modulo("pages/02_outubro_rosa.py")
     assert outubro.interpretar_variacao_mensal(variacao) == esperado
+
+
+@pytest.mark.parametrize(("diferenca", "esperado"), [
+    (3299, "Outubro registrou 3.299 exames a mais que setembro."),
+    (-120, "Outubro registrou 120 exames a menos que setembro."),
+    (1, "Outubro registrou 1 exame a mais que setembro."),
+    (0, "Mesmo volume de exames de setembro."),
+    (float("nan"), "Comparação indisponível no recorte."),
+])
+def test_interpretacao_diferenca_outubro(carregar_modulo, diferenca, esperado):
+    outubro = carregar_modulo("pages/02_outubro_rosa.py")
+    assert outubro.interpretar_diferenca_mensal(diferenca) == esperado
