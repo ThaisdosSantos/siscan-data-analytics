@@ -1,23 +1,52 @@
-"""Visão executiva SISCAN — painel PET-Saúde, dados Gold."""
+"""Visão Executiva do SISCAN para a 10ª CRS.
+
+Apresenta a produção registrada, a disponibilidade temporal, a estimativa
+operacional de exames alterados e um diagrama territorial esquemático.
+Os registros representam exames, não mulheres distintas.
+"""
+
 import html
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from utils.chart_download import chart_with_right_click_download
 
-from utils.theme import apply_custom_css, active_scope_html, fmt_num, fmt_pct, pct, OCEAN, NAVY, ORANGE
+from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import (
-    MUNICIPIOS, filtered, require, sidebar_filters,
-    selected_years, years_label, year_month_index,
+    MUNICIPIOS, filtered, require, selected_years, sidebar_filters, year_month_index,
+)
+from utils.theme import (
+    NAVY, OCEAN, ORANGE, active_scope_html, apply_custom_css, fmt_num, fmt_pct, pct,
 )
 
-st.set_page_config(page_title="Visão executiva | SISCAN", page_icon="🩺",
-                   layout="wide", initial_sidebar_state="expanded")
-apply_custom_css()
-sidebar_filters()
+COLUNAS_TEMPORAL = ("municipio", "ano", "mes", "quantidade")
+COLUNAS_ALTERADOS = {"quantidade_alterados", "total_exames_validos"}
+DISTANCIA_CONEXAO = 34
+# Coordenadas esquemáticas, não geográficas.
+TERRITORIOS = (
+    ("Uruguaiana", 12, 46),
+    ("Alegrete", 42, 40),
+    ("Sant'Ana do Livramento", 50, 84),
+    ("São Gabriel", 82, 44),
+    ("Itaqui", 20, 16),
+    ("Rosário do Sul", 66, 62),
+    ("Quaraí", 26, 76),
+    ("Manoel Viana", 54, 18),
+    ("Barra do Quaraí", 6, 70),
+    ("Santa Margarida do Sul", 90, 66),
+    ("Maçambará", 34, 8),
+)
+ATALHOS = (
+    ("Panorama geral", "Volume por competência e município",
+     "pages/01_panorama_geral.py", "exec-nav-panorama"),
+    ("Exames alterados", "Resultados e categorias citopatológicas",
+     "pages/05_exames_alterados.py", "exec-nav-alterados"),
+    ("Outubro Rosa", "Produção e sazonalidade dos exames",
+     "pages/02_outubro_rosa.py", "exec-nav-outubro"),
+)
 
-st.markdown("""
+
+ESTILOS_EXECUTIVOS = """
 <style>
 .exec-hero{background:linear-gradient(110deg,#1A3B5C,#006C9A);
     border-radius:17px;padding:32px 34px 68px;color:white;margin-bottom:-43px;}
@@ -92,7 +121,7 @@ st.markdown("""
 .exec-metric.orange .exec-metric-value{color:#1A3B5C!important;}
 .exec-metric-desc,.exec-metric.orange .exec-metric-desc{color:#8192a5!important;}
 
-/* feature: revisão visual da Visão Executiva — hierarquia, respiro e cartões. */
+/* Hierarquia e responsividade da Visão Executiva. */
 .exec-hero {
   position:relative;
   background:radial-gradient(125% 155% at 100% 0%,#006C9A 0%,#1A3B5C 72%)!important;
@@ -190,168 +219,10 @@ st.markdown("""
   .exec-metric-value {font-size:1.55rem!important;}
 }
 </style>
-""", unsafe_allow_html=True)
+"""
 
-st.markdown(
-    """
-<div class="exec-hero">
-  <div class="exec-kicker">VISÃO EXECUTIVA · 10ª CRS · RS</div>
-  <h1 class="exec-title">Rastreamento do câncer do colo do útero,
-  <em>território a território.</em></h1>
-  <div class="exec-sub">Apresenta um panorama dos exames citopatológicos registrados nos municípios da 10ª CRS, com indicadores de volume, distribuição territorial, evolução mensal e proporção de resultados alterados. Os dados acompanham os anos e municípios selecionados nos filtros.</div>
-""" + active_scope_html() + "</div>",
-    unsafe_allow_html=True,
-)
 
-df = filtered("temporal")
-if not require(df, ["municipio", "ano", "mes", "quantidade"]):
-    st.stop()
-
-alt = filtered("alterados")
-months = df[["ano", "mes"]].drop_duplicates().shape[0]
-total = df["quantidade"].sum(min_count=1)
-num_cities = df["municipio"].nunique()
-if not alt.empty and {"quantidade_alterados", "total_exames_validos"}.issubset(alt.columns):
-    altered = alt["quantidade_alterados"].sum(min_count=1)
-    denominator = alt["total_exames_validos"].sum(min_count=1)
-    altered_pct = fmt_pct(pct(altered, denominator))
-else:
-    altered_pct = "N/D"
-
-kpis = [
-    ("EXAMES REGISTRADOS", fmt_num(total), "blue"),
-    ("MUNICÍPIOS COM REGISTROS", f"{num_cities} de 11", ""),
-    ("MESES COM REGISTROS", f"{months} de {12 * len(selected_years())}", ""),
-    ("EXAMES ALTERADOS", altered_pct, "orange"),
-]
-for col, (label, value, color) in zip(st.columns(4, gap="small"), kpis):
-    with col:
-        desc = '<div class="exec-metric-desc">Estimativa operacional</div>' if color == "orange" else ""
-        hint = ""
-        if label == "MESES COM REGISTROS":
-            explanation = "Competência 08/2022 sem registros"
-            hint = ('<details class="exec-metric-help"><summary aria-label="Explicação sobre os meses" title="Entenda os meses">!</summary>'
-                    '<div class="exec-metric-tip">' + html.escape(explanation) + '</div></details>')
-        st.markdown(
-            '<div class="exec-metric ' + color + '"><div class="exec-metric-label">'
-            + html.escape(label) + '</div>' + hint
-            + '<div class="exec-metric-value">' + html.escape(value)
-            + '</div>' + desc + '</div>',
-            unsafe_allow_html=True,
-        )
-
-# Ausência de registro não é equivalente a zero.
-calendar = pd.DatetimeIndex([d for d in year_month_index() if d.year in selected_years()])
-monthly = df.groupby(["ano", "mes"], as_index=False)["quantidade"].sum(min_count=1)
-monthly["data"] = pd.to_datetime(dict(year=monthly["ano"], month=monthly["mes"], day=1))
-series = monthly.set_index("data")["quantidade"].reindex(calendar)
-missing = [d.strftime("%m/%Y") for d in calendar if pd.isna(series.loc[d])]
-audit = ("Competências sem registros: " + ", ".join(missing) + ". " if missing else "")
-st.markdown('<div style="height:22px" aria-hidden="true"></div>', unsafe_allow_html=True)
-
-left, right = st.columns([1, 1.45], gap="medium")
-with left:
-    with st.container(border=True, key="exec-bubble-card"):
-        st.markdown('<div class="exec-card-title">Visualização territorial</div>'
-                    '<div class="exec-card-sub">Bolhas proporcionais ao volume de exames</div>',
-                    unsafe_allow_html=True)
-        city = (df.groupby("municipio", as_index=False)["quantidade"]
-                .sum(min_count=1).sort_values("municipio"))
-        # Coordenadas fixas e regra de conexões do diagrama territorial.
-        # Uma aresta existe para cada par com distância euclidiana < 34.
-        # São posições visuais, não coordenadas geográficas.
-        territories = [
-            ("Uruguaiana", 12, 46),
-            ("Alegrete", 42, 40),
-            ("Sant'Ana do Livramento", 50, 84),
-            ("São Gabriel", 82, 44),
-            ("Itaqui", 20, 16),
-            ("Rosário do Sul", 66, 62),
-            ("Quaraí", 26, 76),
-            ("Manoel Viana", 54, 18),
-            ("Barra do Quaraí", 6, 70),
-            ("Santa Margarida do Sul", 90, 66),
-            ("Maçambará", 34, 8),
-        ]
-        totals = city.set_index("municipio")["quantidade"]
-        visible = set(totals.index)
-        selected = set(st.session_state.get("city_preference", list(MUNICIPIOS.values())))
-        fig = go.Figure()
-
-        # A rede é independente da seleção; apenas a cor indica desativação.
-        xs, ys = [], []
-        for i, (_, ax, ay) in enumerate(territories):
-            for _, bx, by in territories[i + 1:]:
-                if ((ax - bx)**2 + (ay - by)**2)**0.5 < 34:
-                    xs.extend([ax, bx, None])
-                    ys.extend([ay, by, None])
-        fig.add_trace(go.Scatter(
-            x=xs, y=ys, mode="lines", showlegend=False, hoverinfo="skip",
-            line=dict(color="#d7e0e8", width=1.0),
-        ))
-
-        # O tamanho reflete os volumes da Gold. Círculos desativados ficam esmaecidos.
-        max_vol = max(1, float(totals.max()) if not totals.empty else 1)
-        for municipality, x, y in territories:
-            volume = float(totals.loc[municipality]) if municipality in visible else 0.0
-            enabled = municipality in selected
-            radius = 2.5 + (volume / max_vol)**0.5 * 11
-            size = radius * 6.2
-            fig.add_trace(go.Scatter(
-                x=[x], y=[y], mode="markers",
-                marker=dict(
-                    size=size,
-                    color="rgba(0,108,154,0.25)" if enabled else "rgba(160,175,190,0.20)",
-                    line=dict(color=OCEAN if enabled else "#b9c4cf", width=1.2),
-                ),
-                customdata=[[municipality, volume]],
-                hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]:,.0f} exames<extra></extra>",
-                showlegend=False,
-            ))
-            fig.add_trace(go.Scatter(
-                x=[x], y=[y], mode="markers",
-                marker=dict(size=6, color=ORANGE if enabled else "#9daeba"),
-                hoverinfo="skip", showlegend=False,
-            ))
-
-        fig.update_xaxes(visible=False, range=[-9, 109], fixedrange=True,
-                         constrain="domain")
-        # SVG original usa origem no canto superior esquerdo.
-        fig.update_yaxes(visible=False, range=[109, -9], fixedrange=True,
-                         scaleanchor="x", scaleratio=1)
-        fig.update_layout(
-            height=330, margin=dict(l=3, r=3, t=5, b=5),
-            plot_bgcolor="#f4f6f8", paper_bgcolor="rgba(0,0,0,0)",
-            hoverlabel=dict(bgcolor="white", font_color=NAVY),
-        )
-        chart_with_right_click_download(fig, filename="visao_executiva_territorial.png", height=fig.layout.height)
-        st.caption("Passe o mouse sobre uma bolha para consultar o município.")
-
-with right:
-    with st.container(border=True, key="exec-month-card"):
-        st.markdown('<div class="exec-card-title">Evolução mensal de exames</div>'
-                    '<div class="exec-card-sub">Competência × exames registrados</div>',
-                    unsafe_allow_html=True)
-        fig = go.Figure(go.Scatter(
-            x=calendar, y=series, mode="lines",
-            line=dict(color=OCEAN, width=2),
-            fill="tozeroy", fillcolor="rgba(0,108,154,.08)",
-            connectgaps=False,
-            hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>",
-        ))
-        fig.update_layout(height=370, showlegend=False,
-                          margin=dict(l=82,r=18,t=22,b=45),
-                          plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)")
-        fig.update_yaxes(
-            gridcolor="#e9eff3", rangemode="tozero", tickformat=",.0f",
-            tickfont=dict(size=11, color=NAVY), automargin=True,
-            title_text="Exames", title_standoff=10,
-        )
-        fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
-        chart_with_right_click_download(fig, filename="visao_executiva_evolucao_mensal.png", height=fig.layout.height)
-
-# Atalhos complementares no rodapé: continuação visual da Visão Executiva.
-st.markdown("""
+ESTILOS_ATALHOS = """
 <style>
 .exec-explore-heading{margin:26px 0 7px;color:#1A3B5C;font-size:1.2rem;font-weight:750;font-family:Manrope,Arial,sans-serif;}
 .exec-explore-desc{color:#60758a;font-size:.84rem;margin:0 0 15px;}
@@ -410,29 +281,284 @@ st.markdown("""
   z-index:3!important;
 }
 </style>
-""", unsafe_allow_html=True)
-nav = [
-    ("Panorama geral", "Volume por competência e município",
-     "pages/01_panorama_geral.py", "exec-nav-panorama"),
-    ("Exames alterados", "Resultados e categorias citopatológicas",
-     "pages/05_exames_alterados.py", "exec-nav-alterados"),
-    ("Outubro Rosa", "Produção e sazonalidade dos exames",
-     "pages/02_outubro_rosa.py", "exec-nav-outubro"),
-]
-st.markdown(
-    '<div class="exec-explore-heading">Explore as análises</div>'
-    '<p class="exec-explore-desc">Aprofunde os indicadores por município, '
-    'período e resultado citopatológico.</p>',
-    unsafe_allow_html=True,
-)
-for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), nav):
-    with col:
-        with st.container(key=key):
+"""
+
+
+def agregar_mensal(df: pd.DataFrame) -> pd.Series:
+    """Soma exames por competência, preservando totais ausentes.
+
+    Args:
+        df: Fato temporal Gold já filtrado por ano e município.
+
+    Returns:
+        Série de quantidades indexada pelo primeiro dia de cada mês.
+    """
+    mensal = (
+        df.groupby(["ano", "mes"], as_index=False)["quantidade"]
+        .sum(min_count=1)
+    )
+    mensal["data"] = pd.to_datetime(
+        dict(year=mensal["ano"], month=mensal["mes"], day=1)
+    )
+    return mensal.set_index("data")["quantidade"].sort_index()
+
+
+def preparar_serie_mensal(
+    mensal: pd.Series, anos: list[int]
+) -> tuple[pd.Series, pd.DatetimeIndex, int]:
+    """Completa o calendário visual sem criar exames ou contar anos não ativos.
+
+    Returns:
+        Série com lacunas, competências ausentes nos anos selecionados
+        e quantidade de competências com valores observados.
+    """
+    if not anos:
+        return mensal.iloc[0:0].copy(), pd.DatetimeIndex([]), 0
+    calendario = year_month_index(anos)
+    selecionadas = calendario[calendario.year.isin(anos)]
+    serie = mensal.reindex(calendario).where(calendario.year.isin(anos))
+    observadas = serie.reindex(selecionadas).notna()
+    ausentes = selecionadas[~observadas.to_numpy()]
+    return serie, ausentes, int(observadas.sum())
+
+
+def calcular_proporcao_alterados(alt: pd.DataFrame) -> str:
+    """Formata a proporção operacional de alterados para todas as idades.
+
+    Usa a razão dos totais Gold, sem calcular médias de percentuais.
+    Retorna N/D quando os campos ou o denominador não estão disponíveis.
+    """
+    if alt.empty or not COLUNAS_ALTERADOS.issubset(alt.columns):
+        return "N/D"
+    alterados = alt["quantidade_alterados"].sum(min_count=1)
+    validos = alt["total_exames_validos"].sum(min_count=1)
+    if pd.isna(alterados) or pd.isna(validos) or validos <= 0:
+        return "N/D"
+    return fmt_pct(pct(alterados, validos))
+
+
+def agregar_municipios(df: pd.DataFrame) -> pd.Series:
+    """Retorna o volume observado por município, sem imputar ausências."""
+    return df.groupby("municipio")["quantidade"].sum(min_count=1).sort_index()
+
+
+def construir_indicadores(
+    df: pd.DataFrame, alt: pd.DataFrame, meses: int, anos: list[int]
+) -> list[tuple[str, str, str]]:
+    """Monta os quatro indicadores do recorte executivo."""
+    total = df["quantidade"].sum(min_count=1)
+    municipios = df.loc[df["quantidade"].notna(), "municipio"].nunique()
+    return [
+        ("EXAMES REGISTRADOS", fmt_num(total) if pd.notna(total) else "N/D", "blue"),
+        ("MUNICÍPIOS COM REGISTROS", f"{municipios} de {len(MUNICIPIOS)}", ""),
+        ("MESES COM REGISTROS", f"{meses} de {12 * len(anos)}", ""),
+        ("EXAMES ALTERADOS", calcular_proporcao_alterados(alt), "orange"),
+    ]
+
+
+def configurar_pagina() -> None:
+    """Configura o tema, os filtros compartilhados e os estilos da visão executiva."""
+    st.set_page_config(page_title="Visão executiva | SISCAN", page_icon="🩺",
+                       layout="wide", initial_sidebar_state="expanded")
+    apply_custom_css()
+    sidebar_filters()
+    st.markdown(ESTILOS_EXECUTIVOS, unsafe_allow_html=True)
+
+
+def renderizar_cabecalho() -> None:
+    """Exibe o cabeçalho e os filtros ativos no recorte analítico."""
+    st.markdown(
+        """
+<div class="exec-hero">
+  <div class="exec-kicker">VISÃO EXECUTIVA · 10ª CRS · RS</div>
+  <h1 class="exec-title">Rastreamento do câncer do colo do útero,
+  <em>território a território.</em></h1>
+  <div class="exec-sub">Apresenta um panorama dos exames citopatológicos registrados nos municípios da 10ª CRS, com indicadores de volume, distribuição territorial, evolução mensal e proporção de resultados alterados. Os dados acompanham os anos e municípios selecionados nos filtros.</div>
+""" + active_scope_html() + "</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def renderizar_indicadores(
+    kpis: list[tuple[str, str, str]], ausentes: pd.DatetimeIndex
+) -> None:
+    """Exibe cartões e ajuda contextual sobre a disponibilidade temporal."""
+    explicacao = (
+        "Competências sem registros: " + ", ".join(ausentes.strftime("%m/%Y"))
+        if len(ausentes) else "Todas as competências selecionadas possuem registros."
+    )
+    for col, (label, value, color) in zip(st.columns(4, gap="small"), kpis):
+        with col:
+            desc = (
+                '<div class="exec-metric-desc" '
+                'title="Inclui todas as idades disponíveis na Gold">'
+                'Estimativa operacional</div>'
+                if color == "orange" else ""
+            )
+            hint = ""
+            if label == "MESES COM REGISTROS":
+                explanation = explicacao
+                hint = ('<details class="exec-metric-help"><summary aria-label="Explicação sobre os meses" title="Entenda os meses">!</summary>'
+                        '<div class="exec-metric-tip">' + html.escape(explanation) + '</div></details>')
             st.markdown(
-                '<div class="exec-nav-title">' + html.escape(title) + '</div>'
-                '<div class="exec-nav-subtitle">' + html.escape(subtitle) + '</div>',
+                '<div class="exec-metric ' + color + '"><div class="exec-metric-label">'
+                + html.escape(label) + '</div>' + hint
+                + '<div class="exec-metric-value">' + html.escape(value)
+                + '</div>' + desc + '</div>',
                 unsafe_allow_html=True,
             )
-            if st.button("Abrir " + title, key="exec-open-" + key,
-                         use_container_width=True):
-                st.switch_page(page)
+
+
+def construir_diagrama_territorial(
+    totais: pd.Series, selecionados: set[str]
+) -> go.Figure:
+    """Constrói a rede esquemática com bolhas proporcionais ao volume.
+
+    As posições e arestas são fixas e não representam distâncias reais.
+    Municípios fora da seleção ficam esmaecidos; ausências não são
+    apresentadas como contagens observadas iguais a zero.
+    """
+    fig = go.Figure()
+    xs, ys = [], []
+    for i, (_, ax, ay) in enumerate(TERRITORIOS):
+        for _, bx, by in TERRITORIOS[i + 1:]:
+            if ((ax - bx) ** 2 + (ay - by) ** 2) ** 0.5 < DISTANCIA_CONEXAO:
+                xs.extend([ax, bx, None])
+                ys.extend([ay, by, None])
+    fig.add_trace(go.Scatter(
+        x=xs, y=ys, mode="lines", showlegend=False, hoverinfo="skip",
+        line=dict(color="#d7e0e8", width=1.0),
+    ))
+
+    max_vol = max(1.0, float(totais.max())) if totais.notna().any() else 1.0
+    for municipality, x, y in TERRITORIOS:
+        volume = totais.get(municipality, float("nan"))
+        enabled = municipality in selecionados
+        observado = enabled and pd.notna(volume)
+        tamanho = max(0.0, float(volume)) if observado else 0.0
+        radius = 2.5 + (tamanho / max_vol) ** 0.5 * 11
+        size = radius * 6.2
+        valor_exibido = (
+            f"{fmt_num(volume)} exames" if observado
+            else "Sem registros" if enabled else "Fora do recorte"
+        )
+        fig.add_trace(go.Scatter(
+            x=[x], y=[y], mode="markers",
+            marker=dict(
+                size=size,
+                color="rgba(0,108,154,0.25)" if enabled else "rgba(160,175,190,0.20)",
+                line=dict(color=OCEAN if enabled else "#b9c4cf", width=1.2),
+            ),
+            customdata=[[municipality, valor_exibido]],
+            hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]}<extra></extra>",
+            showlegend=False,
+        ))
+        fig.add_trace(go.Scatter(
+            x=[x], y=[y], mode="markers",
+            marker=dict(size=6, color=ORANGE if enabled else "#9daeba"),
+            hoverinfo="skip", showlegend=False,
+        ))
+
+    fig.update_xaxes(visible=False, range=[-9, 109], fixedrange=True,
+                     constrain="domain")
+    # Preserva a orientação do diagrama, com a origem no canto superior esquerdo.
+    fig.update_yaxes(visible=False, range=[109, -9], fixedrange=True,
+                     scaleanchor="x", scaleratio=1)
+    fig.update_layout(
+        height=330, margin=dict(l=3, r=3, t=5, b=5),
+        plot_bgcolor="#f4f6f8", paper_bgcolor="rgba(0,0,0,0)",
+        hoverlabel=dict(bgcolor="white", font_color=NAVY),
+    )
+    return fig
+
+
+def construir_grafico_mensal(serie: pd.Series) -> go.Figure:
+    """Constrói o gráfico de produção mensal sem conectar competências ausentes."""
+    fig = go.Figure(go.Scatter(
+        x=serie.index, y=serie, mode="lines",
+        line=dict(color=OCEAN, width=2),
+        fill="tozeroy", fillcolor="rgba(0,108,154,.08)",
+        connectgaps=False,
+        hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>",
+    ))
+    fig.update_layout(height=370, showlegend=False,
+                      margin=dict(l=82, r=18, t=22, b=45),
+                      plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)")
+    fig.update_yaxes(
+        gridcolor="#e9eff3", rangemode="tozero", tickformat=",.0f",
+        tickfont=dict(size=11, color=NAVY), automargin=True,
+        title_text="Exames", title_standoff=10,
+    )
+    fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
+    return fig
+
+
+def renderizar_graficos(df: pd.DataFrame, serie: pd.Series) -> None:
+    """Exibe os dois gráficos executivos com as exportações originais."""
+    st.markdown('<div style="height:22px" aria-hidden="true"></div>', unsafe_allow_html=True)
+
+    left, right = st.columns([1, 1.45], gap="medium")
+    with left:
+        with st.container(border=True, key="exec-bubble-card"):
+            st.markdown('<div class="exec-card-title">Visualização territorial</div>'
+                        '<div class="exec-card-sub">Bolhas proporcionais ao volume de exames</div>',
+                        unsafe_allow_html=True)
+            selecionados = set(
+                st.session_state.get("city_preference", list(MUNICIPIOS.values()))
+            )
+            fig = construir_diagrama_territorial(agregar_municipios(df), selecionados)
+            chart_with_right_click_download(fig, filename="visao_executiva_territorial.png", height=fig.layout.height)
+            st.caption("Passe o mouse sobre uma bolha para consultar o município.")
+
+    with right:
+        with st.container(border=True, key="exec-month-card"):
+            st.markdown('<div class="exec-card-title">Evolução mensal de exames</div>'
+                        '<div class="exec-card-sub">Competência × exames registrados</div>',
+                        unsafe_allow_html=True)
+            fig = construir_grafico_mensal(serie)
+            chart_with_right_click_download(fig, filename="visao_executiva_evolucao_mensal.png", height=fig.layout.height)
+
+
+def renderizar_atalhos() -> None:
+    """Exibe os atalhos existentes e navega sem alterar os filtros ativos."""
+    st.markdown(ESTILOS_ATALHOS, unsafe_allow_html=True)
+    st.markdown(
+        '<div class="exec-explore-heading">Explore as análises</div>'
+        '<p class="exec-explore-desc">Aprofunde os indicadores por município, '
+        'período e resultado citopatológico.</p>',
+        unsafe_allow_html=True,
+    )
+    for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), ATALHOS):
+        with col:
+            with st.container(key=key):
+                st.markdown(
+                    '<div class="exec-nav-title">' + html.escape(title) + '</div>'
+                    '<div class="exec-nav-subtitle">' + html.escape(subtitle) + '</div>',
+                    unsafe_allow_html=True,
+                )
+                if st.button("Abrir " + title, key="exec-open-" + key,
+                             use_container_width=True):
+                    st.switch_page(page)
+
+
+def main() -> None:
+    """Orquestra a visão executiva a partir das fontes Gold filtradas."""
+    configurar_pagina()
+    renderizar_cabecalho()
+
+    df = filtered("temporal")
+    if not require(df, COLUNAS_TEMPORAL):
+        return
+
+    alt = filtered("alterados")
+    anos = selected_years()
+    serie, ausentes, meses = preparar_serie_mensal(agregar_mensal(df), anos)
+    kpis = construir_indicadores(df, alt, meses, anos)
+
+    renderizar_indicadores(kpis, ausentes)
+    renderizar_graficos(df, serie)
+    renderizar_atalhos()
+
+
+if __name__ == "__main__":
+    main()
