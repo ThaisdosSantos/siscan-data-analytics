@@ -242,27 +242,29 @@ def renderizar_evolucao_mensal(
                   color_discrete_sequence=[OCEAN])
     fig.update_traces(connectgaps=False,
                       hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>")
-    axis_dates = complete[::max(1, len(complete)//12)]
-    fig.update_xaxes(tickmode="array", tickvals=axis_dates,
-                     ticktext=[f"{MESES_ABREV[d.month-1]}/{str(d.year)[2:]}" for d in axis_dates])
+    axis_dates = complete[::max(1, len(complete) // 12)].tolist()
+    if agosto_2022_ausente and COMPETENCIA_AUSENTE not in axis_dates:
+        # Substitui o rótulo mais próximo para evitar sobreposição no eixo.
+        nearest = min(
+            range(len(axis_dates)),
+            key=lambda i: abs(axis_dates[i] - COMPETENCIA_AUSENTE),
+        )
+        axis_dates[nearest] = COMPETENCIA_AUSENTE
+        axis_dates.sort()
+    axis_labels = []
+    for date in axis_dates:
+        label = f"{MESES_ABREV[date.month - 1]}/{str(date.year)[2:]}"
+        if agosto_2022_ausente and date == COMPETENCIA_AUSENTE:
+            label = f"<b>{label}*</b>"
+        axis_labels.append(label)
+    fig.update_xaxes(tickmode="array", tickvals=axis_dates, ticktext=axis_labels)
     fig.update_yaxes(tickformat=",d")
-    if agosto_2022_ausente:
-        competencia = COMPETENCIA_AUSENTE.isoformat()
-        fig.add_shape(
-            type="line", x0=competencia, x1=competencia,
-            y0=0, y1=1, xref="x", yref="paper",
-            line=dict(color="#B7791F", width=1.5, dash="dash"),
-            layer="below",
-        )
-        fig.add_annotation(
-            x=competencia, y=0.98, xref="x", yref="paper",
-            text="Ago/2022<br>Sem dados",
-            showarrow=False, xanchor="center", yanchor="top",
-            font=dict(size=12, color="#854D0E"),
-            bgcolor="#FFF7E6", bordercolor="#E5C78F", borderpad=5,
-        )
-        st.caption("⚠️ Agosto/2022: sem registros na base analisada. A interrupção da linha não representa zero exames.")
     display_chart(fig, filename="panorama_evolucao_mensal.png")
+    if agosto_2022_ausente:
+        st.caption(
+            r"\* Agosto/2022 — sem registros na base analisada. "
+            "A lacuna não representa zero exames."
+        )
 
 
 def renderizar_volume_municipal(bycity: pd.DataFrame) -> None:
