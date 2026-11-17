@@ -55,6 +55,8 @@ def apply_custom_css():
     .pet-section-label {color:var(--ocean);font-size:.73rem;font-weight:780;letter-spacing:.12em;}
     [data-testid="stSidebar"] {background:#1A3B5C!important;border-right:0!important;color:#e8f3fa;}
     [data-testid="stSidebar"] * {color:#e8f3fa;}
+    /* Conserva o menu legível enquanto o conteúdo da próxima guia é atualizado. */
+    [data-testid="stSidebar"] [data-stale="true"] {opacity:1!important;}
     [data-testid="stSidebar"] [data-testid="stImage"] {background:white;padding:8px;
          border-radius:14px;margin:4px auto 16px;max-width:220px;}
     [data-testid="stSidebar"] [data-testid="stExpander"] {background:#244d70;

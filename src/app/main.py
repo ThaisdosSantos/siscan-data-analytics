@@ -357,11 +357,7 @@ def construir_indicadores(
 
 
 def configurar_pagina() -> None:
-    """Configura o tema, os filtros compartilhados e os estilos da visão executiva."""
-    st.set_page_config(page_title="Visão executiva | SISCAN", page_icon="🩺",
-                       layout="wide", initial_sidebar_state="expanded")
-    apply_custom_css()
-    sidebar_filters()
+    """Aplica os estilos exclusivos da visão executiva."""
     st.markdown(ESTILOS_EXECUTIVOS, unsafe_allow_html=True)
 
 
@@ -560,5 +556,44 @@ def main() -> None:
     renderizar_atalhos()
 
 
+def executar_aplicacao() -> None:
+    """Mantém o menu, o tema e os filtros no ponto de entrada da aplicação.
+
+    O roteador nativo preserva o contexto compartilhado entre páginas.
+    Cada guia renderiza apenas seu conteúdo analítico.
+    """
+    st.set_page_config(
+        page_icon="🩺", layout="wide", initial_sidebar_state="expanded",
+    )
+    paginas = {
+        "main.py": st.Page(main, title="Visão executiva", default=True),
+        "pages/01_panorama_geral.py": st.Page(
+            "pages/01_panorama_geral.py", title="Panorama geral",
+            url_path="panorama_geral",
+        ),
+        "pages/03_faixa_etaria.py": st.Page(
+            "pages/03_faixa_etaria.py", title="Faixa etária",
+            url_path="faixa_etaria",
+        ),
+        "pages/02_outubro_rosa.py": st.Page(
+            "pages/02_outubro_rosa.py", title="Outubro Rosa",
+            url_path="outubro_rosa",
+        ),
+        "pages/04_adequabilidade.py": st.Page(
+            "pages/04_adequabilidade.py", title="Adequabilidade",
+            url_path="adequabilidade",
+        ),
+        "pages/05_exames_alterados.py": st.Page(
+            "pages/05_exames_alterados.py", title="Exames alterados",
+            url_path="exames_alterados",
+        ),
+    }
+    pagina = st.navigation(list(paginas.values()), position="hidden")
+    with st.sidebar:
+        apply_custom_css()
+    sidebar_filters(paginas)
+    pagina.run()
+
+
 if __name__ == "__main__":
-    main()
+    executar_aplicacao()

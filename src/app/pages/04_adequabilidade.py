@@ -13,11 +13,10 @@ import plotly.express as px
 import streamlit as st
 
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered, require, sidebar_filters
+from utils.data_loader import filtered, require
 from utils.theme import (
     ORANGE,
     SKY,
-    apply_custom_css,
     export_table,
     fmt_num,
     fmt_pct,
@@ -144,10 +143,7 @@ def adicionar_totalizador(tabela: pd.DataFrame) -> pd.DataFrame:
 
 
 def configurar_pagina() -> None:
-    """Configura os filtros, a identidade visual e o cabeçalho da página."""
-    st.set_page_config(page_title="Adequabilidade | SISCAN", layout="wide")
-    apply_custom_css()
-    sidebar_filters()
+    """Configura os estilos e o cabeçalho específicos desta página."""
     page_header(
         "Qualidade da amostra",
         "Adequabilidade das amostras",

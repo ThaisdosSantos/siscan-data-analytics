@@ -1,6 +1,7 @@
 """Acesso somente leitura à Gold, com CSV local ou Databricks SQL."""
 import os
 import base64
+from functools import lru_cache
 import re
 import unicodedata
 from pathlib import Path
@@ -72,7 +73,7 @@ class GoldConsultaIndisponivel(RuntimeError):
     """Falha operacional na origem Gold, distinta de resultado sem registros."""
 
 
-@st.cache_data(ttl=3600,show_spinner=False)
+@st.cache_data(ttl=3600, show_spinner="Carregando dados da camada Gold…")
 def load_table(table_key, source="CSV local"):
     if table_key not in TABLES: raise ValueError("Tabela não permitida")
     name=TABLES[table_key]
@@ -341,14 +342,18 @@ def _render_filter_controls():
                 st.rerun(scope="app")
 
 
-def sidebar_filters():
-    """Navegação global com filtros reativos locais e aplicação explícita."""
+@lru_cache(maxsize=1)
+def _logo_base64() -> str:
+    """Mantém a logo local em memória durante a navegação."""
+    logo_path = ROOT / "src" / "assets" / "LogoPET-Saude.jpeg"
+    return base64.b64encode(logo_path.read_bytes()).decode("ascii")
+
+
+def sidebar_filters(paginas: dict) -> None:
+    """Renderiza navegação e filtros no contexto compartilhado do roteador."""
     _initialize_filter_draft()
     with st.sidebar:
-        # A logo institucional fica em src/assets e é incorporada ao HTML,
-        # sem depender de hospedagem externa ou da URL do repositório.
-        logo_path = ROOT / "src" / "assets" / "LogoPET-Saude.jpeg"
-        logo_base64 = base64.b64encode(logo_path.read_bytes()).decode("ascii")
+        logo_base64 = _logo_base64()
         st.markdown(
             '<div class="lovable-brand">'
             '<span class="lovable-mark">'
@@ -372,9 +377,9 @@ def sidebar_filters():
         ]:
             if nav_key:
                 with st.container(key=nav_key):
-                    st.page_link(path, label=label)
+                    st.page_link(paginas[path], label=label)
             else:
-                st.page_link(path, label=label, icon=icon)
+                st.page_link(paginas[path], label=label, icon=icon)
         st.divider()
         _render_filter_controls()
         st.markdown(

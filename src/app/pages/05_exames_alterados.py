@@ -12,9 +12,9 @@ import plotly.express as px
 import streamlit as st
 
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered, require, selected_years, sidebar_filters
+from utils.data_loader import filtered, require, selected_years
 from utils.theme import (
-    NAVY, OCEAN, ORANGE, apply_custom_css, export_table, fmt_num, fmt_pct,
+    NAVY, OCEAN, ORANGE, export_table, fmt_num, fmt_pct,
     metric_row, page_header, pct,
 )
 
@@ -168,10 +168,7 @@ def completar_grade_anual(
 
 
 def configurar_pagina() -> None:
-    """Configura estilos locais, cabeçalho e filtros compartilhados."""
-    st.set_page_config(page_title="Exames alterados | SISCAN", layout="wide")
-    apply_custom_css()
-    sidebar_filters()
+    """Configura os estilos e o cabeçalho específicos desta página."""
     st.markdown("""
     <style>
     .pet-hero .pet-hero-desc {

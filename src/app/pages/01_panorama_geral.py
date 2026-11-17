@@ -12,10 +12,10 @@ import streamlit as st
 
 from utils.chart_download import chart_with_right_click_download
 from utils.data_loader import (
-    filtered, require, selected_years, sidebar_filters, year_month_index, years_label,
+    filtered, require, selected_years, year_month_index, years_label,
 )
 from utils.theme import (
-    OCEAN, apply_custom_css, display_chart, display_table, fmt_num, fmt_pct,
+    OCEAN, display_chart, display_table, fmt_num, fmt_pct,
     page_header, pct,
 )
 
@@ -31,9 +31,7 @@ COR_REDUCAO = "#A83A20"
 
 
 def configurar_pagina() -> None:
-    """Configura os estilos locais, os filtros e o cabeçalho da página."""
-    st.set_page_config(page_title="Panorama geral | SISCAN", layout="wide")
-    apply_custom_css()
+    """Configura os estilos e o cabeçalho específicos desta página."""
     st.markdown("""
     <style>
     /* O tema global usa margem negativa no hero para sobrepor cartões.
@@ -58,7 +56,6 @@ def configurar_pagina() -> None:
     }
     </style>
     """, unsafe_allow_html=True)
-    sidebar_filters()
     page_header(
         "",
         "Volume de exames por competência e município",

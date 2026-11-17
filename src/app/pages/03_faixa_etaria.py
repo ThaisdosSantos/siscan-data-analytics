@@ -15,10 +15,10 @@ import streamlit as st
 
 from utils import data_loader as gold_loader
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered, sidebar_filters, require
+from utils.data_loader import filtered, require
 from utils.theme import (
     NAVY, OCEAN, ORANGE, SKY,
-    apply_custom_css, display_table, export_table, fmt_num, fmt_pct,
+    display_table, export_table, fmt_num, fmt_pct,
     page_header, pct, style_chart,
 )
 
@@ -171,9 +171,7 @@ def calcular_total_consolidado(resumo_consolidado: pd.DataFrame) -> dict[str, ob
 
 
 def configurar_pagina() -> None:
-    """Configura tema, filtros, cabeçalho e fontes metodológicas."""
-    st.set_page_config(page_title="Faixa etária | SISCAN", layout="wide")
-    apply_custom_css()
+    """Configura os estilos e o cabeçalho específicos desta página."""
     st.markdown("""
     <style>
     .pet-hero .pet-hero-desc {
@@ -257,7 +255,6 @@ def configurar_pagina() -> None:
     }
     </style>
     """, unsafe_allow_html=True)
-    sidebar_filters()
     page_header(
         "Faixa etária · Q3",
         "Faixa etária e produção de exames",

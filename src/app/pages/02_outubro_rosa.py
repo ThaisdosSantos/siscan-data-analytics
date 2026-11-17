@@ -17,10 +17,9 @@ import streamlit as st
 
 from utils import data_loader
 from utils.chart_download import chart_with_right_click_download
-from utils.data_loader import filtered, require, sidebar_filters, years_label
+from utils.data_loader import filtered, require, years_label
 from utils.theme import (
     NAVY,
-    apply_custom_css,
     display_table,
     fmt_num,
     indicator_context,
@@ -55,10 +54,7 @@ ModoRotulo = Literal["percentual_vertical", "quantidade_vertical", "percentual_h
 
 
 def configurar_pagina() -> None:
-    """Configura o tema, os filtros e o cabeçalho do Outubro Rosa."""
-    st.set_page_config(page_title="Outubro Rosa | SISCAN", layout="wide")
-    apply_custom_css()
-    sidebar_filters()
+    """Configura os estilos e o cabeçalho específicos desta página."""
     st.markdown("""
     <style>
     .pet-hero {margin-bottom:0!important}

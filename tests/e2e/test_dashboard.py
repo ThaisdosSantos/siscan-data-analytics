@@ -60,6 +60,38 @@ def test_navegacao(dashboard: Page, nome: str, titulo: str, marco: str) -> None:
     sem_erros(dashboard)
 
 
+def test_navegacao_preserva_menu(dashboard: Page) -> None:
+    """Confirma que o menu permanece no DOM e o filtro durante a troca."""
+    sidebar = dashboard.get_by_test_id("stSidebar")
+    marca = sidebar.locator(".lovable-brand")
+    expect(marca).to_be_visible()
+    abrir_filtro(dashboard, "siscan_year_panel")
+    anos = dashboard.locator(".st-key-siscan_year_panel")
+    anos.get_by_role("button", name="Limpar", exact=True).click()
+    expect(anos.get_by_role("progressbar")).to_have_attribute("aria-valuenow", "0")
+    anos.get_by_role("button", name="2020", exact=True).click()
+    expect(anos.get_by_role("progressbar")).to_have_attribute("aria-valuenow", "1")
+    dashboard.evaluate("""() => {
+        window.__siscanSidebar = document.querySelector(".lovable-brand");
+        window.__siscanNav = document.querySelector('[data-testid="stSidebar"]');
+        window.__siscanMenuWasRemoved = false;
+        window.__siscanObserver = new MutationObserver(() => {
+            if (!window.__siscanNav.isConnected) window.__siscanMenuWasRemoved = true;
+        });
+        window.__siscanObserver.observe(document.body, {childList: true, subtree: true});
+    }""")
+    navegar(dashboard, "Faixa etária", "Faixa etária e produção de exames")
+    expect(sidebar.get_by_text("Painel SISCAN", exact=True)).to_be_visible()
+    expect(dashboard.get_by_role("button", name="Aplicar filtros")).to_be_visible()
+    expect(dashboard.get_by_role("status", name="Recorte ativo")).to_contain_text("2020–2025")
+    assert dashboard.evaluate("""() => {
+        window.__siscanObserver.disconnect();
+        return !window.__siscanMenuWasRemoved &&
+            window.__siscanSidebar === document.querySelector(".lovable-brand");
+    }""")
+    sem_erros(dashboard)
+
+
 def test_lacuna_agosto_2022(dashboard: Page) -> None:
     """Confirma a identificação visual da competência sem dados no gráfico."""
     navegar(dashboard, "Panorama geral", "Volume de exames por competência e município")
