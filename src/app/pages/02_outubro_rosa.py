@@ -431,10 +431,12 @@ def renderizar_producao_mensal(mensal: pd.DataFrame) -> None:
         "os municípios selecionados."
     )
     chart_help(
-        "**Variação (%) = (Outubro − Setembro) ÷ Setembro × 100.** "
-        "A variação reúne os totais dos meses disponíveis nos anos "
-        "selecionados; ela não equivale à média das variações anuais. "
-        "Se setembro for zero, o percentual não é calculável.",
+        "Os cartões apresentam os totais de exames de setembro e outubro "
+        "nos anos e municípios selecionados. O percentual indica quanto a "
+        "produção de outubro aumentou ou diminuiu em relação a setembro, "
+        "considerando os totais acumulados, e não a média das variações anuais. "
+        "O valor em exames indica a diferença absoluta entre os dois meses. "
+        "**Cálculo:** (Outubro − Setembro) ÷ Setembro × 100.",
         chave="producao",
     )
     totais_mes = (
