@@ -89,9 +89,9 @@ def test_classificacao_etaria(carregar_modulo, rotulo, esperado):
 
 
 @pytest.mark.parametrize(("variacao", "esperado"), [
-    (37.70, "Outubro registrou 37,70% mais exames que setembro."),
-    (-12.5, "Outubro registrou 12,50% menos exames que setembro."),
-    (0.0, "Outubro e setembro tiveram o mesmo volume de exames."),
+    (37.70, "Aumento percentual em relação a setembro."),
+    (-12.5, "Redução percentual em relação a setembro."),
+    (0.0, "Sem variação em relação a setembro."),
     (float("nan"), "Comparação indisponível no recorte."),
 ])
 def test_interpretacao_variacao_outubro(carregar_modulo, variacao, esperado):

@@ -95,15 +95,15 @@ def test_navegacao_preserva_menu(dashboard: Page) -> None:
 def test_interpretacao_kpis_outubro_rosa(dashboard: Page) -> None:
     """Verifica as explicações visíveis da comparação mensal."""
     navegar(dashboard, "Outubro Rosa", "Outubro Rosa: produção e perfil etário dos exames")
-    expect(dashboard.get_by_text(
-        "Total de setembro, base de referência da comparação.", exact=True
-    )).to_be_visible()
-    expect(dashboard.get_by_text(
-        "Total de outubro no mesmo recorte selecionado.", exact=True
-    )).to_be_visible()
-    expect(dashboard.get_by_text(
-        "Outubro registrou 20,00% mais exames que setembro.", exact=True
-    )).to_be_visible()
+    kpis = dashboard.locator(".st-key-outubro_producao_kpis")
+    expect(kpis.get_by_text("Mês de referência da comparação.", exact=True)).to_be_visible()
+    expect(kpis.get_by_text("Diferença em exames em relação a setembro.", exact=True)).to_be_visible()
+    expect(kpis.get_by_text("Aumento percentual em relação a setembro.", exact=True)).to_be_visible()
+    outubro = kpis.get_by_test_id("stMetric").filter(has_text="Exames em outubro")
+    expect(outubro.get_by_test_id("stMetricDelta")).to_contain_text("+1.320 exames")
+    variacao = kpis.get_by_test_id("stMetric").filter(has_text="Variação setembro → outubro")
+    expect(variacao.get_by_test_id("stMetricValue")).to_have_text("+20,00%")
+    expect(variacao.get_by_test_id("stMetricDelta")).to_have_count(0)
     sem_erros(dashboard)
 
 

@@ -22,7 +22,6 @@ from utils.theme import (
     NAVY,
     display_table,
     fmt_num,
-    fmt_pct,
     indicator_context,
     page_header,
 )
@@ -69,6 +68,11 @@ def configurar_pagina() -> None:
         color:#1A3B5C;
     }
     .or-section-index {color:#006C9A;margin-right:10px}
+    @media(min-width:769px) {
+        .st-key-outubro_producao_kpis [data-testid="stMetric"] {
+            min-height:144px;
+        }
+    }
     /* Explicações da página Outubro Rosa — alinhadas à tipografia de Faixa Etária. */
     [class*="st-key-outubro_ajuda_"] [data-testid="stExpander"] {
         border:1px solid #D8E5EF!important;
@@ -305,9 +309,9 @@ def interpretar_variacao_mensal(variacao: float) -> str:
     if pd.isna(variacao):
         return "Comparação indisponível no recorte."
     if variacao == 0:
-        return "Outubro e setembro tiveram o mesmo volume de exames."
-    direcao = "mais" if variacao > 0 else "menos"
-    return f"Outubro registrou {fmt_pct(abs(variacao))} {direcao} exames que setembro."
+        return "Sem variação em relação a setembro."
+    direcao = "Aumento" if variacao > 0 else "Redução"
+    return f"{direcao} percentual em relação a setembro."
 
 
 def calcular_pares_municipais(dados: pd.DataFrame) -> pd.DataFrame:
@@ -454,17 +458,21 @@ def renderizar_producao_mensal(mensal: pd.DataFrame) -> None:
     outubro = totais_mes.get(10, float("nan"))
     diferenca = outubro - setembro if pd.notna(outubro) and pd.notna(setembro) else float("nan")
     variacao = variacao_percentual(outubro, setembro)
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Exames em setembro", fmt_num(setembro) if pd.notna(setembro) else "N/D")
-    c1.caption("Total de setembro, base de referência da comparação.")
-    c2.metric("Exames em outubro", fmt_num(outubro) if pd.notna(outubro) else "N/D")
-    c2.caption("Total de outubro no mesmo recorte selecionado.")
-    c3.metric(
-        "Variação setembro → outubro",
-        f"{variacao:+.2f}%".replace(".", ",") if pd.notna(variacao) else "N/D",
-        delta=f"{diferenca:+,.0f} exames".replace(",", ".") if pd.notna(variacao) else None,
-    )
-    c3.caption(interpretar_variacao_mensal(variacao))
+    with st.container(key="outubro_producao_kpis"):
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Exames em setembro", fmt_num(setembro) if pd.notna(setembro) else "N/D")
+        c1.caption("Mês de referência da comparação.")
+        c2.metric(
+            "Exames em outubro",
+            fmt_num(outubro) if pd.notna(outubro) else "N/D",
+            delta=f"{diferenca:+,.0f} exames".replace(",", ".") if pd.notna(diferenca) else None,
+        )
+        c2.caption("Diferença em exames em relação a setembro.")
+        c3.metric(
+            "Variação setembro → outubro",
+            f"{variacao:+.2f}%".replace(".", ",") if pd.notna(variacao) else "N/D",
+        )
+        c3.caption(interpretar_variacao_mensal(variacao))
     anos_set_or = set(mensal.loc[mensal["mes"] == 9, "ano"])
     anos_out_or = set(mensal.loc[mensal["mes"] == 10, "ano"])
     if anos_set_or != anos_out_or:
