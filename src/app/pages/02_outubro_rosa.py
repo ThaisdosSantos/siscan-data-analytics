@@ -370,10 +370,17 @@ def renderizar_estatisticas_anuais(anuais: pd.DataFrame) -> None:
             f"Desvio padrão: {formatar_estatistica(desvios['Outubro'])} exames."
             if n > 1 else "Desvio padrão: indisponível (1 ano)."
         )
+        variacao_media = medias["Variação (%)"]
         c3.metric(
             "Variação percentual média",
-            formatar_estatistica(medias["Variação (%)"], sinal=True) + "%",
+            formatar_estatistica(variacao_media, sinal=True) + "%",
         )
+        if variacao_media > 0:
+            c3.caption("Aumento médio de exames em outubro em relação a setembro de cada ano.")
+        elif variacao_media < 0:
+            c3.caption("Redução média de exames em outubro em relação a setembro de cada ano.")
+        else:
+            c3.caption("Sem variação percentual média entre setembro e outubro.")
         c3.caption(
             f"Desvio padrão: {formatar_estatistica(desvios['Variação (%)'])} pontos percentuais."
             if n > 1 else "Desvio padrão: indisponível (1 ano)."
@@ -547,11 +554,12 @@ def renderizar_producao_mensal(mensal: pd.DataFrame, anuais: pd.DataFrame) -> No
         "os municípios selecionados."
     )
     chart_help(
-        "Cada ano contribui com um total de setembro e um de outubro, "
-        "somados nos municípios selecionados. A média das variações é calculada "
-        "a partir de (Outubro − Setembro) ÷ Setembro × 100 em cada ano. "
-        "O desvio padrão amostral informa a dispersão entre os anos, "
-        "não a margem de erro. A comparação é descritiva.",
+        "Os indicadores apresentam a média de exames registrados em setembro "
+        "e outubro nos anos selecionados. A variação percentual média considera "
+        "o aumento ou a redução de outubro em relação a setembro de cada ano, "
+        "atribuindo o mesmo peso a todos os anos. O desvio padrão amostral "
+        "indica quanto os resultados oscilam em torno da média. "
+        "**Cálculo anual:** (Outubro − Setembro) ÷ Setembro × 100.",
         chave="producao",
     )
     renderizar_estatisticas_anuais(anuais)
