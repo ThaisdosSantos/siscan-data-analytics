@@ -292,33 +292,127 @@ def agregar_producao_mensal(dados: pd.DataFrame) -> pd.DataFrame:
     return mensal
 
 
-def variacao_percentual(outubro: float, setembro: float) -> float:
-    """Retorna a variação outubro/setembro; referência ausente ou zero gera NaN."""
-    if pd.isna(setembro) or pd.isna(outubro) or setembro <= 0:
-        return float("nan")
-    return (outubro - setembro) / setembro * 100
+def calcular_pares_anuais(
+    dados: pd.DataFrame, municipios: list[str]
+) -> pd.DataFrame:
+    """Consolida setembro e outubro por ano usando o mesmo recorte territorial.
+
+    Cada observação corresponde a um ano com ambos os meses disponíveis
+    para todos os municípios selecionados. Não imputa ausências nem zeros.
+    A variação anual usa setembro como denominador e exige base positiva.
+    """
+    municipios = set(municipios)
+    base = dados.loc[
+        dados["mes"].isin([9, 10]) & dados["municipio"].isin(municipios)
+    ]
+    pares = (
+        base.groupby(["municipio", "ano", "mes"])["quantidade"]
+        .sum(min_count=1)
+        .unstack("mes")
+        .reindex(columns=[9, 10])
+        .rename(columns={9: "Setembro", 10: "Outubro"})
+        .dropna(subset=["Setembro", "Outubro"])
+        .reset_index()
+    )
+    cobertura = pares.groupby("ano")["municipio"].nunique()
+    anos_completos = cobertura.index[cobertura.eq(len(municipios))]
+    anuais = (
+        pares.loc[pares["ano"].isin(anos_completos)]
+        .groupby("ano")[["Setembro", "Outubro"]]
+        .sum(min_count=1)
+        .sort_index()
+    )
+    anuais = anuais.loc[anuais["Setembro"] > 0].copy()
+    anuais["Variação (%)"] = (
+        anuais["Outubro"].sub(anuais["Setembro"])
+        .div(anuais["Setembro"]).mul(100)
+    )
+    return anuais
 
 
-def interpretar_diferenca_mensal(diferenca: float) -> str:
-    """Descreve a diferença absoluta de exames de outubro frente a setembro."""
-    if pd.isna(diferenca):
-        return "Comparação indisponível no recorte."
-    if diferenca == 0:
-        return "Mesmo volume de exames de setembro."
-    quantidade = fmt_num(abs(diferenca))
-    unidade = "exame" if abs(diferenca) == 1 else "exames"
-    direcao = "a mais" if diferenca > 0 else "a menos"
-    return f"Outubro registrou {quantidade} {unidade} {direcao} que setembro."
+def resumir_pares_anuais(anuais: pd.DataFrame) -> pd.DataFrame:
+    """Calcula médias e desvios padrão amostrais (n−1) dos anos pareados.
+
+    Um único ano tem média definida, mas não desvio padrão amostral.
+    A média das taxas anuais atribui o mesmo peso a cada ano.
+    """
+    return anuais.agg(["mean", "std"]).rename(
+        index={"mean": "Média", "std": "Desvio padrão"}
+    )
 
 
-def interpretar_variacao_mensal(variacao: float) -> str:
-    """Descreve a direção da variação de outubro em relação a setembro."""
-    if pd.isna(variacao):
-        return "Comparação indisponível no recorte."
-    if variacao == 0:
-        return "Sem variação em relação a setembro."
-    direcao = "Aumento" if variacao > 0 else "Redução"
-    return f"{direcao} percentual em relação a setembro."
+def formatar_estatistica(valor: float, sinal: bool = False) -> str:
+    """Formata resultados decimais sem truncar médias ou dispersões."""
+    if pd.isna(valor):
+        return "N/D"
+    formato = "+,.2f" if sinal else ",.2f"
+    return format(valor, formato).replace(",", "@").replace(".", ",").replace("@", ".")
+
+
+def renderizar_estatisticas_anuais(anuais: pd.DataFrame) -> None:
+    """Apresenta média e dispersão e disponibiliza os desvios por ano."""
+    n = len(anuais)
+    if not n:
+        st.info("Não há anos com pares completos de setembro e outubro no recorte.")
+        return
+    resumo = resumir_pares_anuais(anuais)
+    medias = resumo.loc["Média"]
+    desvios = resumo.loc["Desvio padrão"]
+    with st.container(key="outubro_producao_kpis"):
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Média de exames em setembro", formatar_estatistica(medias["Setembro"]))
+        c1.caption(
+            f"Desvio padrão: {formatar_estatistica(desvios['Setembro'])} exames."
+            if n > 1 else "Desvio padrão: indisponível (1 ano)."
+        )
+        c2.metric("Média de exames em outubro", formatar_estatistica(medias["Outubro"]))
+        c2.caption(
+            f"Desvio padrão: {formatar_estatistica(desvios['Outubro'])} exames."
+            if n > 1 else "Desvio padrão: indisponível (1 ano)."
+        )
+        c3.metric(
+            "Variação percentual média",
+            formatar_estatistica(medias["Variação (%)"], sinal=True) + "%",
+        )
+        c3.caption(
+            f"Desvio padrão: {formatar_estatistica(desvios['Variação (%)'])} pontos percentuais."
+            if n > 1 else "Desvio padrão: indisponível (1 ano)."
+        )
+    st.caption(f"Base da comparação: {n} ano(s) com pares completos de setembro e outubro.")
+    with st.expander("Ver variação e distância da média por ano", expanded=False):
+        st.markdown(
+            "O desvio de cada observação é o valor anual menos a média do mês. "
+            "Valores positivos estão acima da média; negativos, abaixo. "
+            "A diferença da variação percentual é expressa em pontos percentuais."
+        )
+        detalhe = anuais.assign(**{
+            "Desvio setembro (exames)": anuais["Setembro"] - medias["Setembro"],
+            "Desvio outubro (exames)": anuais["Outubro"] - medias["Outubro"],
+            "Desvio da variação (pontos percentuais)": (
+                anuais["Variação (%)"] - medias["Variação (%)"]
+            ),
+        }).reset_index().rename(columns={"ano": "Ano"})
+        detalhe = detalhe[[
+            "Ano", "Setembro", "Desvio setembro (exames)",
+            "Outubro", "Desvio outubro (exames)", "Variação (%)",
+            "Desvio da variação (pontos percentuais)",
+        ]]
+        tabela = detalhe.copy()
+        for coluna in detalhe.columns[1:]:
+            if coluna in ("Setembro", "Outubro"):
+                tabela[coluna] = detalhe[coluna].map(fmt_num)
+            else:
+                tabela[coluna] = detalhe[coluna].map(
+                    lambda valor: formatar_estatistica(valor, sinal=True)
+                )
+        display_table(tabela, integer_columns=["Ano"])
+        st.download_button(
+            "⬇️ Exportar comparação anual (CSV)",
+            data=detalhe.to_csv(index=False, sep=";", decimal=".", float_format="%.2f").encode("utf-8-sig"),
+            file_name="siscan_outubro_rosa_estatisticas_anuais.csv",
+            mime="text/csv",
+            key="outubro_rosa_estatisticas_anuais_csv",
+        )
 
 
 def calcular_pares_municipais(dados: pd.DataFrame) -> pd.DataFrame:
@@ -444,7 +538,7 @@ def ordenar_competencias(perfil: pd.DataFrame) -> list[str]:
     ]
 
 
-def renderizar_producao_mensal(mensal: pd.DataFrame) -> None:
+def renderizar_producao_mensal(mensal: pd.DataFrame, anuais: pd.DataFrame) -> None:
     """Exibe cartões e barras mensais para os municípios selecionados."""
     anos = sorted(mensal["ano"].unique().tolist())
     section("01", "Produção mensal · setembro a dezembro")
@@ -453,39 +547,19 @@ def renderizar_producao_mensal(mensal: pd.DataFrame) -> None:
         "os municípios selecionados."
     )
     chart_help(
-        "A comparação utiliza os totais acumulados de setembro e outubro "
-        "no recorte selecionado, e não a média das variações anuais. "
-        "**Cálculo:** (Outubro − Setembro) ÷ Setembro × 100.",
+        "Cada ano contribui com um total de setembro e um de outubro, "
+        "somados nos municípios selecionados. A média das variações é calculada "
+        "a partir de (Outubro − Setembro) ÷ Setembro × 100 em cada ano. "
+        "O desvio padrão amostral informa a dispersão entre os anos, "
+        "não a margem de erro. A comparação é descritiva.",
         chave="producao",
     )
-    totais_mes = (
-        mensal.groupby("mes")["quantidade"].sum().reindex(MESES.keys())
-    )
-    setembro = totais_mes.get(9, float("nan"))
-    outubro = totais_mes.get(10, float("nan"))
-    diferenca = outubro - setembro if pd.notna(outubro) and pd.notna(setembro) else float("nan")
-    variacao = variacao_percentual(outubro, setembro)
-    with st.container(key="outubro_producao_kpis"):
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Exames em setembro", fmt_num(setembro) if pd.notna(setembro) else "N/D")
-        c1.caption("Mês de referência da comparação.")
-        c2.metric(
-            "Exames em outubro",
-            fmt_num(outubro) if pd.notna(outubro) else "N/D",
-        )
-        c2.caption(interpretar_diferenca_mensal(diferenca))
-        c3.metric(
-            "Variação setembro → outubro",
-            f"{variacao:+.2f}%".replace(".", ",") if pd.notna(variacao) else "N/D",
-        )
-        c3.caption(interpretar_variacao_mensal(variacao))
-    anos_set_or = set(mensal.loc[mensal["mes"] == 9, "ano"])
-    anos_out_or = set(mensal.loc[mensal["mes"] == 10, "ano"])
-    if anos_set_or != anos_out_or:
-        st.warning(
-            "Atenção: setembro e outubro não aparecem em todos os mesmos anos. "
-            "Os cartões acima agregam meses disponíveis; a comparação municipal "
-            "abaixo utiliza apenas pares completos do mesmo município e ano."
+    renderizar_estatisticas_anuais(anuais)
+    if len(anuais) < len(data_loader.selected_years()):
+        st.caption(
+            "Somente anos com ambos os meses disponíveis em todos os municípios "
+            "selecionados e base positiva em setembro entram nos cartões. "
+            "O gráfico mensal mantém todos os registros disponíveis."
         )
     fig = px.bar(
         mensal, x="ano_texto", y="quantidade", color="Mês",
@@ -1160,7 +1234,9 @@ def main() -> None:
         return
 
     periodo = years_label()
-    renderizar_producao_mensal(agregar_producao_mensal(dados))
+    municipios = st.session_state.get("city_preference", list(data_loader.MUNICIPIOS.values()))
+    anuais = calcular_pares_anuais(dados, municipios)
+    renderizar_producao_mensal(agregar_producao_mensal(dados), anuais)
     renderizar_comparacao_municipal(dados)
     renderizar_perfil_mensal(periodo)
     renderizar_perfil_municipal()

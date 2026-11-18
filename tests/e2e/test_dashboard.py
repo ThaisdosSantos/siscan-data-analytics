@@ -93,19 +93,19 @@ def test_navegacao_preserva_menu(dashboard: Page) -> None:
 
 
 def test_interpretacao_kpis_outubro_rosa(dashboard: Page) -> None:
-    """Verifica as explicações visíveis da comparação mensal."""
+    """Verifica as médias anuais e os desvios com a Gold sintética."""
     navegar(dashboard, "Outubro Rosa", "Outubro Rosa: produção e perfil etário dos exames")
     kpis = dashboard.locator(".st-key-outubro_producao_kpis")
-    expect(kpis.get_by_text("Mês de referência da comparação.", exact=True)).to_be_visible()
-    expect(kpis.get_by_text(
-        "Outubro registrou 1.320 exames a mais que setembro.", exact=True
-    )).to_be_visible()
-    expect(kpis.get_by_text("Aumento percentual em relação a setembro.", exact=True)).to_be_visible()
-    outubro = kpis.get_by_test_id("stMetric").filter(has_text="Exames em outubro")
-    expect(outubro.get_by_test_id("stMetricDelta")).to_have_count(0)
-    variacao = kpis.get_by_test_id("stMetric").filter(has_text="Variação setembro → outubro")
-    expect(variacao.get_by_test_id("stMetricValue")).to_have_text("+20,00%")
-    expect(variacao.get_by_test_id("stMetricDelta")).to_have_count(0)
+    for rotulo, valor in [
+        ("Média de exames em setembro", "1.100,00"),
+        ("Média de exames em outubro", "1.320,00"),
+        ("Variação percentual média", "+20,00%"),
+    ]:
+        kpi = kpis.get_by_test_id("stMetric").filter(has_text=rotulo)
+        expect(kpi.get_by_test_id("stMetricValue")).to_have_text(valor)
+    expect(kpis.get_by_text("Desvio padrão: 0,00 exames.", exact=True)).to_have_count(2)
+    expect(kpis.get_by_text("Desvio padrão: 0,00 pontos percentuais.", exact=True)).to_be_visible()
+    expect(dashboard.get_by_text("Base da comparação: 6 ano(s)", exact=False)).to_be_visible()
     sem_erros(dashboard)
 
 

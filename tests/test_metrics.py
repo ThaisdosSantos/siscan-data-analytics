@@ -88,24 +88,38 @@ def test_classificacao_etaria(carregar_modulo, rotulo, esperado):
     assert faixa.q3_group(rotulo) == esperado
 
 
-@pytest.mark.parametrize(("variacao", "esperado"), [
-    (37.70, "Aumento percentual em relação a setembro."),
-    (-12.5, "Redução percentual em relação a setembro."),
-    (0.0, "Sem variação em relação a setembro."),
-    (float("nan"), "Comparação indisponível no recorte."),
-])
-def test_interpretacao_variacao_outubro(carregar_modulo, variacao, esperado):
+def test_estatisticas_outubro_com_pares_anuais(carregar_modulo):
     outubro = carregar_modulo("pages/02_outubro_rosa.py")
-    assert outubro.interpretar_variacao_mensal(variacao) == esperado
+    dados = pd.DataFrame([
+        ("A", 2020, 9, 100), ("A", 2020, 10, 150),
+        ("A", 2021, 9, 300), ("A", 2021, 10, 300),
+        ("A", 2022, 9, 200),
+    ], columns=["municipio", "ano", "mes", "quantidade"])
+    anuais = outubro.calcular_pares_anuais(dados, ["A"])
+    assert list(anuais.index) == [2020, 2021]
+    resumo = outubro.resumir_pares_anuais(anuais)
+    assert resumo.loc["Média", "Setembro"] == pytest.approx(200)
+    assert resumo.loc["Média", "Outubro"] == pytest.approx(225)
+    assert resumo.loc["Média", "Variação (%)"] == pytest.approx(25)
+    assert resumo.loc["Desvio padrão", "Setembro"] == pytest.approx(141.421356)
+    assert resumo.loc["Desvio padrão", "Variação (%)"] == pytest.approx(35.355339)
+    assert outubro.formatar_estatistica(1458.3333) == "1.458,33"
+    unico = outubro.resumir_pares_anuais(anuais.iloc[:1])
+    assert unico.loc["Desvio padrão"].isna().all()
 
 
-@pytest.mark.parametrize(("diferenca", "esperado"), [
-    (3299, "Outubro registrou 3.299 exames a mais que setembro."),
-    (-120, "Outubro registrou 120 exames a menos que setembro."),
-    (1, "Outubro registrou 1 exame a mais que setembro."),
-    (0, "Mesmo volume de exames de setembro."),
-    (float("nan"), "Comparação indisponível no recorte."),
-])
-def test_interpretacao_diferenca_outubro(carregar_modulo, diferenca, esperado):
+def test_pares_anuais_preservam_recorte_territorial(carregar_modulo):
     outubro = carregar_modulo("pages/02_outubro_rosa.py")
-    assert outubro.interpretar_diferenca_mensal(diferenca) == esperado
+    dados = pd.DataFrame([
+        ("A", 2020, 9, 100), ("A", 2020, 10, 120),
+        ("B", 2020, 9, 50), ("B", 2020, 10, 60),
+        ("A", 2021, 9, 100), ("A", 2021, 10, 150),
+        ("B", 2021, 9, 50),
+        ("A", 2022, 9, 0), ("A", 2022, 10, 10),
+    ], columns=["municipio", "ano", "mes", "quantidade"])
+    anuais = outubro.calcular_pares_anuais(dados, ["A", "B"])
+    assert list(anuais.index) == [2020]
+    assert anuais.loc[2020, "Setembro"] == 150
+    assert anuais.loc[2020, "Variação (%)"] == pytest.approx(20)
+    assert outubro.calcular_pares_anuais(dados, ["C"]).empty
+    assert list(outubro.calcular_pares_anuais(dados, ["A"]).index) == [2020, 2021]
