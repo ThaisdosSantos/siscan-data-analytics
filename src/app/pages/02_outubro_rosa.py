@@ -376,15 +376,16 @@ def renderizar_estatisticas_anuais(anuais: pd.DataFrame) -> None:
             formatar_estatistica(variacao_media, sinal=True) + "%",
         )
         if variacao_media > 0:
-            c3.caption("Aumento médio de exames em outubro em relação a setembro de cada ano.")
+            interpretacao = "Aumento médio: setembro → outubro."
         elif variacao_media < 0:
-            c3.caption("Redução média de exames em outubro em relação a setembro de cada ano.")
+            interpretacao = "Redução média: setembro → outubro."
         else:
-            c3.caption("Sem variação percentual média entre setembro e outubro.")
-        c3.caption(
+            interpretacao = "Sem variação média."
+        dispersao = (
             f"Desvio padrão: {formatar_estatistica(desvios['Variação (%)'])} pontos percentuais."
             if n > 1 else "Desvio padrão: indisponível (1 ano)."
         )
+        c3.caption(f"{interpretacao}  \n{dispersao}")
     st.caption(f"Base da comparação: {n} ano(s) com pares completos de setembro e outubro.")
     with st.expander("Ver variação e distância da média por ano", expanded=False):
         st.markdown(
