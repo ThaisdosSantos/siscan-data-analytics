@@ -105,7 +105,7 @@ def test_interpretacao_kpis_outubro_rosa(dashboard: Page) -> None:
         expect(kpi.get_by_test_id("stMetricValue")).to_have_text(valor)
     expect(kpis.get_by_text("Desvio padrão: 0,00 exames.", exact=True)).to_have_count(2)
     expect(kpis.get_by_text(
-        "Aumento médio: setembro → outubro.",
+        "Aumento médio anual de setembro para outubro.",
         exact=False,
     )).to_be_visible()
     expect(kpis.get_by_text("Desvio padrão: 0,00 pontos percentuais.", exact=False)).to_be_visible()
