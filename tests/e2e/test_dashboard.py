@@ -187,7 +187,7 @@ def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
     expect(grafico.locator(".modebar-btn")).to_have_count(2)
     assert grafico.evaluate("(el) => el._context.displayModeBar") == "hover"
     assert grafico.evaluate("(el) => (el.layout.shapes || []).length") == 0
-    assert grafico.evaluate("(el) => el.data.every(trace => trace.fill === 'none')")
+    assert grafico.evaluate("(el) => el.data.every(trace => trace.fill === 'tozeroy')")
     assert grafico.evaluate("(el) => el.layout.xaxis.linecolor") == "#CBD5E1"
     assert grafico.evaluate("(el) => el.layout.yaxis.zerolinecolor") == "#CBD5E1"
     # A nota deve ficar próxima do eixo, sem sobrepor nem cortar o rótulo.
@@ -197,7 +197,9 @@ def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
     expect(nota).to_have_css("color", "rgb(64, 86, 107)")
     expect(nota).to_have_css("background-color", "rgba(0, 0, 0, 0)")
     expect(nota).to_have_css("border-left-width", "0px")
-    expect(nota.locator("strong")).to_have_css("color", "rgb(26, 59, 92)")
+    expect(nota.locator("strong")).to_have_count(0)
+    expect(nota).to_have_css("font-weight", "400")
+    expect(nota).to_have_css("padding-bottom", "12px")
     assert nota.evaluate("(el) => parseFloat(getComputedStyle(el).fontSize)") >= 13
     assert rotulo.evaluate("(el) => getComputedStyle(el).fill") == frame.locator(
         ".xtick text"

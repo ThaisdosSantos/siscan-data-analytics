@@ -87,13 +87,10 @@ ESTILOS_EXECUTIVOS = """
 .st-key-exec-month-card .exec-month-note {
     font-family:Manrope,Arial,sans-serif!important;
     font-size:.9rem!important;line-height:1.55!important;
-    color:#40566B!important;font-weight:500;
-    padding:0;margin:0;
+    color:#40566B!important;font-weight:400!important;
+    padding:0 0 12px;margin:0;
     background:transparent;border:0;
     overflow-wrap:break-word;
-}
-.st-key-exec-month-card .exec-month-note strong {
-    color:#1A3B5C!important;font-weight:750!important;
 }
 @media(max-width:850px){
   .exec-hero{padding:24px 18px 48px;margin-bottom:0;}
@@ -482,8 +479,8 @@ def construir_grafico_mensal(
 ) -> go.Figure:
     """Destaca as competências ausentes sem interpolar ou inventar valores."""
     fig = go.Figure()
-    # Desenha cada trecho observado separadamente, sem preenchimento de área.
-    # A linha não atravessa meses ausentes ou anos fora do recorte selecionado.
+    # Preenche cada trecho observado separadamente, preservando a lacuna.
+    # Nem a linha nem a área atravessam meses ausentes ou anos fora do recorte.
     for _, trecho in serie.groupby(serie.isna().cumsum()):
         trecho = trecho.dropna()
         if trecho.empty:
@@ -492,7 +489,8 @@ def construir_grafico_mensal(
             x=trecho.index, y=trecho, mode="lines+markers" if len(trecho) > 1 else "markers",
             line=dict(color=OCEAN, width=2),
             marker=dict(size=4, color=OCEAN, line=dict(color="white", width=0.5)),
-            fill="none",
+            fill="tozeroy" if len(trecho) > 1 else "none",
+            fillcolor="rgba(0,108,154,.08)",
             connectgaps=False,
             hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>",
         ))
@@ -579,7 +577,7 @@ def renderizar_graficos(
                 competencias = ", ".join(ausentes.strftime("%m/%Y"))
                 st.markdown(
                     '<div class="exec-month-note" role="note">'
-                    f'<strong>{html.escape(competencias)} — sem dados na base.</strong> '
+                    f'{html.escape(competencias)} — sem dados na base. '
                     'A lacuna não representa zero exames.</div>',
                     unsafe_allow_html=True,
                 )

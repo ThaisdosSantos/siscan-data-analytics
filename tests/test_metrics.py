@@ -103,13 +103,26 @@ def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     assert all(not trace.connectgaps and trace.fill == "none" for trace in fig.data)
 
 
+def test_grafico_executivo_preenchimento_preserva_lacuna(carregar_modulo):
+    main = carregar_modulo("main.py")
+    datas = pd.date_range("2022-06-01", "2022-10-01", freq="MS")
+    serie = pd.Series([1500, 1550, float("nan"), 1600, 1700], index=datas)
+    fig = main.construir_grafico_mensal(serie, pd.DatetimeIndex([datas[2]]))
+    assert len(fig.data) == 2
+    assert list(fig.data[0].x) == list(datas[:2])
+    assert list(fig.data[1].x) == list(datas[3:])
+    assert all(trace.fill == "tozeroy" and not trace.connectgaps
+               for trace in fig.data)
+    assert all(trace.fillcolor == "rgba(0,108,154,.08)" for trace in fig.data)
+
+
 def test_grafico_executivo_marcadores_e_margem(carregar_modulo):
     main = carregar_modulo("main.py")
     datas = pd.date_range("2022-01-01", periods=3, freq="MS")
     serie = pd.Series([100, 0, 200], index=datas)
     fig = main.construir_grafico_mensal(serie, pd.DatetimeIndex([]))
     assert fig.data[0].mode == "lines+markers"
-    assert fig.data[0].fill == "none"
+    assert fig.data[0].fill == "tozeroy"
     assert list(fig.data[0].y) == [100, 0, 200]
     assert fig.data[0].marker.size == 4
     assert fig.layout.xaxis.tickformat == "%m/%Y"
