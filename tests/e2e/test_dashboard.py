@@ -171,6 +171,18 @@ def test_interpretacao_kpis_outubro_rosa(dashboard: Page) -> None:
     sem_erros(dashboard)
 
 
+def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
+    """Confirma que o mês ausente aparece no próprio gráfico e na legenda."""
+    card = dashboard.locator(".st-key-exec-month-card")
+    expect(card.get_by_text("08/2022", exact=False)).to_be_visible()
+    expect(card.get_by_text("A interrupção da linha não representa zero exames.", exact=False)).to_be_visible()
+    frame = card.frame_locator("iframe")
+    expect(frame.locator(".annotation-text").filter(has_text="08/2022")).to_contain_text(
+        "Sem dados", timeout=30_000,
+    )
+    sem_erros(dashboard)
+
+
 def test_lacuna_agosto_2022(dashboard: Page) -> None:
     """Confirma a identificação visual da competência sem dados no gráfico."""
     navegar(dashboard, "Panorama geral", "Volume de exames por competência e município")

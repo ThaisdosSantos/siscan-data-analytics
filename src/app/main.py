@@ -465,17 +465,46 @@ def construir_diagrama_territorial(
     return fig
 
 
-def construir_grafico_mensal(serie: pd.Series) -> go.Figure:
-    """Constrói o gráfico de produção mensal sem conectar competências ausentes."""
-    fig = go.Figure(go.Scatter(
-        x=serie.index, y=serie, mode="lines",
-        line=dict(color=OCEAN, width=2),
-        fill="tozeroy", fillcolor="rgba(0,108,154,.08)",
-        connectgaps=False,
-        hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>",
-    ))
+def construir_grafico_mensal(
+    serie: pd.Series, ausentes: pd.DatetimeIndex
+) -> go.Figure:
+    """Destaca as competências ausentes sem interpolar ou inventar valores."""
+    fig = go.Figure()
+    # Preenche cada trecho observado separadamente: nem a linha nem a área
+    # atravessam meses ausentes ou anos fora do recorte selecionado.
+    for _, trecho in serie.groupby(serie.isna().cumsum()):
+        trecho = trecho.dropna()
+        if trecho.empty:
+            continue
+        fig.add_trace(go.Scatter(
+            x=trecho.index, y=trecho, mode="lines" if len(trecho) > 1 else "markers",
+            line=dict(color=OCEAN, width=2),
+            fill="tozeroy" if len(trecho) > 1 else "none",
+            fillcolor="rgba(0,108,154,.08)",
+            connectgaps=False,
+            hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>",
+        ))
+
+    agosto = pd.Timestamp("2022-08-01")
+    for data in ausentes:
+        fig.add_vrect(
+            x0=data - pd.Timedelta(days=15),
+            x1=data + pd.Timedelta(days=15),
+            fillcolor="rgba(238,83,37,.14)", line_width=0, layer="below",
+        )
+    # A anotação acompanha a competência no zoom e na exportação PNG.
+    destaque = agosto if agosto in ausentes else (ausentes[0] if len(ausentes) == 1 else None)
+    if destaque is not None:
+        fig.add_annotation(
+            x=destaque, y=1.0, xref="x", yref="paper",
+            text=f"<b>{destaque:%m/%Y}</b><br>Sem dados",
+            showarrow=False, yanchor="bottom", yshift=4,
+            font=dict(size=11, color="#B43E19"), align="center",
+            bgcolor="rgba(255,255,255,.96)", bordercolor="#EE5325",
+            borderwidth=1, borderpad=4,
+        )
     fig.update_layout(height=370, showlegend=False,
-                      margin=dict(l=82, r=18, t=22, b=45),
+                      margin=dict(l=82, r=18, t=60 if destaque is not None else 22, b=45),
                       plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)")
     fig.update_yaxes(
         gridcolor="#e9eff3", rangemode="tozero", tickformat=",.0f",
@@ -483,10 +512,17 @@ def construir_grafico_mensal(serie: pd.Series) -> go.Figure:
         title_text="Exames", title_standoff=10,
     )
     fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
+    if len(serie.index):
+        fig.update_xaxes(range=[
+            serie.index.min() - pd.Timedelta(days=15),
+            serie.index.max() + pd.Timedelta(days=15),
+        ])
     return fig
 
 
-def renderizar_graficos(df: pd.DataFrame, serie: pd.Series) -> None:
+def renderizar_graficos(
+    df: pd.DataFrame, serie: pd.Series, ausentes: pd.DatetimeIndex
+) -> None:
     """Exibe os dois gráficos executivos com as exportações originais."""
     st.markdown('<div style="height:22px" aria-hidden="true"></div>', unsafe_allow_html=True)
 
@@ -508,8 +544,14 @@ def renderizar_graficos(df: pd.DataFrame, serie: pd.Series) -> None:
             st.markdown('<div class="exec-card-title">Evolução mensal de exames</div>'
                         '<div class="exec-card-sub">Competência × exames registrados</div>',
                         unsafe_allow_html=True)
-            fig = construir_grafico_mensal(serie)
+            fig = construir_grafico_mensal(serie, ausentes)
             chart_with_right_click_download(fig, filename="visao_executiva_evolucao_mensal.png", height=fig.layout.height)
+            if len(ausentes):
+                competencias = ", ".join(ausentes.strftime("%m/%Y"))
+                st.caption(
+                    f"**Faixa laranja — sem dados:** {competencias}. "
+                    "A interrupção da linha não representa zero exames."
+                )
 
 
 def renderizar_atalhos() -> None:
@@ -543,7 +585,7 @@ def main() -> None:
     kpis = construir_indicadores(df, alt, meses, anos)
 
     renderizar_indicadores(kpis, ausentes)
-    renderizar_graficos(df, serie)
+    renderizar_graficos(df, serie, ausentes)
     renderizar_atalhos()
 
 
