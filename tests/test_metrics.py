@@ -88,11 +88,15 @@ def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     assert fig.layout.shapes[0].line.dash == "dot"
     assert pd.Timestamp(fig.layout.shapes[0].x0) == datas[1]
     assert len(fig.layout.annotations) == 0
-    assert any("08/2022" in rotulo and "Sem dados" in rotulo and "#A64A28" in rotulo
+    assert '<span style="color:#1A3B5C"><b>08/2022</b></span>' in fig.layout.xaxis.ticktext
+    assert all("Sem dados" not in rotulo and "<br>" not in rotulo
                for rotulo in fig.layout.xaxis.ticktext)
+    assert fig.layout.xaxis.tickfont.color == "#64748B"
     assert all(trace.marker.size == 4 for trace in fig.data)
     assert fig.layout.hovermode == "closest"
-    assert fig.layout.margin.b == 42
+    assert fig.layout.margin.b == 32
+    assert fig.layout.xaxis.linecolor == "#CBD5E1"
+    assert fig.layout.yaxis.zerolinecolor == "#CBD5E1"
     assert fig.layout.xaxis.automargin
     assert datas[1] in fig.layout.xaxis.tickvals
     assert [list(trace.y) for trace in fig.data] == [[1500], [1600]]

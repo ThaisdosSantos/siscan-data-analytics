@@ -495,7 +495,7 @@ def construir_grafico_mensal(
         )
     destaque = agosto if agosto in ausentes else (ausentes[0] if len(ausentes) == 1 else None)
     fig.update_layout(height=370, showlegend=False,
-                      margin=dict(l=70, r=18, t=22, b=42 if destaque is not None else 32),
+                      margin=dict(l=70, r=18, t=22, b=32),
                       plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)",
                       hovermode="closest", hoverdistance=20,
                       hoverlabel=dict(bgcolor="white", bordercolor="#D5E3ED",
@@ -504,14 +504,16 @@ def construir_grafico_mensal(
                                    color="#72879D", activecolor=OCEAN))
     fig.update_yaxes(
         gridcolor="#e9eff3", rangemode="tozero", tickformat=",.0f",
+        zeroline=True, zerolinecolor="#CBD5E1", zerolinewidth=1,
         tickfont=dict(size=11, color=NAVY), automargin=True,
         title_text="Exames", title_standoff=10,
         ticks="outside", ticklen=5, tickcolor="#D5E3ED",
     )
     fig.update_xaxes(
         showgrid=False, tickformat="%m/%Y", nticks=6,
+        showline=True, linecolor="#CBD5E1", linewidth=1,
         ticks="outside", ticklen=5, tickcolor="#D5E3ED",
-        tickfont=dict(size=10, color="#536D82"), automargin=True,
+        tickfont=dict(size=10, color="#64748B"), automargin=True,
     )
     if destaque is not None and len(serie.index):
         # Insere a competência no eixo em vez de uma caixa sobre o gráfico.
@@ -523,13 +525,13 @@ def construir_grafico_mensal(
             datas_eixo[mais_proxima] = destaque
             datas_eixo.sort()
         rotulos = [
-            f'<span style="color:#A64A28">{data:%m/%Y}<br>Sem dados</span>'
+            f'<span style="color:{NAVY}"><b>{data:%m/%Y}</b></span>'
             if data == destaque else data.strftime("%m/%Y")
             for data in datas_eixo
         ]
         fig.update_xaxes(
             tickmode="array", tickvals=datas_eixo, ticktext=rotulos,
-            tickfont=dict(size=10, color="#536D82"),
+            tickfont=dict(size=10, color="#64748B"),
             automargin=True,
         )
     if len(serie.index):
