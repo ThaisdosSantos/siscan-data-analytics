@@ -98,6 +98,23 @@ def test_cabecalho_adequabilidade_sem_corte(dashboard: Page, largura: int, altur
     sem_erros(dashboard)
 
 
+def test_ordenacao_razao_anual_antes_da_tabela(dashboard: Page) -> None:
+    """Mantém orientações, filtro de ordenação e tabela na sequência visual."""
+    navegar(dashboard, "Faixa etária", "Faixa etária e produção de exames")
+    interpretacao = dashboard.get_by_text("Como interpretar esta tabela (Razão Anual %)", exact=False)
+    filtro = dashboard.locator(".st-key-ordenacao_tabela_razao_anual_q3")
+    tabela = dashboard.locator(".q3-razao-heatmap")
+    expect(interpretacao).to_be_visible()
+    expect(filtro).to_be_visible()
+    expect(tabela).to_be_visible()
+    caixas = [elemento.bounding_box() for elemento in (interpretacao, filtro, tabela)]
+    assert all(caixa is not None for caixa in caixas)
+    primeira, segunda, terceira = caixas
+    assert primeira["y"] + primeira["height"] <= segunda["y"]
+    assert segunda["y"] + segunda["height"] <= terceira["y"]
+    sem_erros(dashboard)
+
+
 def test_espacamento_perfil_etario(dashboard: Page) -> None:
     """Evita espaços vazios entre as fontes e o primeiro título da faixa etária."""
     navegar(dashboard, "Faixa etária", "Faixa etária e produção de exames")

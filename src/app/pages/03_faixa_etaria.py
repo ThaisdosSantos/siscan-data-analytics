@@ -266,6 +266,38 @@ def configurar_pagina() -> None:
     }
     .q3-section-title .q3-section-index {color:#006C9A;margin-right:10px;}
     div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff;}
+
+    .q3-razao-scroll {
+        width:100%; overflow-x:auto; border-radius:10px;
+        margin:12px 0 16px; box-shadow:0 2px 9px rgba(26,59,92,.12);
+    }
+    .q3-razao-heatmap {
+        width:100%; min-width:690px; border-collapse:collapse;
+        background:#fff; color:#1A3B5C;
+        font:500 15px Manrope,Arial,sans-serif;
+    }
+    .q3-razao-heatmap thead th {
+        background:#1A3B5C; color:#fff; text-align:center;
+        padding:14px 12px; font-weight:700;
+    }
+    .q3-razao-heatmap thead th:first-child {text-align:left;}
+    .q3-razao-heatmap tbody th {
+        background:#FFFFFF; color:#1A3B5C; text-align:left;
+        padding:12px 14px; white-space:nowrap; font-weight:650;
+        border-bottom:1px solid #E6EBF0;
+    }
+    .q3-razao-heatmap tbody td {
+        padding:12px; text-align:center; font-variant-numeric:tabular-nums;
+        font-weight:600; white-space:nowrap;
+        border-bottom:1px solid #E6EBF0;
+    }
+    .q3-razao-heatmap tbody tr:hover th {background:#F4F7FA;}
+    .q3-razao-heatmap tfoot th, .q3-razao-heatmap tfoot td {
+        background:#E8F0F6; color:#1A3B5C; font-weight:750;
+        padding:13px 12px; text-align:center;
+        border-top:2px solid #1A3B5C; white-space:nowrap;
+    }
+    .q3-razao-heatmap tfoot th {text-align:left;}
     </style>
     """, unsafe_allow_html=True)
     page_header(
@@ -834,6 +866,21 @@ def renderizar_tabela_razao(cob: pd.DataFrame, base: pd.DataFrame) -> None:
             "A razão serve para comparar produção relativa à população, "
             "**não representa a porcentagem de mulheres distintas rastreadas**."
         )
+    with st.expander("ℹ️ Como interpretar esta tabela (Razão Anual %)", expanded=False):
+        st.markdown(
+            "**O que mede:** em cada ano, compara a quantidade de exames "
+            "registrados em mulheres de 25–64 anos com a população feminina "
+            "dessa faixa etária no município (Censo IBGE 2022). "
+            "**Razão (%) = exames registrados ÷ população feminina de 25–64 anos × 100.**\n\n"
+            "**Como ler as cores do heatmap:**\n\n"
+            "- 🟠 **Faixa inferior (≤ 3,00%):** razão anual muito baixa no intervalo exploratório.\n"
+            "- 🔵 **Faixa intermediária (> 3,00% e < 33,00%):** gradiente azul; tons mais fortes indicam razões maiores.\n"
+            "- 🟢 **Faixa superior (≥ 33,00%):** razão igual ou superior ao limite visual de 33%.\n\n"
+            "**Comparação temporal:** compare as colunas para acompanhar como a razão "
+            "varia de um ano para outro. A linha regional usa a soma dos exames "
+            "dividida pela soma das populações, não a média simples dos municípios.\n\n"
+
+        )
     ordenar_tabela_razao = st.selectbox(
         "Ordenar por",
         options=["A–Z", "Maior média", "Menor média"],
@@ -890,59 +937,6 @@ def renderizar_tabela_razao(cob: pd.DataFrame, base: pd.DataFrame) -> None:
     html_heatmap = construir_heatmap_razao(
         pivo_cob, linha_regional_csv, nome_linha_regional
     )
-    st.markdown(
-        """
-        <style>
-        .q3-razao-scroll {
-            width:100%; overflow-x:auto; border-radius:10px;
-            margin:12px 0 16px; box-shadow:0 2px 9px rgba(26,59,92,.12);
-        }
-        .q3-razao-heatmap {
-            width:100%; min-width:690px; border-collapse:collapse;
-            background:#fff; color:#1A3B5C;
-            font:500 15px Manrope,Arial,sans-serif;
-        }
-        .q3-razao-heatmap thead th {
-            background:#1A3B5C; color:#fff; text-align:center;
-            padding:14px 12px; font-weight:700;
-        }
-        .q3-razao-heatmap thead th:first-child {text-align:left;}
-        .q3-razao-heatmap tbody th {
-            background:#FFFFFF; color:#1A3B5C; text-align:left;
-            padding:12px 14px; white-space:nowrap; font-weight:650;
-            border-bottom:1px solid #E6EBF0;
-        }
-        .q3-razao-heatmap tbody td {
-            padding:12px; text-align:center; font-variant-numeric:tabular-nums;
-            font-weight:600; white-space:nowrap;
-            border-bottom:1px solid #E6EBF0;
-        }
-        .q3-razao-heatmap tbody tr:hover th {background:#F4F7FA;}
-        .q3-razao-heatmap tfoot th, .q3-razao-heatmap tfoot td {
-            background:#E8F0F6; color:#1A3B5C; font-weight:750;
-            padding:13px 12px; text-align:center;
-            border-top:2px solid #1A3B5C; white-space:nowrap;
-        }
-        .q3-razao-heatmap tfoot th {text-align:left;}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-    with st.expander("ℹ️ Como interpretar esta tabela (Razão Anual %)", expanded=False):
-        st.markdown(
-            "**O que mede:** em cada ano, compara a quantidade de exames "
-            "registrados em mulheres de 25–64 anos com a população feminina "
-            "dessa faixa etária no município (Censo IBGE 2022). "
-            "**Razão (%) = exames registrados ÷ população feminina de 25–64 anos × 100.**\n\n"
-            "**Como ler as cores do heatmap:**\n\n"
-            "- 🟠 **Faixa inferior (≤ 3,00%):** razão anual muito baixa no intervalo exploratório.\n"
-            "- 🔵 **Faixa intermediária (> 3,00% e < 33,00%):** gradiente azul; tons mais fortes indicam razões maiores.\n"
-            "- 🟢 **Faixa superior (≥ 33,00%):** razão igual ou superior ao limite visual de 33%.\n\n"
-            "**Comparação temporal:** compare as colunas para acompanhar como a razão "
-            "varia de um ano para outro. A linha regional usa a soma dos exames "
-            "dividida pela soma das populações, não a média simples dos municípios.\n\n"
-
-        )
     st.markdown(html_heatmap, unsafe_allow_html=True)
     st.download_button(
         "⬇️ Exportar razão anual de exames (CSV)",
