@@ -85,7 +85,8 @@ def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     serie = pd.Series([1500, float("nan"), 1600], index=datas)
     fig = main.construir_grafico_mensal(serie, pd.DatetimeIndex([datas[1]]))
     assert len(fig.layout.shapes) == 0
-    assert all(datas[1] not in trace.x for trace in fig.data)
+    assert len(fig.data) == 1
+    assert pd.isna(fig.data[0].y[1])
     assert len(fig.layout.annotations) == 0
     assert "08/2022" in fig.layout.xaxis.ticktext
     assert list(fig.layout.xaxis.ticktext) == [
@@ -99,8 +100,8 @@ def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     assert fig.layout.yaxis.zerolinecolor == "#CBD5E1"
     assert fig.layout.xaxis.automargin
     assert datas[1] in fig.layout.xaxis.tickvals
-    assert [list(trace.y) for trace in fig.data] == [[1500], [1600]]
-    assert all(not trace.connectgaps and trace.fill == "none" for trace in fig.data)
+    assert list(fig.data[0].y[::2]) == [1500, 1600]
+    assert not fig.data[0].connectgaps and fig.data[0].fill == "tozeroy"
 
 
 def test_grafico_executivo_preenchimento_preserva_lacuna(carregar_modulo):
@@ -108,12 +109,24 @@ def test_grafico_executivo_preenchimento_preserva_lacuna(carregar_modulo):
     datas = pd.date_range("2022-06-01", "2022-10-01", freq="MS")
     serie = pd.Series([1500, 1550, float("nan"), 1600, 1700], index=datas)
     fig = main.construir_grafico_mensal(serie, pd.DatetimeIndex([datas[2]]))
-    assert len(fig.data) == 2
-    assert list(fig.data[0].x) == list(datas[:2])
-    assert list(fig.data[1].x) == list(datas[3:])
-    assert all(trace.fill == "tozeroy" and not trace.connectgaps
-               for trace in fig.data)
-    assert all(trace.fillcolor == "rgba(0,108,154,.08)" for trace in fig.data)
+    assert len(fig.data) == 1
+    assert list(fig.data[0].x) == list(datas)
+    assert pd.isna(fig.data[0].y[2])
+    assert fig.data[0].fill == "tozeroy" and not fig.data[0].connectgaps
+    assert fig.data[0].fillcolor == "rgba(0,108,154,.08)"
+
+
+def test_grafico_executivo_preserva_marcos_anuais(carregar_modulo):
+    main = carregar_modulo("main.py")
+    datas = pd.date_range("2020-01-01", "2025-12-01", freq="MS")
+    serie = pd.Series(1500.0, index=datas)
+    agosto = pd.Timestamp("2022-08-01")
+    serie.loc[agosto] = float("nan")
+    fig = main.construir_grafico_mensal(serie, pd.DatetimeIndex([agosto]))
+    assert list(fig.layout.xaxis.ticktext) == [
+        "01/2020", "01/2021", "01/2022", "08/2022",
+        "01/2023", "01/2024", "01/2025",
+    ]
 
 
 def test_grafico_executivo_marcadores_e_margem(carregar_modulo):

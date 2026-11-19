@@ -477,19 +477,26 @@ def construir_diagrama_territorial(
 def construir_grafico_mensal(
     serie: pd.Series, ausentes: pd.DatetimeIndex
 ) -> go.Figure:
-    """Destaca as competências ausentes sem interpolar ou inventar valores."""
+    """Mantém a lacuna na linha e um fundo de área contínuo em ausência isolada."""
     fig = go.Figure()
-    # Preenche cada trecho observado separadamente, preservando a lacuna.
-    # Nem a linha nem a área atravessam meses ausentes ou anos fora do recorte.
-    for _, trecho in serie.groupby(serie.isna().cumsum()):
-        trecho = trecho.dropna()
-        if trecho.empty:
+    # Mantém o NaN de uma competência ausente isolada dentro do mesmo trace:
+    # o preenchimento do Plotly passa por ela, mas connectgaps=False interrompe
+    # a linha e não cria ponto, valor ou tooltip. Lacunas maiores e anos fora
+    # do recorte continuam separando os trechos, inclusive no preenchimento.
+    isoladas = (
+        serie.isna() & serie.index.isin(ausentes)
+        & serie.shift(1).notna() & serie.shift(-1).notna()
+    )
+    separadores = serie.isna() & ~isoladas
+    for _, trecho in serie[~separadores].groupby(separadores.cumsum()[~separadores]):
+        observados = int(trecho.notna().sum())
+        if not observados:
             continue
         fig.add_trace(go.Scatter(
-            x=trecho.index, y=trecho, mode="lines+markers" if len(trecho) > 1 else "markers",
+            x=trecho.index, y=trecho, mode="lines+markers" if observados > 1 else "markers",
             line=dict(color=OCEAN, width=2),
             marker=dict(size=4, color=OCEAN, line=dict(color="white", width=0.5)),
-            fill="tozeroy" if len(trecho) > 1 else "none",
+            fill="tozeroy" if observados > 1 else "none",
             fillcolor="rgba(0,108,154,.08)",
             connectgaps=False,
             hovertemplate="%{x|%m/%Y}<br>%{y:,.0f} exames<extra></extra>",
@@ -521,13 +528,11 @@ def construir_grafico_mensal(
         tickfont=dict(size=10, color="#64748B"), automargin=True,
     )
     if destaque is not None and len(serie.index):
-        # Insere a competência no eixo em vez de uma caixa sobre o gráfico.
-        # Substitui o tick mais próximo, evitando rótulos muito juntos.
+        # Preserva as referências anuais e acrescenta a competência ausente,
+        # sem substituir janeiro/2023 nem qualquer outro rótulo regular.
         datas_eixo = serie.index[::max(1, (len(serie.index) + 5) // 6)].tolist()
         if destaque not in datas_eixo:
-            mais_proxima = min(range(len(datas_eixo)),
-                               key=lambda i: abs(datas_eixo[i] - destaque))
-            datas_eixo[mais_proxima] = destaque
+            datas_eixo.append(destaque)
             datas_eixo.sort()
         # Todas as datas têm a mesma cor, tamanho e peso tipográfico.
         rotulos = [data.strftime("%m/%Y") for data in datas_eixo]

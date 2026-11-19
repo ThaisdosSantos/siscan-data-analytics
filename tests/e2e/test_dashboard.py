@@ -180,6 +180,7 @@ def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
     expect(frame.locator(".xtick text").filter(has_text="08/2022")).to_have_text(
         "08/2022", timeout=30_000,
     )
+    expect(frame.locator(".xtick text").filter(has_text="01/2023")).to_have_text("01/2023")
     expect(frame.locator(".xtick text").filter(has_text="Sem dados")).to_have_count(0)
     expect(frame.locator(".annotation-text")).to_have_count(0)
     grafico = frame.locator(".js-plotly-plot")
@@ -187,7 +188,8 @@ def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
     expect(grafico.locator(".modebar-btn")).to_have_count(2)
     assert grafico.evaluate("(el) => el._context.displayModeBar") == "hover"
     assert grafico.evaluate("(el) => (el.layout.shapes || []).length") == 0
-    assert grafico.evaluate("(el) => el.data.every(trace => trace.fill === 'tozeroy')")
+    assert grafico.evaluate("(el) => el.data.length === 1 && el.data[0].fill === 'tozeroy' && !el.data[0].connectgaps")
+    assert grafico.evaluate("(el) => el.data[0].y[31] == null || Number.isNaN(el.data[0].y[31])")
     assert grafico.evaluate("(el) => el.layout.xaxis.linecolor") == "#CBD5E1"
     assert grafico.evaluate("(el) => el.layout.yaxis.zerolinecolor") == "#CBD5E1"
     # A nota deve ficar próxima do eixo, sem sobrepor nem cortar o rótulo.
