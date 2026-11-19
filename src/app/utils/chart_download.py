@@ -7,9 +7,12 @@ import streamlit.components.v1 as components
 
 def chart_with_right_click_download(
     fig, *, filename, height=None, export_fig=None, min_chart_width=0,
-    compact_modebar=False,
+    compact_modebar=False, bottom_space=28,
 ):
-    """Exibe Plotly interativo, com opção de barra de ferramentas compacta."""
+    """Exibe Plotly interativo com opções de barra e espaço inferior do iframe.
+
+    O espaço adicional padrão é mantido para os demais gráficos.
+    """
     height = int(height if height is not None else (fig.layout.height or 430))
     name = filename.removesuffix(".png")
     min_width = max(0, int(min_chart_width))
@@ -190,4 +193,4 @@ if("ResizeObserver" in window){
             .replace("__MODEBAR_CLASS__", "compact-modebar" if compact_modebar else "")
             .replace("__FILENAME__", json.dumps(name))
             .replace("__EXPORT_SPEC__", export_spec))
-    components.html(html, height=height + 28, scrolling=False)
+    components.html(html, height=height + max(0, int(bottom_space)), scrolling=False)

@@ -495,7 +495,7 @@ def construir_grafico_mensal(
         )
     destaque = agosto if agosto in ausentes else (ausentes[0] if len(ausentes) == 1 else None)
     fig.update_layout(height=370, showlegend=False,
-                      margin=dict(l=70, r=18, t=22, b=64 if destaque is not None else 50),
+                      margin=dict(l=70, r=18, t=22, b=42 if destaque is not None else 32),
                       plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)",
                       hovermode="closest", hoverdistance=20,
                       hoverlabel=dict(bgcolor="white", bordercolor="#D5E3ED",
@@ -567,7 +567,7 @@ def renderizar_graficos(
             fig = construir_grafico_mensal(serie, ausentes)
             chart_with_right_click_download(
                 fig, filename="visao_executiva_evolucao_mensal.png",
-                height=fig.layout.height, compact_modebar=True,
+                height=fig.layout.height, compact_modebar=True, bottom_space=4,
             )
             if len(ausentes):
                 competencias = ", ".join(ausentes.strftime("%m/%Y"))

@@ -92,6 +92,8 @@ def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
                for rotulo in fig.layout.xaxis.ticktext)
     assert all(trace.marker.size == 4 for trace in fig.data)
     assert fig.layout.hovermode == "closest"
+    assert fig.layout.margin.b == 42
+    assert fig.layout.xaxis.automargin
     assert datas[1] in fig.layout.xaxis.tickvals
     assert [list(trace.y) for trace in fig.data] == [[1500], [1600]]
     assert all(not trace.connectgaps for trace in fig.data)
@@ -107,6 +109,7 @@ def test_grafico_executivo_marcadores_e_margem(carregar_modulo):
     assert fig.data[0].marker.size == 4
     assert fig.layout.xaxis.tickformat == "%m/%Y"
     assert fig.layout.xaxis.ticklen == 5
+    assert fig.layout.margin.b == 32
     assert pd.Timestamp(fig.layout.xaxis.range[0]) < datas[0]
     assert fig.layout.modebar.bgcolor == "rgba(255,255,255,0)"
 

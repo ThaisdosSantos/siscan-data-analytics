@@ -185,6 +185,14 @@ def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
     expect(grafico.locator(".scatterlayer .point")).to_have_count(71)
     expect(grafico.locator(".modebar-btn")).to_have_count(2)
     assert grafico.evaluate("(el) => el._context.displayModeBar") == "hover"
+    # A nota deve ficar próxima do eixo, sem sobrepor nem cortar o rótulo.
+    rotulo = frame.locator(".xtick text").filter(has_text="08/2022")
+    nota = card.get_by_text("A lacuna não representa zero exames.", exact=False)
+    caixa_rotulo = rotulo.bounding_box()
+    caixa_nota = nota.bounding_box()
+    assert caixa_rotulo is not None and caixa_nota is not None
+    distancia = caixa_nota["y"] - (caixa_rotulo["y"] + caixa_rotulo["height"])
+    assert 0 <= distancia <= 48
     sem_erros(dashboard)
 
 
