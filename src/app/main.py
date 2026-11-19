@@ -477,8 +477,9 @@ def construir_grafico_mensal(
         if trecho.empty:
             continue
         fig.add_trace(go.Scatter(
-            x=trecho.index, y=trecho, mode="lines" if len(trecho) > 1 else "markers",
+            x=trecho.index, y=trecho, mode="lines+markers" if len(trecho) > 1 else "markers",
             line=dict(color=OCEAN, width=2),
+            marker=dict(size=4, color=OCEAN, line=dict(color="white", width=0.5)),
             fill="tozeroy" if len(trecho) > 1 else "none",
             fillcolor="rgba(0,108,154,.08)",
             connectgaps=False,
@@ -494,14 +495,24 @@ def construir_grafico_mensal(
         )
     destaque = agosto if agosto in ausentes else (ausentes[0] if len(ausentes) == 1 else None)
     fig.update_layout(height=370, showlegend=False,
-                      margin=dict(l=65, r=18, t=22, b=58 if destaque is not None else 45),
-                      plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)")
+                      margin=dict(l=70, r=18, t=22, b=64 if destaque is not None else 50),
+                      plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)",
+                      hovermode="closest", hoverdistance=20,
+                      hoverlabel=dict(bgcolor="white", bordercolor="#D5E3ED",
+                                      font=dict(color=NAVY)),
+                      modebar=dict(bgcolor="rgba(255,255,255,0)",
+                                   color="#72879D", activecolor=OCEAN))
     fig.update_yaxes(
         gridcolor="#e9eff3", rangemode="tozero", tickformat=",.0f",
         tickfont=dict(size=11, color=NAVY), automargin=True,
         title_text="Exames", title_standoff=10,
+        ticks="outside", ticklen=5, tickcolor="#D5E3ED",
     )
-    fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
+    fig.update_xaxes(
+        showgrid=False, tickformat="%m/%Y", nticks=6,
+        ticks="outside", ticklen=5, tickcolor="#D5E3ED",
+        tickfont=dict(size=10, color="#536D82"), automargin=True,
+    )
     if destaque is not None and len(serie.index):
         # Insere a competência no eixo em vez de uma caixa sobre o gráfico.
         # Substitui o tick mais próximo, evitando rótulos muito juntos.
@@ -512,8 +523,8 @@ def construir_grafico_mensal(
             datas_eixo[mais_proxima] = destaque
             datas_eixo.sort()
         rotulos = [
-            f"<b>{data:%m/%y}</b><br>Sem dados" if data == destaque
-            else data.strftime("%m/%y")
+            f'<span style="color:#A64A28">{data:%m/%Y}<br>Sem dados</span>'
+            if data == destaque else data.strftime("%m/%Y")
             for data in datas_eixo
         ]
         fig.update_xaxes(
@@ -523,8 +534,8 @@ def construir_grafico_mensal(
         )
     if len(serie.index):
         fig.update_xaxes(range=[
-            serie.index.min() - pd.Timedelta(days=15),
-            serie.index.max() + pd.Timedelta(days=15),
+            serie.index.min() - pd.Timedelta(days=24),
+            serie.index.max() + pd.Timedelta(days=24),
         ])
     return fig
 
@@ -554,7 +565,10 @@ def renderizar_graficos(
                         '<div class="exec-card-sub">Competência × exames registrados</div>',
                         unsafe_allow_html=True)
             fig = construir_grafico_mensal(serie, ausentes)
-            chart_with_right_click_download(fig, filename="visao_executiva_evolucao_mensal.png", height=fig.layout.height)
+            chart_with_right_click_download(
+                fig, filename="visao_executiva_evolucao_mensal.png",
+                height=fig.layout.height, compact_modebar=True,
+            )
             if len(ausentes):
                 competencias = ", ".join(ausentes.strftime("%m/%Y"))
                 st.caption(

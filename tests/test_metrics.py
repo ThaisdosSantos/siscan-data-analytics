@@ -88,11 +88,27 @@ def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     assert fig.layout.shapes[0].line.dash == "dot"
     assert pd.Timestamp(fig.layout.shapes[0].x0) == datas[1]
     assert len(fig.layout.annotations) == 0
-    assert any("08/22" in rotulo and "Sem dados" in rotulo
+    assert any("08/2022" in rotulo and "Sem dados" in rotulo and "#A64A28" in rotulo
                for rotulo in fig.layout.xaxis.ticktext)
+    assert all(trace.marker.size == 4 for trace in fig.data)
+    assert fig.layout.hovermode == "closest"
     assert datas[1] in fig.layout.xaxis.tickvals
     assert [list(trace.y) for trace in fig.data] == [[1500], [1600]]
     assert all(not trace.connectgaps for trace in fig.data)
+
+
+def test_grafico_executivo_marcadores_e_margem(carregar_modulo):
+    main = carregar_modulo("main.py")
+    datas = pd.date_range("2022-01-01", periods=3, freq="MS")
+    serie = pd.Series([100, 0, 200], index=datas)
+    fig = main.construir_grafico_mensal(serie, pd.DatetimeIndex([]))
+    assert fig.data[0].mode == "lines+markers"
+    assert list(fig.data[0].y) == [100, 0, 200]
+    assert fig.data[0].marker.size == 4
+    assert fig.layout.xaxis.tickformat == "%m/%Y"
+    assert fig.layout.xaxis.ticklen == 5
+    assert pd.Timestamp(fig.layout.xaxis.range[0]) < datas[0]
+    assert fig.layout.modebar.bgcolor == "rgba(255,255,255,0)"
 
 
 def test_grafico_executivo_nao_marca_ano_fora_do_recorte(carregar_modulo):

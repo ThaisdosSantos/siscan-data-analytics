@@ -5,8 +5,11 @@ from plotly.utils import PlotlyJSONEncoder
 import streamlit.components.v1 as components
 
 
-def chart_with_right_click_download(fig, *, filename, height=None, export_fig=None, min_chart_width=0):
-    """Exibe Plotly interativo: botão direito abre a opção de baixar PNG."""
+def chart_with_right_click_download(
+    fig, *, filename, height=None, export_fig=None, min_chart_width=0,
+    compact_modebar=False,
+):
+    """Exibe Plotly interativo, com opção de barra de ferramentas compacta."""
     height = int(height if height is not None else (fig.layout.height or 430))
     name = filename.removesuffix(".png")
     min_width = max(0, int(min_chart_width))
@@ -49,10 +52,20 @@ def chart_with_right_click_download(fig, *, filename, height=None, export_fig=No
             font=dict(color="#1A3B5C"),
         )
     export_spec = json.dumps(export_fig.to_plotly_json(), cls=PlotlyJSONEncoder)
+    config = {
+        "responsive": True, "displayModeBar": True, "displaylogo": False,
+        "toImageButtonOptions": {"format": "png", "filename": name, "scale": 2},
+    }
+    if compact_modebar:
+        # O zoom por seleção continua disponível; a restauração evita prender
+        # o usuário em um recorte ampliado. Os demais gráficos não mudam.
+        config.update(
+            displayModeBar="hover",
+            modeBarButtons=[["toImage", "resetScale2d"]],
+        )
     figure = fig.to_html(
         full_html=False, include_plotlyjs="cdn",
-        config={"responsive": True, "displayModeBar": True, "displaylogo": False,
-                "toImageButtonOptions": {"format": "png", "filename": name, "scale": 2}},
+        config=config,
         default_width="100%", default_height=str(height) + "px",
     )
     html = """<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
@@ -71,6 +84,25 @@ html,body{margin:0;background:transparent;font-family:Arial,sans-serif}
   #chart-scroll{overscroll-behavior-x:contain;scrollbar-width:thin}
   #chart-content .modebar{opacity:.8}
 }
+.compact-modebar #chart-content .modebar {
+  background:transparent!important;
+}
+.compact-modebar #chart-content .modebar-group {
+  background:transparent!important;
+}
+.compact-modebar #chart-content .modebar-btn {
+  opacity:.65;transition:opacity .15s;
+}
+.compact-modebar #chart-content .modebar-btn:hover,
+.compact-modebar #chart-content .modebar-btn:focus-visible {
+  opacity:1;
+}
+.compact-modebar #chart-content:focus-within .modebar {
+  opacity:1!important;
+}
+@media(hover:none), (pointer:coarse){
+  .compact-modebar #chart-content .modebar {opacity:1!important;}
+}
 #menu{display:none;position:absolute;z-index:1000;border:1px solid #cbd9e4;
 border-radius:8px;padding:5px;background:white;box-shadow:0 7px 20px #1a3b5c33}
 #menu button{cursor:pointer;border:0;border-radius:5px;background:white;
@@ -81,7 +113,7 @@ background:#006C9A;color:#fff;border:0;border-radius:8px;padding:9px 12px;
 font:600 12px Arial,sans-serif;box-shadow:0 2px 8px #1a3b5c33;cursor:pointer}
 @media(hover:none), (pointer:coarse){#mobile-save{display:block}}
 
-</style></head><body><div id="wrap">
+</style></head><body class="__MODEBAR_CLASS__"><div id="wrap">
 <div id="chart-scroll" tabindex="0" role="region" aria-label="Gráfico interativo, deslize horizontalmente quando necessário"><div id="chart-content">__FIGURE__</div></div>
 <div id="chart-hint" aria-hidden="true">↔ Deslize para explorar o gráfico</div>
 <div id="menu" role="menu" aria-label="Exportar gráfico">
@@ -155,6 +187,7 @@ if("ResizeObserver" in window){
 </script></body></html>"""
     html = (html.replace("__FIGURE__", figure)
             .replace("__MIN_WIDTH__", str(min_width))
+            .replace("__MODEBAR_CLASS__", "compact-modebar" if compact_modebar else "")
             .replace("__FILENAME__", json.dumps(name))
             .replace("__EXPORT_SPEC__", export_spec))
     components.html(html, height=height + 28, scrolling=False)

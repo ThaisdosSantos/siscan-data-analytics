@@ -177,10 +177,14 @@ def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
     expect(card.get_by_text("08/2022", exact=False)).to_be_visible()
     expect(card.get_by_text("A lacuna não representa zero exames.", exact=False)).to_be_visible()
     frame = card.frame_locator("iframe")
-    expect(frame.locator(".xtick text").filter(has_text="08/22")).to_contain_text(
+    expect(frame.locator(".xtick text").filter(has_text="08/2022")).to_contain_text(
         "Sem dados", timeout=30_000,
     )
     expect(frame.locator(".annotation-text")).to_have_count(0)
+    grafico = frame.locator(".js-plotly-plot")
+    expect(grafico.locator(".scatterlayer .point")).to_have_count(71)
+    expect(grafico.locator(".modebar-btn")).to_have_count(2)
+    assert grafico.evaluate("(el) => el._context.displayModeBar") == "hover"
     sem_erros(dashboard)
 
 
