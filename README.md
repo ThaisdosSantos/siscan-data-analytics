@@ -31,9 +31,12 @@ flowchart LR
     end
 
     subgraph Application["Analytics · Read-only"]
-        Q --> S["Streamlit"]
-        S --> P["Pandas / Plotly"]
+        P["Pandas"] --> V["Plotly"]
+        P --> S["Streamlit"]
+        V --> S
     end
+
+    Q --> P
 ```
 
 - **Processamento em lote:** arquitetura Medallion com persistência em Delta Lake, rastreabilidade dos arquivos de origem e validações entre camadas.
