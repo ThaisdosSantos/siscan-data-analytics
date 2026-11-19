@@ -39,6 +39,23 @@ def test_visao_executiva(dashboard: Page) -> None:
     sem_erros(dashboard)
 
 
+@pytest.mark.parametrize(("chave", "titulo", "rota"), [
+    ("exec-nav-panorama", "Volume de exames por competência e município", "panorama_geral"),
+    ("exec-nav-alterados", "Exames citopatológicos alterados", "exames_alterados"),
+    ("exec-nav-outubro", "Outubro Rosa: produção e perfil etário dos exames", "outubro_rosa"),
+])
+def test_atalhos_visao_executiva(dashboard: Page, chave: str, titulo: str, rota: str) -> None:
+    """Clica na região da seta de cada card e verifica a navegação interna."""
+    link = dashboard.locator(f".st-key-{chave}").get_by_role("link")
+    expect(link).to_be_visible()
+    caixa = link.bounding_box()
+    assert caixa is not None and caixa["height"] >= 70
+    link.click(position={"x": caixa["width"] - 20, "y": caixa["height"] / 2})
+    expect(dashboard).to_have_url(re.compile(rf"/{rota}/?(?:\?.*)?$"))
+    expect(dashboard.get_by_role("heading", level=1)).to_have_text(titulo, timeout=30_000)
+    sem_erros(dashboard)
+
+
 @pytest.mark.parametrize(("nome", "titulo", "marco"), [
     ("Panorama geral", "Volume de exames por competência e município",
      "Variação anual de exames por município (ano a ano)"),
@@ -142,7 +159,10 @@ def test_filtros_persistem_entre_paginas(dashboard: Page) -> None:
     dashboard.get_by_role("button", name="Aplicar filtros").click()
     expect(dashboard.locator(".exec-metric-value").first).to_have_text("1.220", timeout=30_000)
     expect(dashboard.locator(".exec-metric-value").nth(2)).to_have_text("12 de 12")
-    navegar(dashboard, "Panorama geral", "Volume de exames por competência e município")
+    dashboard.locator(".st-key-exec-nav-panorama").get_by_role("link").click()
+    expect(dashboard.get_by_role("heading", level=1)).to_have_text(
+        "Volume de exames por competência e município", timeout=30_000,
+    )
     escopo = dashboard.get_by_role("status", name="Recorte ativo")
     expect(escopo).to_contain_text("2020")
     expect(escopo).to_contain_text("1 de 11 municípios")

@@ -6,6 +6,7 @@ Os registros representam exames, não mulheres distintas.
 """
 
 import html
+import json
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -226,62 +227,58 @@ ESTILOS_ATALHOS = """
 <style>
 .exec-explore-heading{margin:26px 0 7px;color:#1A3B5C;font-size:1.2rem;font-weight:750;font-family:Manrope,Arial,sans-serif;}
 .exec-explore-desc{color:#60758a;font-size:.84rem;margin:0 0 15px;}
-.exec-nav-subtitle{
-  color:#72879d!important;font-size:.76rem!important;
-  margin-top:1px!important;line-height:1.35!important;
-  text-align:left!important;pointer-events:none;
-}
-.st-key-exec-nav-panorama,
-.st-key-exec-nav-outubro,
-.st-key-exec-nav-alterados{
+[data-testid="stMain"] :is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados){
   position:relative!important;background:#fff!important;
   border:1px solid #d7dde3!important;border-radius:13px!important;
-  padding:15px 16px!important;min-height:78px!important;
+  padding:0!important;min-height:78px!important;
   box-shadow:0 3px 9px rgba(26,59,92,.07)!important;
   transition:border-color .15s,box-shadow .15s,transform .15s;
 }
-.st-key-exec-nav-panorama:hover,
-.st-key-exec-nav-outubro:hover,
-.st-key-exec-nav-alterados:hover{
+:is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados):hover{
   border-color:#EE5325!important;
   box-shadow:0 7px 20px rgba(26,59,92,.13)!important;
   transform:translateY(-1px);
 }
-.st-key-exec-nav-panorama::after,
-.st-key-exec-nav-outubro::after,
-.st-key-exec-nav-alterados::after{
+:is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados)::after{
   content:"→";position:absolute;right:16px;top:50%;
   transform:translateY(-50%);color:#EE5325;
   font-size:1.35rem;font-weight:500;pointer-events:none;
 }
-.st-key-exec-nav-panorama .exec-nav-title,
-.st-key-exec-nav-outubro .exec-nav-title,
-.st-key-exec-nav-alterados .exec-nav-title{
-  font-family:Fraunces,Georgia,serif!important;
-  font-size:1rem!important;font-weight:650!important;
-  line-height:1.3!important;color:#1A3B5C!important;
-  text-align:left!important;margin:0 35px 2px 0!important;
+:is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados) [data-testid="stPageLink"]{
+  width:100%!important;
 }
-.st-key-exec-nav-panorama [data-testid="stVerticalBlock"],
-.st-key-exec-nav-outubro [data-testid="stVerticalBlock"],
-.st-key-exec-nav-alterados [data-testid="stVerticalBlock"]{
-  gap:0!important;
+:is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados) [data-testid="stPageLink"] a{
+  display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+  justify-content:center!important;gap:2px!important;
+  width:100%!important;min-height:76px!important;box-sizing:border-box!important;
+  padding:15px 35px 15px 16px!important;border-radius:12px!important;
+  background:transparent!important;border:0!important;text-decoration:none!important;
+  cursor:pointer!important;
 }
-.st-key-exec-nav-panorama [data-testid="stButton"],
-.st-key-exec-nav-outubro [data-testid="stButton"],
-.st-key-exec-nav-alterados [data-testid="stButton"]{
-  height:0!important;min-height:0!important;margin:0!important;padding:0!important;
+:is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados) [data-testid="stPageLink"] a,
+:is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados) [data-testid="stPageLink"] a p{
+  font-family:Fraunces,Georgia,serif!important;font-size:1rem!important;font-weight:650!important;
+  line-height:1.3!important;color:#1A3B5C!important;text-align:left!important;margin:0!important;
 }
-.st-key-exec-nav-panorama [data-testid="stButton"] button,
-.st-key-exec-nav-outubro [data-testid="stButton"] button,
-.st-key-exec-nav-alterados [data-testid="stButton"] button{
-  position:absolute!important;inset:0!important;
-  display:block!important;width:100%!important;height:100%!important;
-  min-height:0!important;opacity:0!important;cursor:pointer!important;
-  z-index:3!important;
+:is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados) [data-testid="stPageLink"] a::after{
+  content:var(--exec-nav-subtitle);display:block;white-space:normal;
+  font-family:Manrope,Arial,sans-serif;color:#72879d!important;font-size:.76rem!important;
+  font-weight:400;line-height:1.35;text-align:left;
 }
-</style>
+:is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados) [data-testid="stPageLink"] a:focus-visible{
+  outline:2px solid #EE5325!important;outline-offset:-3px!important;
+}
+@media(max-width:768px){
+  :is(.st-key-exec-nav-panorama,.st-key-exec-nav-outubro,.st-key-exec-nav-alterados) [data-testid="stPageLink"] a{
+    padding:14px 35px 14px 14px!important;min-height:75px!important;
+  }
+}
 """
+# Os subtítulos são gerados a partir da mesma definição usada para os atalhos.
+ESTILOS_ATALHOS += "\n".join(
+    f".st-key-{key} {{ --exec-nav-subtitle: {json.dumps(subtitle, ensure_ascii=False)}; }}"
+    for _, subtitle, _, key in ATALHOS
+) + "\n</style>"
 
 
 def agregar_mensal(df: pd.DataFrame) -> pd.Series:
@@ -524,17 +521,11 @@ def renderizar_atalhos() -> None:
         'período e resultado citopatológico.</p>',
         unsafe_allow_html=True,
     )
-    for col, (title, subtitle, page, key) in zip(st.columns(3, gap="medium"), ATALHOS):
+    for col, (title, _, page, key) in zip(st.columns(3, gap="medium"), ATALHOS):
         with col:
             with st.container(key=key):
-                st.markdown(
-                    '<div class="exec-nav-title">' + html.escape(title) + '</div>'
-                    '<div class="exec-nav-subtitle">' + html.escape(subtitle) + '</div>',
-                    unsafe_allow_html=True,
-                )
-                if st.button("Abrir " + title, key="exec-open-" + key,
-                             use_container_width=True):
-                    st.switch_page(page)
+                # O link nativo ocupa o card inteiro e usa o roteador compartilhado.
+                st.page_link(page, label=title, use_container_width=True)
 
 
 def main() -> None:
