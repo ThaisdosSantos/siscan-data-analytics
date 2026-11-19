@@ -190,7 +190,14 @@ def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
     assert grafico.evaluate("(el) => el.layout.yaxis.zerolinecolor") == "#CBD5E1"
     # A nota deve ficar próxima do eixo, sem sobrepor nem cortar o rótulo.
     rotulo = frame.locator(".xtick text").filter(has_text="08/2022")
-    nota = card.get_by_text("A lacuna não representa zero exames.", exact=False)
+    nota = card.locator(".exec-month-note")
+    expect(nota).to_contain_text("A lacuna não representa zero exames.")
+    expect(nota).to_have_css("color", "rgb(64, 86, 107)")
+    expect(nota.locator("strong")).to_have_css("color", "rgb(26, 59, 92)")
+    assert nota.evaluate("(el) => parseFloat(getComputedStyle(el).fontSize)") >= 13
+    assert rotulo.evaluate("(el) => getComputedStyle(el).fill") == frame.locator(
+        ".xtick text"
+    ).first.evaluate("(el) => getComputedStyle(el).fill")
     caixa_rotulo = rotulo.bounding_box()
     caixa_nota = nota.bounding_box()
     assert caixa_rotulo is not None and caixa_nota is not None

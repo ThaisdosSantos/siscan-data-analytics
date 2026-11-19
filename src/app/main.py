@@ -83,6 +83,18 @@ ESTILOS_EXECUTIVOS = """
 .st-key-exec-month-card [data-testid="stPlotlyChart"]{border:none!important;
     box-shadow:none!important;background:transparent!important;padding:0!important}
 .st-key-exec-bubble-card,.st-key-exec-month-card{border-radius:14px!important;background:white!important}
+/* Nota da série temporal: contraste suficiente sem competir com o gráfico. */
+.st-key-exec-month-card .exec-month-note {
+    font-family:Manrope,Arial,sans-serif!important;
+    font-size:.9rem!important;line-height:1.55!important;
+    color:#40566B!important;font-weight:500;
+    padding:9px 12px;margin:0;
+    background:#F1F6FA;border-left:3px solid #006C9A;
+    border-radius:6px;overflow-wrap:break-word;
+}
+.st-key-exec-month-card .exec-month-note strong {
+    color:#1A3B5C!important;font-weight:750!important;
+}
 @media(max-width:850px){
   .exec-hero{padding:24px 18px 48px;margin-bottom:0;}
   .exec-metric{height:124px;}
@@ -524,11 +536,8 @@ def construir_grafico_mensal(
                                key=lambda i: abs(datas_eixo[i] - destaque))
             datas_eixo[mais_proxima] = destaque
             datas_eixo.sort()
-        rotulos = [
-            f'<span style="color:{NAVY}"><b>{data:%m/%Y}</b></span>'
-            if data == destaque else data.strftime("%m/%Y")
-            for data in datas_eixo
-        ]
+        # Todas as datas têm a mesma cor, tamanho e peso tipográfico.
+        rotulos = [data.strftime("%m/%Y") for data in datas_eixo]
         fig.update_xaxes(
             tickmode="array", tickvals=datas_eixo, ticktext=rotulos,
             tickfont=dict(size=10, color="#64748B"),
@@ -573,9 +582,11 @@ def renderizar_graficos(
             )
             if len(ausentes):
                 competencias = ", ".join(ausentes.strftime("%m/%Y"))
-                st.caption(
-                    f"**{competencias} — sem dados na base.** "
-                    "A lacuna não representa zero exames."
+                st.markdown(
+                    '<div class="exec-month-note" role="note">'
+                    f'<strong>{html.escape(competencias)} — sem dados na base.</strong> '
+                    'A lacuna não representa zero exames.</div>',
+                    unsafe_allow_html=True,
                 )
 
 
