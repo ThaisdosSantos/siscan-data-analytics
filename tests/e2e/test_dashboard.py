@@ -186,6 +186,7 @@ def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
     expect(grafico.locator(".scatterlayer .point")).to_have_count(71)
     expect(grafico.locator(".modebar-btn")).to_have_count(2)
     assert grafico.evaluate("(el) => el._context.displayModeBar") == "hover"
+    assert grafico.evaluate("(el) => (el.layout.shapes || []).length") == 0
     assert grafico.evaluate("(el) => el.layout.xaxis.linecolor") == "#CBD5E1"
     assert grafico.evaluate("(el) => el.layout.yaxis.zerolinecolor") == "#CBD5E1"
     # A nota deve ficar próxima do eixo, sem sobrepor nem cortar o rótulo.

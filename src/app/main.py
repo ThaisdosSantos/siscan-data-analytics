@@ -499,12 +499,8 @@ def construir_grafico_mensal(
         ))
 
     agosto = pd.Timestamp("2022-08-01")
-    # Uma referência fina e neutra mantém o foco na série de produção.
-    for data in ausentes:
-        fig.add_vline(
-            x=data, line=dict(color="#8396A6", width=1.2, dash="dot"),
-            layer="below",
-        )
+    # A lacuna natural entre os trechos e o rótulo no eixo sinalizam
+    # a ausência, sem linhas verticais ou sobreposições decorativas.
     destaque = agosto if agosto in ausentes else (ausentes[0] if len(ausentes) == 1 else None)
     fig.update_layout(height=370, showlegend=False,
                       margin=dict(l=70, r=18, t=22, b=32),

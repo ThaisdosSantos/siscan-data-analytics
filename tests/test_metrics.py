@@ -84,9 +84,8 @@ def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     datas = pd.date_range("2022-07-01", "2022-09-01", freq="MS")
     serie = pd.Series([1500, float("nan"), 1600], index=datas)
     fig = main.construir_grafico_mensal(serie, pd.DatetimeIndex([datas[1]]))
-    assert len(fig.layout.shapes) == 1
-    assert fig.layout.shapes[0].line.dash == "dot"
-    assert pd.Timestamp(fig.layout.shapes[0].x0) == datas[1]
+    assert len(fig.layout.shapes) == 0
+    assert all(datas[1] not in trace.x for trace in fig.data)
     assert len(fig.layout.annotations) == 0
     assert "08/2022" in fig.layout.xaxis.ticktext
     assert list(fig.layout.xaxis.ticktext) == [
@@ -124,9 +123,11 @@ def test_grafico_executivo_nao_marca_ano_fora_do_recorte(carregar_modulo):
     serie = pd.Series([1500, 1600], index=pd.to_datetime(["2020-12-01", "2022-01-01"]))
     completa, ausentes, _ = main.preparar_serie_mensal(serie, [2020, 2022])
     fig = main.construir_grafico_mensal(completa, ausentes)
-    assert all(pd.Timestamp(shape.x0).year in (2020, 2022)
-               for shape in fig.layout.shapes)
-    assert len(fig.layout.shapes) == len(ausentes)
+    assert len(fig.layout.shapes) == 0
+    assert all(pd.Timestamp(data).year in (2020, 2022)
+               for trace in fig.data for data in trace.x)
+    assert len(ausentes) == 22
+    assert [list(trace.y) for trace in fig.data] == [[1500], [1600]]
 
 
 @pytest.mark.parametrize("rotulo,esperado", [
