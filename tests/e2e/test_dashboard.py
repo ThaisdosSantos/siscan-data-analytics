@@ -77,6 +77,27 @@ def test_navegacao(dashboard: Page, nome: str, titulo: str, marco: str) -> None:
     sem_erros(dashboard)
 
 
+@pytest.mark.parametrize(("largura", "altura"), [(1280, 900), (1015, 740), (414, 736)])
+def test_cabecalho_adequabilidade_sem_corte(dashboard: Page, largura: int, altura: int) -> None:
+    """O cabeçalho deve começar abaixo da barra superior, inclusive em telas menores."""
+    # Navega antes de reduzir a largura para não depender do menu móvel.
+    navegar(dashboard, "Adequabilidade", "Adequabilidade das amostras")
+    dashboard.set_viewport_size({"width": largura, "height": altura})
+    kicker = dashboard.locator(".st-key-adequabilidade_header .pet-hero-kicker")
+    expect(kicker).to_have_text("Qualidade da amostra")
+    expect(kicker).to_be_visible()
+    dashboard.wait_for_function("""() => {
+        const barra = document.querySelector('[data-testid="stHeader"]');
+        const hero = document.querySelector('.st-key-adequabilidade_header .pet-hero');
+        const kicker = hero?.querySelector('.pet-hero-kicker');
+        if (!barra || !hero || !kicker) return false;
+        const limite = barra.getBoundingClientRect().bottom;
+        return hero.getBoundingClientRect().top >= limite &&
+            kicker.getBoundingClientRect().top >= limite;
+    }""")
+    sem_erros(dashboard)
+
+
 def test_espacamento_perfil_etario(dashboard: Page) -> None:
     """Evita espaços vazios entre as fontes e o primeiro título da faixa etária."""
     navegar(dashboard, "Faixa etária", "Faixa etária e produção de exames")

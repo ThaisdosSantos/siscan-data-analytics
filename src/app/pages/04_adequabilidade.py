@@ -144,16 +144,21 @@ def adicionar_totalizador(tabela: pd.DataFrame) -> pd.DataFrame:
 
 def configurar_pagina() -> None:
     """Configura os estilos e o cabeçalho específicos desta página."""
-    page_header(
-        "Qualidade da amostra",
-        "Adequabilidade das amostras",
-        "Apresenta a distribuição das amostras citopatológicas segundo sua "
-        "adequabilidade, a evolução anual das amostras insatisfatórias e rejeitadas "
-        "e a comparação dos resultados entre os municípios selecionados.",
-    )
+    with st.container(key="adequabilidade_header"):
+        page_header(
+            "Qualidade da amostra",
+            "Adequabilidade das amostras",
+            "Apresenta a distribuição das amostras citopatológicas segundo sua "
+            "adequabilidade, a evolução anual das amostras insatisfatórias e rejeitadas "
+            "e a comparação dos resultados entre os municípios selecionados.",
+        )
     st.markdown(
         """
         <style>
+        /* Reserva a altura da barra superior fixa apenas nesta página. */
+        [data-testid="stMainBlockContainer"]:has(.st-key-adequabilidade_header) {
+          padding-top:60px !important;
+        }
         .pet-hero {margin-bottom:0 !important;}
         .adequabilidade-section-title {
           margin:30px 0 17px; padding:9px 0 12px;
