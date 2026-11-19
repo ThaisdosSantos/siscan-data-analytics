@@ -100,7 +100,7 @@ def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     assert fig.layout.xaxis.automargin
     assert datas[1] in fig.layout.xaxis.tickvals
     assert [list(trace.y) for trace in fig.data] == [[1500], [1600]]
-    assert all(not trace.connectgaps for trace in fig.data)
+    assert all(not trace.connectgaps and trace.fill == "none" for trace in fig.data)
 
 
 def test_grafico_executivo_marcadores_e_margem(carregar_modulo):
@@ -109,6 +109,7 @@ def test_grafico_executivo_marcadores_e_margem(carregar_modulo):
     serie = pd.Series([100, 0, 200], index=datas)
     fig = main.construir_grafico_mensal(serie, pd.DatetimeIndex([]))
     assert fig.data[0].mode == "lines+markers"
+    assert fig.data[0].fill == "none"
     assert list(fig.data[0].y) == [100, 0, 200]
     assert fig.data[0].marker.size == 4
     assert fig.layout.xaxis.tickformat == "%m/%Y"
