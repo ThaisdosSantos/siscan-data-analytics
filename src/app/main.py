@@ -486,25 +486,15 @@ def construir_grafico_mensal(
         ))
 
     agosto = pd.Timestamp("2022-08-01")
+    # Uma referência fina e neutra mantém o foco na série de produção.
     for data in ausentes:
-        fig.add_vrect(
-            x0=data - pd.Timedelta(days=15),
-            x1=data + pd.Timedelta(days=15),
-            fillcolor="rgba(238,83,37,.14)", line_width=0, layer="below",
+        fig.add_vline(
+            x=data, line=dict(color="#8396A6", width=1.2, dash="dot"),
+            layer="below",
         )
-    # A anotação acompanha a competência no zoom e na exportação PNG.
     destaque = agosto if agosto in ausentes else (ausentes[0] if len(ausentes) == 1 else None)
-    if destaque is not None:
-        fig.add_annotation(
-            x=destaque, y=1.0, xref="x", yref="paper",
-            text=f"<b>{destaque:%m/%Y}</b><br>Sem dados",
-            showarrow=False, yanchor="bottom", yshift=4,
-            font=dict(size=11, color="#B43E19"), align="center",
-            bgcolor="rgba(255,255,255,.96)", bordercolor="#EE5325",
-            borderwidth=1, borderpad=4,
-        )
     fig.update_layout(height=370, showlegend=False,
-                      margin=dict(l=82, r=18, t=60 if destaque is not None else 22, b=45),
+                      margin=dict(l=65, r=18, t=22, b=58 if destaque is not None else 45),
                       plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)")
     fig.update_yaxes(
         gridcolor="#e9eff3", rangemode="tozero", tickformat=",.0f",
@@ -512,6 +502,25 @@ def construir_grafico_mensal(
         title_text="Exames", title_standoff=10,
     )
     fig.update_xaxes(showgrid=False, tickformat="%m/%Y", nticks=7)
+    if destaque is not None and len(serie.index):
+        # Insere a competência no eixo em vez de uma caixa sobre o gráfico.
+        # Substitui o tick mais próximo, evitando rótulos muito juntos.
+        datas_eixo = serie.index[::max(1, (len(serie.index) + 5) // 6)].tolist()
+        if destaque not in datas_eixo:
+            mais_proxima = min(range(len(datas_eixo)),
+                               key=lambda i: abs(datas_eixo[i] - destaque))
+            datas_eixo[mais_proxima] = destaque
+            datas_eixo.sort()
+        rotulos = [
+            f"<b>{data:%m/%y}</b><br>Sem dados" if data == destaque
+            else data.strftime("%m/%y")
+            for data in datas_eixo
+        ]
+        fig.update_xaxes(
+            tickmode="array", tickvals=datas_eixo, ticktext=rotulos,
+            tickfont=dict(size=10, color="#536D82"),
+            automargin=True,
+        )
     if len(serie.index):
         fig.update_xaxes(range=[
             serie.index.min() - pd.Timedelta(days=15),
@@ -549,8 +558,8 @@ def renderizar_graficos(
             if len(ausentes):
                 competencias = ", ".join(ausentes.strftime("%m/%Y"))
                 st.caption(
-                    f"**Faixa laranja — sem dados:** {competencias}. "
-                    "A interrupção da linha não representa zero exames."
+                    f"**{competencias} — sem dados na base.** "
+                    "A lacuna não representa zero exames."
                 )
 
 

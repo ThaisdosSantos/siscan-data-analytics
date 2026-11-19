@@ -79,18 +79,18 @@ def test_lacunas_mensais(carregar_modulo):
     assert resultado.loc["2021"].isna().all()
 
 
-@pytest.mark.parametrize("rotulo,esperado", [
-    ("25–64 anos", "25–64 anos"), (">=65 anos", "≥65 anos"),
-    ("<25 anos", "<25 anos"), ("Ignorado", None),
-])
 def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     main = carregar_modulo("main.py")
     datas = pd.date_range("2022-07-01", "2022-09-01", freq="MS")
     serie = pd.Series([1500, float("nan"), 1600], index=datas)
     fig = main.construir_grafico_mensal(serie, pd.DatetimeIndex([datas[1]]))
     assert len(fig.layout.shapes) == 1
-    assert "08/2022" in fig.layout.annotations[0].text
-    assert "Sem dados" in fig.layout.annotations[0].text
+    assert fig.layout.shapes[0].line.dash == "dot"
+    assert pd.Timestamp(fig.layout.shapes[0].x0) == datas[1]
+    assert len(fig.layout.annotations) == 0
+    assert any("08/22" in rotulo and "Sem dados" in rotulo
+               for rotulo in fig.layout.xaxis.ticktext)
+    assert datas[1] in fig.layout.xaxis.tickvals
     assert [list(trace.y) for trace in fig.data] == [[1500], [1600]]
     assert all(not trace.connectgaps for trace in fig.data)
 
@@ -100,11 +100,15 @@ def test_grafico_executivo_nao_marca_ano_fora_do_recorte(carregar_modulo):
     serie = pd.Series([1500, 1600], index=pd.to_datetime(["2020-12-01", "2022-01-01"]))
     completa, ausentes, _ = main.preparar_serie_mensal(serie, [2020, 2022])
     fig = main.construir_grafico_mensal(completa, ausentes)
-    assert all(pd.Timestamp(shape.x0).year != 2021 or pd.Timestamp(shape.x1).year == 2022
+    assert all(pd.Timestamp(shape.x0).year in (2020, 2022)
                for shape in fig.layout.shapes)
     assert len(fig.layout.shapes) == len(ausentes)
 
 
+@pytest.mark.parametrize("rotulo,esperado", [
+    ("25–64 anos", "25–64 anos"), (">=65 anos", "≥65 anos"),
+    ("<25 anos", "<25 anos"), ("Ignorado", None),
+])
 def test_classificacao_etaria(carregar_modulo, rotulo, esperado):
     faixa = carregar_modulo("pages/03_faixa_etaria.py")
     assert faixa.q3_group(rotulo) == esperado
