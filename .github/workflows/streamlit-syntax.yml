@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - ui/padronizacao-q5-outubro-20261115
   pull_request:
     branches: [main]
     paths:
