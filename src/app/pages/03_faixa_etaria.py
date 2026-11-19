@@ -226,7 +226,7 @@ def configurar_pagina() -> None:
     /* Painel de fontes: cartão claro e texto legível, sem sobreposição ao hero. */
     .st-key-q3_sources_panel {
         margin-top: 52px !important;
-        margin-bottom: 16px !important;
+        margin-bottom: 0 !important;
     }
     .st-key-q3_sources_panel [data-testid="stExpander"] details {
         background: #FFFFFF !important;
@@ -253,6 +253,19 @@ def configurar_pagina() -> None:
     @media (max-width: 768px) {
         .st-key-q3_sources_panel {margin-top: 12px !important;}
     }
+    /* O primeiro título segue o painel de fontes sem blocos vazios de CSS. */
+    [data-testid="stMain"] .q3-section-title.q3-profile-title {
+        margin-top: 6px !important;
+        padding-top: 0 !important;
+    }
+    .q3-section-title {
+        margin:30px 0 17px;padding:9px 0 12px;
+        border-bottom:2px solid #D8E5EF;
+        font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
+        color:#1A3B5C;
+    }
+    .q3-section-title .q3-section-index {color:#006C9A;margin-right:10px;}
+    div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff;}
     </style>
     """, unsafe_allow_html=True)
     page_header(
@@ -275,17 +288,11 @@ def configurar_pagina() -> None:
                 "de beneficiárias da ANS."
             )
 
-    st.markdown("""
-    <style>
-    div[data-testid="stMetric"] {border-left:5px solid #006C9A;border-radius:12px;background:#fff;}
-    </style>
-    """, unsafe_allow_html=True)
-
 
 def renderizar_indicadores(sums: pd.Series, total: float) -> None:
     """Exibe a distribuição regional e as quantidades dos três grupos."""
     st.markdown(
-        '<h2 class="q3-section-title"><span class="q3-section-index">01</span>'
+        '<h2 class="q3-section-title q3-profile-title"><span class="q3-section-index">01</span>'
         'Perfil etário dos exames</h2>', unsafe_allow_html=True,
     )
 
@@ -539,20 +546,6 @@ def renderizar_composicao_municipal(agg: pd.DataFrame) -> None:
 
 def renderizar_perfil_etario(groups: pd.DataFrame) -> None:
     """Coordena indicadores, gráficos e detalhamento da composição etária."""
-    st.markdown(
-        """
-        <style>
-        .q3-section-title {
-          margin:30px 0 17px;padding:9px 0 12px;
-          border-bottom:2px solid #D8E5EF;
-          font:750 clamp(21px,2vw,26px)/1.35 Manrope,Arial,sans-serif;
-          color:#1A3B5C;
-        }
-        .q3-section-title .q3-section-index {color:#006C9A;margin-right:10px;}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
     sums = groups.groupby("grupo")["quantidade_exames"].sum()
     total = sums.sum()
     renderizar_indicadores(sums, total)

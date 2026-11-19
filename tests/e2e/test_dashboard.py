@@ -77,6 +77,26 @@ def test_navegacao(dashboard: Page, nome: str, titulo: str, marco: str) -> None:
     sem_erros(dashboard)
 
 
+def test_espacamento_perfil_etario(dashboard: Page) -> None:
+    """Evita espaços vazios entre as fontes e o primeiro título da faixa etária."""
+    navegar(dashboard, "Faixa etária", "Faixa etária e produção de exames")
+    fontes = dashboard.locator(".st-key-q3_sources_panel [data-testid=stExpander]")
+    perfil = dashboard.locator(".q3-profile-title")
+    expect(fontes).to_be_visible()
+    expect(perfil).to_be_visible()
+    for largura, altura in [(1280, 900), (414, 736)]:
+        dashboard.set_viewport_size({"width": largura, "height": altura})
+        expect(perfil).to_be_visible()
+        dashboard.wait_for_function("""() => {
+            const fontes = document.querySelector('.st-key-q3_sources_panel [data-testid=stExpander]');
+            const titulo = document.querySelector('.q3-profile-title');
+            if (!fontes || !titulo) return false;
+            const distancia = titulo.getBoundingClientRect().top - fontes.getBoundingClientRect().bottom;
+            return distancia >= 0 && distancia <= 45;
+        }""")
+    sem_erros(dashboard)
+
+
 def test_navegacao_preserva_menu(dashboard: Page) -> None:
     """Confirma que o menu permanece no DOM e o filtro durante a troca."""
     sidebar = dashboard.get_by_test_id("stSidebar")
