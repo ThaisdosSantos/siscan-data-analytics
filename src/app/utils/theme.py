@@ -1231,6 +1231,67 @@ def apply_custom_css():
         max-width:92vw!important;
       }
     }
+
+    /* Leitura nítida da navegação em notebooks e zoom reduzido.
+       Reforça hierarquia e contraste sem alterar a largura ou os ícones do menu. */
+    [data-testid="stSidebar"] {
+      text-rendering:optimizeLegibility;
+    }
+    [data-testid="stSidebar"] .lovable-brand strong {
+      font-size:1.14rem!important;font-weight:800!important;
+      letter-spacing:-.01em!important;
+    }
+    [data-testid="stSidebar"] .lovable-brand small {
+      color:#e7f2fa!important;font-size:.81rem!important;
+      line-height:1.4!important;font-weight:550!important;
+    }
+    [data-testid="stSidebar"] .lovable-brand .lovable-brand-region {
+      color:#c4e1f2!important;font-size:.77rem!important;font-weight:700!important;
+    }
+    [data-testid="stSidebar"] .lovable-label {
+      color:#c5dfef!important;font-size:.76rem!important;
+      font-weight:800!important;letter-spacing:.12em!important;
+    }
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a {
+      min-height:42px!important;color:#f4f9fd!important;
+      font-size:.95rem!important;font-weight:700!important;
+      line-height:1.35!important;
+    }
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a p {
+      color:inherit!important;font-size:inherit!important;
+      font-weight:inherit!important;line-height:inherit!important;
+    }
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a svg {
+      color:#d7eaf5!important;width:18px!important;height:18px!important;
+      flex-shrink:0!important;
+    }
+    [data-testid="stSidebar"] .st-key-nav_panorama_icon [data-testid="stPageLink"] a::before,
+    [data-testid="stSidebar"] .st-key-nav_outubro_icon [data-testid="stPageLink"] a::before,
+    [data-testid="stSidebar"] .st-key-nav_exames_icon [data-testid="stPageLink"] a::before {
+      width:18px!important;height:18px!important;flex-basis:18px!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_filter_panel .filter-panel-title {
+      color:#c5dfef!important;font-size:12px!important;font-weight:800!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary [data-testid="stMarkdownContainer"] p {
+      color:#fff!important;font:700 14px/1.2 Manrope,Arial,sans-serif!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details:not([open])>summary [data-testid="stMarkdownContainer"]::after,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details:not([open])>summary [data-testid="stMarkdownContainer"]::after {
+      color:#c5dcec!important;font:550 11.5px/1.2 Manrope,Arial,sans-serif!important;
+    }
+    [data-testid="stSidebar"] .st-key-siscan_year_panel details>summary::after,
+    [data-testid="stSidebar"] .st-key-siscan_city_panel details>summary::after {
+      color:#b9e1f7!important;font:750 11px/1.1 Manrope,Arial,sans-serif!important;
+    }
+    [data-testid="stSidebar"] .lovable-footer {
+      font-size:.81rem!important;color:#dbeaf4!important;
+    }
+    [data-testid="stSidebar"] .lovable-footer .lovable-footer-period,
+    [data-testid="stSidebar"] .lovable-footer .lovable-footer-project {
+      color:#c5dcec!important;font-size:.78rem!important;
+    }
     </style>""", unsafe_allow_html=True)
 
 
