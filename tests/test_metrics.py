@@ -79,6 +79,21 @@ def test_lacunas_mensais(carregar_modulo):
     assert resultado.loc["2021"].isna().all()
 
 
+def test_diagrama_territorial_ocupa_largura_do_card(carregar_modulo):
+    """O diagrama acompanha o card sem deformar os marcadores."""
+    main = carregar_modulo("main.py")
+    totais = pd.Series({"Alegrete": 100, "Itaqui": 50})
+    fig = main.construir_diagrama_territorial(totais, {"Alegrete", "Itaqui"})
+
+    assert fig.layout.autosize is True
+    assert fig.layout.width is None
+    assert fig.layout.height == 370
+    assert fig.layout.yaxis.scaleanchor is None
+    assert list(fig.layout.yaxis.range) == [109, -9]
+    assert len(fig.data) == 1 + len(main.TERRITORIOS) * 2
+    assert fig.data[1].hovertemplate.endswith("<extra></extra>")
+
+
 def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     main = carregar_modulo("main.py")
     datas = pd.date_range("2022-07-01", "2022-09-01", freq="MS")

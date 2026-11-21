@@ -461,13 +461,13 @@ def construir_diagrama_territorial(
             hoverinfo="skip", showlegend=False,
         ))
 
-    fig.update_xaxes(visible=False, range=[-9, 109], fixedrange=True,
-                     constrain="domain")
+    # Sem trava quadrada: o diagrama preenche a largura do card em qualquer zoom.
+    # As bolhas seguem circulares porque marcadores Plotly são medidos em pixels.
+    fig.update_xaxes(visible=False, range=[-9, 109], fixedrange=True)
     # Preserva a orientação do diagrama, com a origem no canto superior esquerdo.
-    fig.update_yaxes(visible=False, range=[109, -9], fixedrange=True,
-                     scaleanchor="x", scaleratio=1)
+    fig.update_yaxes(visible=False, range=[109, -9], fixedrange=True)
     fig.update_layout(
-        height=330, margin=dict(l=3, r=3, t=5, b=5),
+        autosize=True, height=370, margin=dict(l=3, r=3, t=5, b=5),
         plot_bgcolor="#f4f6f8", paper_bgcolor="rgba(0,0,0,0)",
         hoverlabel=dict(bgcolor="white", font_color=NAVY),
     )
