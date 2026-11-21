@@ -23,7 +23,7 @@ def apply_custom_css():
     :root {--navy:#1A3B5C;--ocean:#006C9A;--sky:#4A9FD8;
            --orange:#EE5325;--gray:#D9D9D9;--light:#F4F6F8;}
     html,body,[data-testid="stAppViewContainer"] {background:#fff;color:#1A3B5C;}
-    .block-container {padding:1.25rem 2.1rem 3rem;max-width:1480px;}
+    .block-container {padding:1.25rem 1.5rem 3rem;max-width:1760px;}
     h1,h2,h3,h4 {color:var(--navy)!important;letter-spacing:-.015em;}
     h2,h3 {font-weight:730!important;}
     .pet-hero {background:radial-gradient(120% 140% at 100% 0%,#006C9A 0%,#1A3B5C 66%);
@@ -152,7 +152,7 @@ def apply_custom_css():
     /* Responsividade compartilhada — desktop, tablet e smartphone. */
     *, *::before, *::after {box-sizing:border-box;}
     [data-testid="stAppViewContainer"], .block-container {min-width:0;}
-    .block-container {width:100%;max-width:1480px;margin:0 auto;}
+    .block-container {width:100%;max-width:1760px;margin:0 auto;}
     [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {min-width:0;}
     [data-testid="stPlotlyChart"],[data-testid="stPlotlyChart"] > div {max-width:100%;min-width:0;}
     [data-testid="stImage"] img {max-width:100%;height:auto;}
@@ -870,7 +870,8 @@ def apply_custom_css():
       box-sizing:border-box!important;
       width:100%!important;
       min-width:0!important;
-      max-width:1480px!important;
+      /* Reduz as margens vazias entre o menu e os painéis em zooms menores. */
+      max-width:1760px!important;
     }
     [data-testid="stMain"] [data-testid="stVerticalBlock"],
     [data-testid="stMain"] [data-testid="stElementContainer"],
