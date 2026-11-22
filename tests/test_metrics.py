@@ -110,13 +110,34 @@ def test_grafico_executivo_identifica_competencia_ausente(carregar_modulo):
     assert fig.layout.xaxis.tickfont.color == "#64748B"
     assert all(trace.marker.size == 4 for trace in fig.data)
     assert fig.layout.hovermode == "closest"
-    assert fig.layout.margin.b == 32
+    assert fig.layout.margin.b == 52
     assert fig.layout.xaxis.linecolor == "#CBD5E1"
     assert fig.layout.yaxis.zerolinecolor == "#CBD5E1"
     assert fig.layout.xaxis.automargin
     assert datas[1] in fig.layout.xaxis.tickvals
     assert list(fig.data[0].y[::2]) == [1500, 1600]
     assert not fig.data[0].connectgaps and fig.data[0].fill == "tozeroy"
+
+
+def test_grafico_executivo_exportacao_com_valores_e_eixo(carregar_modulo):
+    """O PNG contém contagens; o gráfico interativo preserva o hover e a lacuna."""
+    main = carregar_modulo("main.py")
+    datas = pd.date_range("2022-07-01", "2022-09-01", freq="MS")
+    serie = pd.Series([1500, float("nan"), 1600], index=datas)
+    ausentes = pd.DatetimeIndex([datas[1]])
+    fig = main.construir_grafico_mensal(serie, ausentes)
+    png = main.construir_grafico_mensal_exportacao(fig, ausentes)
+
+    assert fig.layout.xaxis.title.text == "Anos"
+    assert fig.data[0].mode == "lines+markers"
+    assert fig.data[0].text is None
+    assert png.layout.xaxis.title.text == "Anos"
+    assert png.layout.height == 820
+    assert png.data[0].mode == "lines+markers+text"
+    assert list(png.data[0].text) == ["1.500", None, "1.600"]
+    assert pd.isna(png.data[0].y[1])
+    assert png.data[0].connectgaps is False
+    assert "08/2022 — sem dados" in png.layout.annotations[-1].text
 
 
 def test_grafico_executivo_preenchimento_preserva_lacuna(carregar_modulo):
@@ -155,7 +176,7 @@ def test_grafico_executivo_marcadores_e_margem(carregar_modulo):
     assert fig.data[0].marker.size == 4
     assert fig.layout.xaxis.tickformat == "%m/%Y"
     assert fig.layout.xaxis.ticklen == 5
-    assert fig.layout.margin.b == 32
+    assert fig.layout.margin.b == 52
     assert pd.Timestamp(fig.layout.xaxis.range[0]) < datas[0]
     assert fig.layout.modebar.bgcolor == "rgba(255,255,255,0)"
 

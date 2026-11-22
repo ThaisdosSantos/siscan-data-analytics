@@ -198,6 +198,7 @@ def test_lacuna_agosto_2022_visao_executiva(dashboard: Page) -> None:
         "08/2022", timeout=30_000,
     )
     expect(frame.locator(".xtick text").filter(has_text="01/2023")).to_have_text("01/2023")
+    expect(frame.locator(".xtitle")).to_have_text("Anos")
     expect(frame.locator(".xtick text").filter(has_text="Sem dados")).to_have_count(0)
     expect(frame.locator(".annotation-text")).to_have_count(0)
     grafico = frame.locator(".js-plotly-plot")
@@ -316,6 +317,7 @@ def test_exportacao_png(dashboard: Page, tmp_path: Path) -> None:
     destino = tmp_path / download.suggested_filename
     download.save_as(destino)
     assert destino.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+    assert int.from_bytes(destino.read_bytes()[16:20], "big") == 5400
 
 
 def test_analises_avancadas(dashboard: Page) -> None:

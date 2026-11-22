@@ -7,7 +7,7 @@ import streamlit.components.v1 as components
 
 def chart_with_right_click_download(
     fig, *, filename, height=None, export_fig=None, min_chart_width=0,
-    compact_modebar=False, bottom_space=28,
+    compact_modebar=False, bottom_space=28, export_width=1500,
 ):
     """Exibe Plotly interativo com opções de barra e espaço inferior do iframe.
 
@@ -40,7 +40,9 @@ def chart_with_right_click_download(
                 # Pontos de séries temporais são rotulados apenas no arquivo
                 # para que cada valor possa ser lido sem passar o mouse.
                 if getattr(trace, "y", None) is not None:
+                    mode = str(getattr(trace, "mode", "") or "")
                     trace.update(
+                        mode=mode if "text" in mode else mode + "+text",
                         texttemplate="%{y:,.0f}", textposition="top center",
                         textfont=dict(size=10, color="#1A3B5C"),
                     )
@@ -141,7 +143,7 @@ async function downloadPng(){
   if(!window.Plotly)return;
   const temp=document.createElement("div");
   const exportHeight=Math.max(720,Number(exportSpec.layout?.height)||720);
-  const exportWidth=1500;
+  const exportWidth=__EXPORT_WIDTH__;
   temp.style.cssText="position:absolute;left:-20000px;top:0;width:"+exportWidth+"px;height:"+exportHeight+"px;pointer-events:none";
   document.body.appendChild(temp);
   try{
@@ -191,6 +193,7 @@ if("ResizeObserver" in window){
     html = (html.replace("__FIGURE__", figure)
             .replace("__MIN_WIDTH__", str(min_width))
             .replace("__MODEBAR_CLASS__", "compact-modebar" if compact_modebar else "")
+            .replace("__EXPORT_WIDTH__", str(max(600, int(export_width))))
             .replace("__FILENAME__", json.dumps(name))
             .replace("__EXPORT_SPEC__", export_spec))
     components.html(html, height=height + max(0, int(bottom_space)), scrolling=False)

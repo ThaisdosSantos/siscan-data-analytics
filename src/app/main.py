@@ -507,7 +507,7 @@ def construir_grafico_mensal(
     # a ausência, sem linhas verticais ou sobreposições decorativas.
     destaque = agosto if agosto in ausentes else (ausentes[0] if len(ausentes) == 1 else None)
     fig.update_layout(height=370, showlegend=False,
-                      margin=dict(l=70, r=18, t=22, b=32),
+                      margin=dict(l=70, r=18, t=22, b=52),
                       plot_bgcolor="white", paper_bgcolor="rgba(0,0,0,0)",
                       hovermode="closest", hoverdistance=20,
                       hoverlabel=dict(bgcolor="white", bordercolor="#D5E3ED",
@@ -523,6 +523,7 @@ def construir_grafico_mensal(
     )
     fig.update_xaxes(
         showgrid=False, tickformat="%m/%Y", nticks=6,
+        title_text="Anos", title_standoff=9,
         showline=True, linecolor="#CBD5E1", linewidth=1,
         ticks="outside", ticklen=5, tickcolor="#D5E3ED",
         tickfont=dict(size=10, color="#64748B"), automargin=True,
@@ -547,6 +548,49 @@ def construir_grafico_mensal(
             serie.index.max() + pd.Timedelta(days=24),
         ])
     return fig
+
+
+def construir_grafico_mensal_exportacao(
+    fig: go.Figure, ausentes: pd.DatetimeIndex
+) -> go.Figure:
+    """Prepara um PNG legível com as contagens de todas as competências.
+
+    A figura interativa permanece sem rótulos fixos. No PNG, os valores
+    observados são identificados, mas uma competência ausente não recebe
+    valor nem é convertida em zero.
+    """
+    exportacao = go.Figure(fig)
+    valores = []
+    for traco in exportacao.data:
+        if traco.type != "scatter" or traco.y is None:
+            continue
+        traco.update(
+            mode="lines+markers+text" if "lines" in str(traco.mode) else "markers+text",
+            text=[fmt_num(valor) if pd.notna(valor) else None for valor in traco.y],
+            textposition="top center",
+            textfont=dict(size=11, color=NAVY),
+            cliponaxis=False,
+        )
+        valores.extend(float(valor) for valor in traco.y if pd.notna(valor))
+
+    exportacao.update_layout(
+        title=dict(text="Evolução mensal de exames — 10ª CRS/RS", x=0.5),
+        height=820,
+        margin=dict(l=95, r=75, t=100, b=120),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+    )
+    if valores and max(valores) > 0:
+        exportacao.update_yaxes(range=[0, max(valores) * 1.18])
+    if len(ausentes):
+        competencias = ", ".join(ausentes.strftime("%m/%Y"))
+        exportacao.add_annotation(
+            x=0, y=-0.14, xref="paper", yref="paper",
+            text=f"{competencias} — sem dados na base. A lacuna não representa zero exames.",
+            showarrow=False, xanchor="left",
+            font=dict(size=12, color="#40566B"),
+        )
+    return exportacao
 
 
 def renderizar_graficos(
@@ -577,6 +621,8 @@ def renderizar_graficos(
             chart_with_right_click_download(
                 fig, filename="visao_executiva_evolucao_mensal.png",
                 height=fig.layout.height, compact_modebar=True, bottom_space=4,
+                export_fig=construir_grafico_mensal_exportacao(fig, ausentes),
+                export_width=2700,
             )
             if len(ausentes):
                 competencias = ", ".join(ausentes.strftime("%m/%Y"))
