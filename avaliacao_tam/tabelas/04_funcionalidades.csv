@@ -1,0 +1,9 @@
+﻿Código,Funcionalidade,Afirmação,n válido,Não utilizou (n),Não utilizou (%),Concordância positiva (n),Concordância positiva (%),Média
+F1,Menu lateral,O menu lateral facilita o acesso às diferentes páginas do dashboard.,34,7,17.0732,32,94.1176,4.7353
+F2,Filtros de anos e municípios,Os filtros de anos e municípios permitem personalizar as informações de acordo com minhas necessidades.,30,11,26.8293,28,93.3333,4.6667
+F3,Comparação nos gráficos,"Os gráficos facilitam a comparação de informações entre diferentes períodos, municípios e grupos etários.",35,6,14.6341,32,91.4286,4.6286
+F4,Explicações dos indicadores,As explicações disponíveis nos indicadores e gráficos ajudam a compreender o significado dos dados apresentados.,34,7,17.0732,30,88.2353,4.4706
+F5,Organização visual e legibilidade,"A organização visual, as cores e o tamanho dos textos facilitam a leitura das informações.",35,6,14.6341,29,82.8571,4.2857
+F6,Interação com gráficos,"Os recursos de interação com os gráficos, como consultar valores ao passar o cursor, são fáceis de utilizar.",36,5,12.1951,34,94.4444,4.6111
+F7,Exportação de gráficos e tabelas,Os recursos para exportar gráficos e tabelas são fáceis de utilizar.,27,14,34.1463,24,88.8889,4.5556
+F8,Fontes e limitações dos dados,O dashboard apresenta de forma clara as fontes dos dados e as limitações dos indicadores utilizados.,33,8,19.5122,29,87.8788,4.4545

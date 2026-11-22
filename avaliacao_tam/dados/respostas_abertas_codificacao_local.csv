@@ -1,0 +1,65 @@
+﻿ID analítico,Sugestão de melhoria,Comentário adicional,Categoria temática (preencher),Notas de codificação (preencher)
+P01,,,,
+P02,,,,
+P03,,,,
+P04,,,,
+P05,"Acredito que a organização das informações poderia ser aprimorada. Em algumas páginas, há uma grande quantidade de conteúdo apresentado de forma pouco estruturada, o que pode dificultar a navegação e a identificação das informações mais relevantes. Uma alternativa seria adotar uma organização por abas, agrupando os conteúdos de acordo com suas respectivas finalidades e contextos.
+
+Ao navegar entre os menus, também percebi alguns flashes visuais ao alternar entre os itens do sidebar. Durante aproximadamente meio segundo, a estilização da interface parece ser perdida ou aplicada incorretamente, até que a página seja completamente carregada. Esse comportamento acaba comprometendo um pouco a experiência do usuário.
+
+Gostei da proposta de utilizar um filtro global na lateral esquerda. No entanto, senti falta de filtros específicos nas tabelas, permitindo refinar os resultados de forma independente. Por exemplo, seria interessante conseguir visualizar apenas os registros de ""Alegrete"" em uma determinada tabela, sem que isso afetasse os demais conteúdos da página. Uma abordagem baseada em filtros locais, seguindo um padrão semelhante ao ""Faceted Search"", poderia atender bem a essa necessidade. Ou até mesmo adicionando um campo de pesquisa por tabela.
+
+Outro ponto que chamou minha atenção foi o uso frequente de accordions para expandir e recolher tabelas. Acredito que a organização por abas também poderia resolver essa questão, permitindo que as tabelas fossem exibidas diretamente na aba correspondente, sem exigir uma ação adicional (clique extra) do usuário para visualizá-las.
+
+Por fim, em tabelas com um grande volume de registros, seria interessante estabelecer uma altura máxima para a área de exibição, com rolagem interna e/ou implementar paginação. Isso ajudaria a manter a interface mais organizada e evitaria que tabelas muito extensas comprometessem a experiência de navegação.",No geral acredito ser uma boa ferramenta.,,
+P06,Nada. Achei bem joia a plataforma,,,
+P07,,,,
+P08,"Acho que a fonte dos dados deveria ficar muito mais clara, pois não encontrei na página. Acho que deveria ter um link da api ou algo assim, para que o usuário possa saber facilmente de onde foram tirados esses dados, e também saber se eles estão atualizados.",,,
+P09,,,,
+P10,"1. Download das imagens dos mapas está gerando várias imagens sem dados, bug crítico impede o usuário de acessar os dados que foram baixados.
+2. Há botões de Panorama geral, Exames alterados e Outubro Rosa na tela inicial que não são clicáveis, pra quê eles estão ali se não redirecionam para a tela? 
+3. Os filtros laterais não alteram a visualização da tela, ao clicar no ano de 2021 ele ainda segue sendo visualizado nos gráficos. 
+4. Fiquei confusa o dash é pra gerar informações sobre exames citapológicos ou de câncer de colo de útero ou ambas as informações se comunicam durante a jornada de navegação, os textos me deixaram confusa sobre o objetivo de informatividade da ferramenta.
+5. O campo de ordenar por está lento e confuso só pode filtrar por ordem crescente de A-Z e maior para o menor e se eu quiser ver só de um município? 
+6. As box que explicam os gráficos estão meio complexas, tem dados negativos e explica de um jeito que me faz entender que nao houveram dados naquele mes? Entao porque está negativo? 
+7. O menu de cada gráfico está em inglês e o texto do dash em português, fiquei confusa isso era pra ter um tradutor? 
+8. A opção de dar zoom selecionando uma parte do gráfico fica meio estranha se clicada duas vezes
+9. Em Adequadabilidade o percentual do somatório não bate com os dados, como assim 0,05% se tem 11 dados com porcentagens distintas? 
+10. Composição dos resultados citopatológicos o gráfico está com legenda não formatada.
+11. Composição dos resultados citopatológicos quando o cursor passa por cima do gráfico o sistema gera valores de faixa que nao batem com o gráfico.",rever os pontos acima. ,,
+P11,"Tenho duas principais sugestões ao dashboard:
+1-  Os filtros estão pouco visíveis. Demorei um pouco para encontrar a funcionalidade pois estava quase invisivel na barra lateral (talvez devido à resolução do meu computador);
+2-  Acredito que as informações sobre o que os gráficos representam, como interpretá-los e outros, embora sejam extremamente importantes, estejam tomando muito do espaço da tela, deixando ela um pouco poluída e difícil de visualizar os gráficos. Considero que é algo valido no primeiro uso, mas acabaria me atrapalhando em um uso mais continuo do dashboard.",,,
+P12,"Acho que usabilidade pode ser melhorada porque tive muita dificuldade em visualizar e você pode notar a diferença entre as telas e menu e isso acabou me incomodando bastante, Mas de modo geral foi só isso e também poderia ter alguma legenda de dados do gráfico, algo explicativo talvez ","Acredito que o trabalho possa contribuir, mas acho que falta somente uns ajustes de usabilidade e acessibilidade. Parabéns pelo trabalho!",,
+P13,,,,
+P14,"Só na minha experiência eu não tinha notado os filtros dos anos e municípios, fui perceber só porque teve no questionário. Talvez o filtro ficando em cima do gráfico seja mais intuítivo. ","Maravilhoso trabalho, parabéns pela iniciativa, com certeza servirá para evolução de mais trabalhos acadêmicos não só na área da tecnologia mas principalmente na área da saúde. Também é bem promissor para a utilidade pública e setor privado. ",,
+P15,,,,
+P16,Pesquisa por cidade e ano digitando o nome da cidade e ano,Satisfatória. Parabéns!,,
+P17,,,,
+P18,Algumas páginas há uma margem no card do título cortando um pouco o texto.,,,
+P19,,,,
+P20,Facilidade de acesso as informações ,,,
+P21,"Contraste de algumas fontes com o fundo. Incluir dados analíticos ampliaria a aplicabilidade (pensando em gestão seria interessante um painel de custos do procedimento desde a consulta, coleta e analise). Isso necessitaria acesso a contas publicas (portais de transparência). Mas, atende o que se propôs. ","Interessante. Rapidamente me ambientei com o Painel, descobri os filtros e comecei a utilizar. ",,
+P22,,,,
+P23,,,,
+P24,,,,
+P25,,,,
+P26,,,,
+P27,,,,
+P28,Acredito que na parte de tabelas seria bom tentar encaixar totalmente dentro da tela e não ter que ir para o lado para visualizar mais ela e nas tabelas que são muito extensas no número de linhas talvez fixar quando vai para baixo o cabeçalho da coluna para a pessoa que estiver analisando não esquecer o que aquela coluna significa.,,,
+P29,"- Alguns cards não possuem icone de interrogação para explicar o que ele representa, o que pode dificultar o entendimento. 
+- Seria interessante que após limpar os filtros, o dashboard atualizasse os números em tempo real sem precisar atualizar a página ",,,
+P30,"Com certeza o dashboard é extremamente útil, o sidebar também facilita muito. Eu acho que ficaria um pouco melhor para o usuário se os filtros ficassem fixos no topo da página (no container da direita), ele fica fixo para todas as abas do sidebar. Fora isso, apenas tomaria cuidado com textos informativos em cor quase transparente; textos explicativos muito longos; e também aplicar conceitos de arquitetura da informação para ficar mais categorizado tudo. De resto ta ótimo!",,,
+P31,"O visual poderia ter uma identidade mais própria, pois o layout parece genérico. Há muito texto em cada página e é preciso rolar bastante até chegar aos gráficos. Os filtros poderiam ser aplicados automaticamente, pois o botão ""Aplicar filtros"" fica escondido na barra lateral. O mapa de bolhas poderia mostrar o nome dos municípios sem precisar passar o mouse, e alguns títulos dos cartões aparecem cortados.",,,
+P32,"Eu acredito que esteja bom como está
+O design clean combina com o tema de saúde e facilita a compreensão das informações
+Achei muito completo, tem tantas informações que não me ficou nenhuma dúvida, acho que serviria perfeitamente para quem precisar",,,
+P33,,,,
+P34,,,,
+P35,O tempo de acesso ,É uma plataforma boa de utilizar!,,
+P36,,,,
+P37,Seria interessante adicionar uma pequena parte com informações sobre a importância de realizar os exames citopatológicos.,,,
+P38,,,,
+P39,,,,
+P40,,,,
+P41,"O dashboard é organizado e fácil de navegar, mas poderia melhorar em alguns pontos: deixar os filtros de ano e município mais visíveis (no topo da barra lateral, sem precisar rolar), reduzir o espaço do banner para que os indicadores apareçam logo na primeira tela, e explicar melhor termos técnicos como “proporção operacional” diretamente nos cartões. Também seria útil incluir comparações (por exemplo, com o ano anterior) e a opção de exportar dados e gráficos.","Achei a ideia do dashboard muito interessante e relevante. Reunir os dados do SISCAN da 10ª CRS em um só lugar, com filtros por ano e município, facilita bastante a consulta e a compreensão dos indicadores. Parabéns pelo trabalho!",,
