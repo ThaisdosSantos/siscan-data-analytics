@@ -50,7 +50,10 @@ CORES_GRUPOS = {
     GRUPO_ALVO: "#1757A6",
     "≥65 anos": "#E85D2A",
 }
-ModoRotulo = Literal["percentual_vertical", "quantidade_vertical", "percentual_horizontal"]
+ModoRotulo = Literal[
+    "percentual_vertical", "quantidade_vertical",
+    "percentual_horizontal", "variacao_horizontal",
+]
 
 
 def configurar_pagina() -> None:
@@ -164,30 +167,35 @@ def download_plot(
     imagem = copy.deepcopy(fig)
     # Os rótulos do PNG não alteram a figura interativa.
     if rotulos_exportacao in {
-        "percentual_vertical", "quantidade_vertical", "percentual_horizontal"
+        "percentual_vertical", "quantidade_vertical",
+        "percentual_horizontal", "variacao_horizontal",
     }:
-        barras_verticais = rotulos_exportacao != "percentual_horizontal"
+        barras_verticais = rotulos_exportacao not in {
+            "percentual_horizontal", "variacao_horizontal"
+        }
         percentual = rotulos_exportacao != "quantidade_vertical"
+        variacao_horizontal = rotulos_exportacao == "variacao_horizontal"
         for traco in imagem.data:
             nome_grupo = str(getattr(traco, "name", ""))
             grupo_superior = nome_grupo in {"≥65 anos", ">=65 anos"}
             texto_escuro = grupo_superior
             traco.update(
                 texttemplate=(
-                    "<b>%{x:.1f}%</b>"
-                    if not barras_verticais
-                    else ("<b>%{y:.1f}%</b>" if percentual
-                          else "<b>%{y:,.0f}</b>")
+                    "<b>%{x:+.2f}%</b>" if variacao_horizontal
+                    else ("<b>%{x:.1f}%</b>" if not barras_verticais
+                          else ("<b>%{y:.1f}%</b>" if percentual
+                                else "<b>%{y:,.0f}</b>"))
                 ),
                 textposition=(
-                    "outside" if grupo_superior and barras_verticais
-                    else "inside"
+                    "outside" if variacao_horizontal or (
+                        grupo_superior and barras_verticais
+                    ) else "inside"
                 ),
                 insidetextanchor="middle",
                 textfont=dict(
                     family="Arial Black, Arial, sans-serif",
                     size=12 if grupo_superior else 13,
-                    color=NAVY if texto_escuro else "#FFFFFF",
+                    color=NAVY if texto_escuro or variacao_horizontal else "#FFFFFF",
                 ),
                 cliponaxis=False,
                 constraintext="none",
@@ -586,7 +594,12 @@ def renderizar_producao_mensal(mensal: pd.DataFrame, anuais: pd.DataFrame) -> No
     )
     fig.update_xaxes(title_text="Ano", showgrid=False)
     fig.update_yaxes(title_text="Quantidade de exames", tickformat=",d")
-    download_plot(fig, "outubro_rosa_producao_mensal_por_ano.png", altura=440, largura=1550, margem_superior=100)
+    download_plot(
+        fig, "outubro_rosa_producao_mensal_por_ano.png",
+        altura=440, largura=1550, margem_superior=100,
+        rotulos_exportacao="quantidade_vertical",
+        titulo_exportacao="Outubro Rosa — Produção mensal por ano",
+    )
 
 
 def renderizar_comparacao_municipal(dados: pd.DataFrame) -> None:
@@ -672,9 +685,22 @@ def renderizar_comparacao_municipal(dados: pd.DataFrame) -> None:
             categoryarray=list(reversed(municipios_validos["Município"].tolist())),
             automargin=True,
         )
+        menor_variacao = min(
+            0.0, float(municipios_validos["Variação (%)"].min())
+        )
+        maior_variacao = max(
+            0.0, float(municipios_validos["Variação (%)"].max())
+        )
+        margem_rotulos = max(
+            4.0, max(abs(menor_variacao), abs(maior_variacao)) * 0.11
+        )
         fig_mun.update_xaxes(
             ticksuffix="%", tickformat=".2f",
             zeroline=True, zerolinecolor=NAVY, zerolinewidth=2,
+            range=[
+                menor_variacao - margem_rotulos,
+                maior_variacao + margem_rotulos,
+            ],
         )
         fig_mun.update_traces(
             hovertemplate="<b>%{y}</b>"
@@ -690,6 +716,10 @@ def renderizar_comparacao_municipal(dados: pd.DataFrame) -> None:
             fig_mun, "outubro_rosa_variacao_acumulada_pares_completos.png",
             altura=max(460, 42 * len(municipios_validos) + 110),
             largura=1600,
+            rotulos_exportacao="variacao_horizontal",
+            titulo_exportacao=(
+                "Outubro Rosa — Variação setembro × outubro por município (%)"
+            ),
         )
 
     municipios_ativos = set(dados["municipio"].unique())
