@@ -181,7 +181,7 @@ def download_plot(
             texto_escuro = grupo_superior
             traco.update(
                 texttemplate=(
-                    "<b>%{x:+.2f}%</b>" if variacao_horizontal
+                    "<b>%{customdata[3]}</b>" if variacao_horizontal
                     else ("<b>%{x:.1f}%</b>" if not barras_verticais
                           else ("<b>%{y:.1f}%</b>" if percentual
                                 else "<b>%{y:,.0f}</b>"))
